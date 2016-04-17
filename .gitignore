@@ -1,0 +1,5 @@
+*.pyc
+*.swp
+parser.out
+parsetab.py
+txsc.egg-info/
