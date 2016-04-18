@@ -10,7 +10,15 @@ You can also run `compiler.py` locally, but you won't be able to use any languag
 Unless specified, `txsc` will assume that the source language is `txscript` and the target
 language is `BTC` (see below for explanations of what these languages are).
 
-You can either invoke `txsc` with a string or with a filename.
+You can either invoke `txsc` with a string or with a filename. If a filename is specified, the file
+extension will be used to determine the source language if one is present.
+
+Compile a raw `BTC` to `ASM`:
+
+```
+txsc "5255935788" -s btc -t asm
+2 5 ADD 7 EQUALVERIFY
+```
 
 Compile `txscript` to `BTC` and `ASM`:
 
