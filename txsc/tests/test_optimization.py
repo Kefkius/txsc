@@ -62,3 +62,8 @@ class OptimizationTest(BaseOptimizationTest):
 
         script = Instructions([types.Five(), types.Sha256(), types.RipeMD160()])
         self._do_test('OP_5 OP_HASH160', script)
+
+    def test_multiple_optimization_occurrences(self):
+        script = Instructions([types.Five(), types.Five(), types.Equal(), types.Verify(),
+                               types.Five(), types.Five(), types.Equal(), types.Verify()])
+        self._do_test('OP_5 OP_5 OP_EQUALVERIFY OP_5 OP_5 OP_EQUALVERIFY', script)

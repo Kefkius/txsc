@@ -1,3 +1,5 @@
+import copy
+
 from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 from bitcoin.core.scripteval import _CastToBool
@@ -23,8 +25,22 @@ class Instructions(list):
         """Evaluate data as a boolean."""
         return _CastToBool(data)
 
+    def __init__(self, *args):
+        # Perform a deep copy if an Instructions instance is passed.
+        if len(args) == 1 and isinstance(args[0], Instructions):
+            return super(Instructions, self).__init__(copy.deepcopy(args[0]))
+        return super(Instructions, self).__init__(*args)
+
     def __str__(self):
         return str(map(str, self))
+
+    def copy_slice(self, start, end):
+        """Create a copy of instructions from [start : end]."""
+        return copy.deepcopy(self[start:end])
+
+    def replace_slice(self, start, end, values):
+        """Replace instructions from [start : end] with values."""
+        self[start:end] = values
 
     def matches_template(self, template, index, strict=True):
         """Returns whether a block that matches templates starts at index.
@@ -50,30 +66,20 @@ class Instructions(list):
 
         return True
 
-    def replace(self, start, length, new_instructions):
-        """Replace length instructions, starting at start."""
-        values = []
-        for i in range(length):
-            values.append(self.pop(start))
+    def replace(self, start, length, callback):
+        """Pass [start : length] instructions to callback and replace them with its result."""
+        end = start + length
+        values = self.copy_slice(start, end)
+        self.replace_slice(start, end, callback(values))
 
-        # If the two have the same length, attempt to substitute wildcards.
-        if len(values) == len(new_instructions):
-            for i, value in enumerate(values):
-                if new_instructions[i] == '*':
-                    new_instructions[i] = value
-        new_instructions = filter(lambda i: i is not None, new_instructions)
-
-        for j in reversed(new_instructions):
-            self.insert(start, j)
-
-    def replace_template(self, template, replacement):
-        """Replace any instructions matching template with replacement."""
+    def replace_template(self, template, callback):
+        """Call callback with any instructions matching template."""
         idx = 0
         while 1:
             if idx >= len(self):
                 break
             if (idx <= len(self) - len(template)) and self.matches_template(template, idx):
-                self.replace(idx, len(template), replacement)
+                self.replace(idx, len(template), callback)
                 idx += len(template)
             else:
                 idx += 1
