@@ -13,6 +13,10 @@ class Script(ScriptOp):
     """A complete script."""
     _fields = ('statements',)
 
+class Assumption(ScriptOp):
+    """Assumption that a stack item exists."""
+    _fields = ('name', 'depth', 'stack_size')
+
 class Push(ScriptOp):
     """A data push operation."""
     _fields = ('data',)

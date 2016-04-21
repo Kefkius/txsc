@@ -14,8 +14,10 @@ class ScriptParser(object):
             setattr(self, k, v)
         self.lexer = lex.lex(module=lexer)
         self.parser = yacc.yacc(module=self, debug=self.debug)
+        self.symbol_table = None
 
-    def parse(self, s):
+    def parse(self, s, symbol_table):
+        self.symbol_table = symbol_table
         return self.parser.parse(s, lexer=self.lexer)
 
     def p_error(self, p):
@@ -53,6 +55,12 @@ class ScriptParser(object):
         if len(p) > 2:
             args.append(p[3])
         p[0] = ast.List(elts=args, ctx=ast.Store())
+
+    def p_assume(self, p):
+        '''expr : ASSUME args'''
+        self.symbol_table.add_stack_assumptions([i.id for i in p[2].elts])
+        p[0] = ast.Pass()
+        return
 
     def p_function_call(self, p):
         '''expr : NAME LPAREN args RPAREN'''

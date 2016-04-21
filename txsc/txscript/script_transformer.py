@@ -84,6 +84,10 @@ op_functions_dict = dict((i.name, i) for i in op_functions)
 
 class ScriptTransformer(BaseTransformer):
     """Transforms input into a structural intermediate representation."""
+    def __init__(self, symbol_table=None):
+        super(ScriptTransformer, self).__init__()
+        self.symbol_table = symbol_table
+
     def is_script_op(self, node):
         """Return whether node is of an intermediate type."""
         return isinstance(node, types.ScriptOp)
@@ -101,6 +105,16 @@ class ScriptTransformer(BaseTransformer):
         node.body = map(self.visit, node.body)
         scr = types.Script(statements=node.body)
         return scr
+
+    def visit_Name(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot lookup name. Transformer was started without a symbol table.')
+        symbol = self.symbol_table.lookup(node.id)
+        if symbol is None:
+            raise NameError('Symbol "%s" was not declared.' % node.id)
+        # Assume node is a stack assumption.
+        assumption = types.Assumption(name=symbol.name, depth=symbol.depth, stack_size=symbol.stack_size)
+        return assumption
 
     def visit_Num(self, node):
         s = SourceVisitor.int_to_bytearray(node.n)

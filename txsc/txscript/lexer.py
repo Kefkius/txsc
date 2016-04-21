@@ -13,10 +13,12 @@ tokens = ['NAME', 'NUMBER',
         'COMMA', 'TILDE',
         'SEMICOLON',
 
+        'ASSUME',
         'VERIFY',
 ]
 
 reserved_words = {
+    'assume': 'ASSUME',
     'verify': 'VERIFY',
 }
 
@@ -41,6 +43,7 @@ t_COMMA = r'\,'
 t_TILDE = r'\~'
 t_SEMICOLON = r'\;'
 
+t_ASSUME = r'assume'
 t_VERIFY = r'verify'
 
 def t_NAME(t):
