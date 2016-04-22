@@ -16,7 +16,7 @@ class BaseTransformer(ast.NodeTransformer):
 
     def generic_visit(self, node):
         self.debug_print('generic_visit %s' % node.__class__.__name__)
-        super(BaseTransformer, self).generic_visit(node)
+        return super(BaseTransformer, self).generic_visit(node)
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
         if isinstance(node, ast.AST):

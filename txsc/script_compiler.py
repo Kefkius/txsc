@@ -31,7 +31,6 @@ class ScriptCompiler(object):
     """Script compiler."""
     def __init__(self):
         self.outputs = OrderedDict()
-        self.optimize = True
         self.setup_languages()
 
     def setup_languages(self):
@@ -42,7 +41,6 @@ class ScriptCompiler(object):
     def setup_options(self, options):
         self.options = options
         self.verbosity = Verbosity(self.options.verbosity)
-        self.optimize = not self.options.no_optimize
 
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]
@@ -75,10 +73,9 @@ class ScriptCompiler(object):
             self.outputs['Linear Intermediate Representation'] = str(instructions)
 
         # Perform linear IR optimizations.
-        if self.optimize:
-            optimizer = LinearOptimizer()
-            optimizer.optimize(instructions)
-            self.outputs['Optimized Linear Representation'] = str(instructions)
+        optimizer = LinearOptimizer()
+        optimizer.optimize(instructions)
+        self.outputs['Optimized Linear Representation'] = str(instructions)
 
         self.process_targets(instructions)
 

@@ -103,8 +103,11 @@ class ScriptTransformer(BaseTransformer):
 
     def visit_Module(self, node):
         node.body = map(self.visit, node.body)
-        scr = types.Script(statements=node.body)
+        scr = types.Script(statements=filter(lambda i: i is not None, node.body))
         return scr
+
+    def visit_Pass(self, node):
+        return None
 
     def visit_Name(self, node):
         if not self.symbol_table:

@@ -46,7 +46,6 @@ def main():
     argparser.add_argument('-s', '--source', metavar='SOURCE_LANGUAGE', dest='source_lang', choices=source_choices, default='txscript', help='Source language.')
     argparser.add_argument('-t', '--target', metavar='TARGET_LANGUAGE', dest='target_lang', choices=target_choices, default='btc', help='Target language.')
 
-    argparser.add_argument('--no-optimize', dest='no_optimize', action='store_true', default=False, help='Do not perform optimizations on script.')
     argparser.add_argument('-v', '--verbose', nargs='?', action=VAction, dest='verbosity', default=0, help='Verbosity level (Max: %d).' % Verbosity.max_verbosity)
 
     args = argparser.parse_args()
