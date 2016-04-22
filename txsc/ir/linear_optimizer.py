@@ -1,5 +1,6 @@
 """Script optimizations."""
 
+from txsc.ir.linear_context import LinearContextualizer
 import txsc.ir.linear_nodes as types
 
 optimizers = []
@@ -108,6 +109,24 @@ def remove_trailing_verifications(instructions):
 
 class LinearOptimizer(object):
     """Performs optimizations on the linear IR."""
-    def optimize(self, instructions):
-        for func in optimizers:
-            func(instructions)
+    MAX_PASSES = 10
+    def optimize(self, instructions, contextualizer=None):
+        if not contextualizer:
+            contextualizer = LinearContextualizer()
+        contextualizer.contextualize(instructions)
+
+        pass_number = 0
+        while 1:
+            if pass_number > self.MAX_PASSES:
+                break
+
+            state = str(instructions)
+            for func in optimizers:
+                func(instructions)
+            new = str(instructions)
+
+            pass_number += 1
+
+            if state == new:
+                break
+
