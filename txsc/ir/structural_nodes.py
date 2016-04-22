@@ -1,6 +1,7 @@
-"""Initial intermediate representation for scripts.
+"""Structural intermediate representation for scripts.
 
-Nodes from ast are transformed into these nodes.
+This representation supports higher-level features like
+assumptions that stack values will exist.
 """
 import ast
 

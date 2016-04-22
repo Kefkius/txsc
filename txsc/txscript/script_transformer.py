@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from txsc.txscript import structural_nodes as types
+import txsc.ir.structural_nodes as types
 from txsc.transformer import BaseTransformer, SourceVisitor
 
 # Unary opcodes implemented as operations.

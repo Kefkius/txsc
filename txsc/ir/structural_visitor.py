@@ -1,7 +1,7 @@
 from txsc.transformer import SourceVisitor
-from txsc.instructions import Instructions
-from txsc.txscript import structural_nodes
-import txsc.linear_nodes as types
+from txsc.ir.instructions import Instructions
+from txsc.ir import structural_nodes
+import txsc.ir.linear_nodes as types
 
 class StructuralVisitor(SourceVisitor):
     """Tranforms a structural representation into a linear one."""

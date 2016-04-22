@@ -1,8 +1,8 @@
 import unittest
 
-from txsc.instructions import Instructions
+from txsc.ir.instructions import Instructions
 from txsc.optimize import Optimizer
-import txsc.linear_nodes as types
+import txsc.ir.linear_nodes as types
 
 class BaseOptimizationTest(unittest.TestCase):
     def setUp(self):

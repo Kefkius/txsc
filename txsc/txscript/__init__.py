@@ -1,4 +1,3 @@
-from structural_visitor import StructuralVisitor
 from script_parser import ScriptParser
 from script_transformer import ScriptTransformer
 from txscript_language import TxScriptLanguage

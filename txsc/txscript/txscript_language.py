@@ -1,9 +1,10 @@
 import ast
 from ply import yacc
 
+from txsc.ir.structural_visitor import StructuralVisitor
 from txsc.language import Language
 from txsc.transformer import SourceVisitor
-from txsc.txscript import ScriptParser, ScriptTransformer, StructuralVisitor
+from txsc.txscript import ScriptParser, ScriptTransformer
 from txsc.symbols import SymbolTable
 
 def get_lang():

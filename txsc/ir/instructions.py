@@ -4,7 +4,7 @@ from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 from bitcoin.core.scripteval import _CastToBool
 
-import txsc.linear_nodes as types
+import txsc.ir.linear_nodes as types
 
 class Instructions(list):
     """Model for linear instructions."""

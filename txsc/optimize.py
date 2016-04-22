@@ -1,6 +1,6 @@
 """Script optimizations."""
 
-import txsc.linear_nodes as types
+import txsc.ir.linear_nodes as types
 
 optimizers = []
 

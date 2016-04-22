@@ -3,8 +3,8 @@ import ast
 from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 
-import txsc.linear_nodes as types
-from txsc.instructions import Instructions
+import txsc.ir.linear_nodes as types
+from txsc.ir.instructions import Instructions
 
 class BaseTransformer(ast.NodeTransformer):
     """Base class for transformers."""

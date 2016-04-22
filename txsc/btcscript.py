@@ -6,7 +6,7 @@ Uses python-bitcoinlib internally.
 from bitcoin.core import b2x, x, script
 
 from txsc.transformer import SourceVisitor, TargetVisitor
-import txsc.linear_nodes as types
+import txsc.ir.linear_nodes as types
 from txsc.language import Language
 
 def get_lang():
