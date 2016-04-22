@@ -3,18 +3,18 @@
 from txsc.ir.linear_context import LinearContextualizer
 import txsc.ir.linear_nodes as types
 
-optimizers = []
+peephole_optimizers = []
 
 def op_by_name(name):
     """Get the linear representation class for name."""
     return types.opcode_classes[name]
 
-def optimizer(func):
-    """Decorator for optimizers."""
-    optimizers.append(func)
+def peephole(func):
+    """Decorator for peephole optimizers."""
+    peephole_optimizers.append(func)
     return func
 
-@optimizer
+@peephole
 def merge_op_and_verify(instructions):
     """Merge opcodes with a corresponding *VERIFY form.
 
@@ -35,7 +35,7 @@ def merge_op_and_verify(instructions):
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
-@optimizer
+@peephole
 def replace_repeated_ops(instructions):
     """Replace repeated opcodes with single opcodes."""
     optimizations = [
@@ -46,7 +46,7 @@ def replace_repeated_ops(instructions):
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
-@optimizer
+@peephole
 def optimize_stack_ops(instructions):
     """Optimize stack operations."""
     for template, replacement in [
@@ -60,7 +60,7 @@ def optimize_stack_ops(instructions):
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
-@optimizer
+@peephole
 def replace_shortcut_ops(instructions):
     """Replace opcodes with a corresponding shortcut form."""
     optimizations = [
@@ -79,14 +79,14 @@ def replace_shortcut_ops(instructions):
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
-@optimizer
+@peephole
 def optimize_dup_and_checksig(instructions):
     for template, callback in [
         ([types.Dup(), None, types.CheckSig()], lambda values: values[1:]),
     ]:
         instructions.replace_template(template, callback)
 
-@optimizer
+@peephole
 def optimize_hashes(instructions):
     for template, replacement in [
         # OP_SHA256 OP_SHA256 -> OP_HASH256
@@ -97,7 +97,7 @@ def optimize_hashes(instructions):
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
-@optimizer
+@peephole
 def remove_trailing_verifications(instructions):
     """Remove any trailing OP_VERIFY occurrences.
 
@@ -121,7 +121,7 @@ class LinearOptimizer(object):
                 break
 
             state = str(instructions)
-            for func in optimizers:
+            for func in peephole_optimizers:
                 func(instructions)
             new = str(instructions)
 
