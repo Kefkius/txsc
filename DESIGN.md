@@ -2,9 +2,14 @@
 
 ## Compilation
 
-`txsc` compiles scripts to/from languages using an intermediate representation.
-The nodes of this representation can be found in `txsc.linear_nodes`, and the
-container for them can be found in `txsc.instructions`.
+`txsc` compiles scripts to/from languages using intermediate representations.
+There are two intermediate representations: One that is structural, and one that is linear.
+
+The structural representation is higher-level and is structued as a tree.
+The linear representation is lower-level and is the representation that ultimately
+gets compiled.
+
+These representations can be found in `txsc.ir`.
 
 ## Languages
 
@@ -22,5 +27,8 @@ it can process instructions and output source. If a language has neither of thes
 it cannot be used.
 
 The base classes of `source_visitor` and `target_visitor` can be found in `txsc.transformer`.
+`SourceVisitor` subclasses can specify the type of intermediate representation they produce
+via the class attribute `ir_type`. By default, it is expected that a linear representation
+will be produced.
 
 `txsc` also support Python *entry points* which can be used to add new languages via plugins.

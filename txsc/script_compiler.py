@@ -3,12 +3,12 @@ import ast
 import sys
 from pkg_resources import iter_entry_points
 
-from ply import yacc
-
 from txsc.optimize import Optimizer
 from txsc.txscript import TxScriptLanguage
 from txsc.asm import ASMLanguage
 from txsc.btcscript import BtcScriptLanguage
+from txsc.ir.instructions import LINEAR, STRUCTURAL
+from txsc.ir.structural_visitor import StructuralVisitor
 
 # Load known languages in case we're running locally.
 languages = [ASMLanguage, BtcScriptLanguage, TxScriptLanguage]
@@ -63,14 +63,18 @@ class ScriptCompiler(object):
             print(e)
             sys.exit(1)
 
+        self.process_ir(instructions)
+
+    def process_ir(self, instructions):
+        """Process intermediate representation."""
+        # Convert structural to linear representation.
+        if instructions.ir_type == STRUCTURAL:
+            instructions = StructuralVisitor().transform(instructions.script)
+
         if self.verbosity.show_linear_ir:
             self.outputs['Linear Intermediate Representation'] = str(instructions)
 
-        self.process_linear_ir(instructions)
-
-    def process_linear_ir(self, instructions):
-        """Process linear intermediate representation."""
-        # Perform optimizations.
+        # Perform linear IR optimizations.
         if self.optimize:
             optimizer = Optimizer()
             optimizer.optimize(instructions)

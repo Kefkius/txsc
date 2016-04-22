@@ -1,7 +1,7 @@
 import ast
 from ply import yacc
 
-from txsc.ir.structural_visitor import StructuralVisitor
+from txsc.ir.instructions import STRUCTURAL, SInstructions
 from txsc.language import Language
 from txsc.transformer import SourceVisitor
 from txsc.txscript import ScriptParser, ScriptTransformer
@@ -12,6 +12,7 @@ def get_lang():
 
 class TxScriptSourceVisitor(SourceVisitor):
     """Wrapper around txscript classes."""
+    ir_type = STRUCTURAL
     def __init__(self, *args, **kwargs):
         super(TxScriptSourceVisitor, self).__init__(*args, **kwargs)
         self.symbol_table = SymbolTable()
@@ -32,8 +33,7 @@ class TxScriptSourceVisitor(SourceVisitor):
         # Convert AST to structural representation.
         node = ScriptTransformer(symbol_table).visit(node)
 
-        # Convert structural representation to linear representation.
-        return StructuralVisitor().transform(node)
+        return SInstructions(node)
 
 
 class TxScriptLanguage(Language):

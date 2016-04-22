@@ -4,7 +4,7 @@ from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 
 import txsc.ir.linear_nodes as types
-from txsc.ir.instructions import Instructions
+from txsc.ir.instructions import LINEAR, get_instructions_class
 
 class BaseTransformer(ast.NodeTransformer):
     """Base class for transformers."""
@@ -42,6 +42,9 @@ class BaseTransformer(ast.NodeTransformer):
 
 class SourceVisitor(BaseTransformer):
     """Visitor that operates on a source language."""
+    # Type of instructions that this visitor generates.
+    ir_type = LINEAR
+
     @staticmethod
     def int_to_bytearray(value):
         """Encode an integer as a byte array."""
@@ -53,10 +56,12 @@ class SourceVisitor(BaseTransformer):
 
     def __init__(self, *args, **kwargs):
         super(SourceVisitor, self).__init__(*args, **kwargs)
-        self.instructions = Instructions()
+        self.instructions = get_instructions_class(self.ir_type)()
 
     def add_instruction(self, node):
         """Add a single instruction."""
+        if self.ir_type != LINEAR:
+            raise Exception('Visitor must generate linear IR instructions to use this method')
         self.instructions.append(node)
 
     def transform(self, source):
@@ -65,10 +70,14 @@ class SourceVisitor(BaseTransformer):
 
     def get_opcode_class(self, name):
         """Get the linear node opcode type for name."""
+        if self.ir_type != LINEAR:
+            raise Exception('Visitor must generate linear IR instructions to use this method')
         return types.opcode_classes[name]()
 
     def get_small_int_class(self, value):
         """Get the linear node small int opcode type for value."""
+        if self.ir_type != LINEAR:
+            raise Exception('Visitor must generate linear IR instructions to use this method')
         return self.get_opcode_class('OP_%d'%value)
 
 class TargetVisitor(BaseTransformer):

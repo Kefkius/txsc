@@ -1,8 +1,4 @@
-"""Structural intermediate representation for scripts.
-
-This representation supports higher-level features like
-assumptions that stack values will exist.
-"""
+"""Structural intermediate representation for scripts."""
 import ast
 
 

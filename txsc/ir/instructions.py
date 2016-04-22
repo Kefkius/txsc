@@ -4,10 +4,21 @@ from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 from bitcoin.core.scripteval import _CastToBool
 
-import txsc.ir.linear_nodes as types
+from txsc.ir import linear_nodes
+from txsc.ir import structural_nodes
 
-class Instructions(list):
-    """Model for linear instructions."""
+# Constants for instructions type.
+LINEAR = 1
+STRUCTURAL = 2
+def get_instructions_class(instructions_type):
+    """Get the class for instructions of type instructions_type."""
+    if instructions_type == LINEAR:
+        return LInstructions
+    elif instructions_type == STRUCTURAL:
+        return SInstructions
+
+class Instructions(object):
+    """Base model for instructions."""
     @staticmethod
     def decode_number(data):
         """Decode data into an integer."""
@@ -25,11 +36,15 @@ class Instructions(list):
         """Evaluate data as a boolean."""
         return _CastToBool(data)
 
+class LInstructions(Instructions, list):
+    """Model for linear instructions."""
+    ir_type = LINEAR
+
     def __init__(self, *args):
-        # Perform a deep copy if an Instructions instance is passed.
-        if len(args) == 1 and isinstance(args[0], Instructions):
-            return super(Instructions, self).__init__(copy.deepcopy(args[0]))
-        return super(Instructions, self).__init__(*args)
+        # Perform a deep copy if an LInstructions instance is passed.
+        if len(args) == 1 and isinstance(args[0], LInstructions):
+            return super(LInstructions, self).__init__(copy.deepcopy(args[0]))
+        return super(LInstructions, self).__init__(*args)
 
     def __str__(self):
         return str(map(str, self))
@@ -57,7 +72,7 @@ class Instructions(list):
                 return False
 
             if (not equal
-                    and isinstance(template[i], types.Push) and isinstance(self[index + i], types.Push)
+                    and isinstance(template[i], linear_nodes.Push) and isinstance(self[index + i], linear_nodes.Push)
                     and template[i].data != self[index + i].data):
                 equal = True
 
@@ -84,3 +99,8 @@ class Instructions(list):
             else:
                 idx += 1
 
+class SInstructions(Instructions):
+    """Model for structural instructions."""
+    ir_type = STRUCTURAL
+    def __init__(self, script=structural_nodes.Script()):
+        self.script = script
