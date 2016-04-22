@@ -3,12 +3,12 @@ import ast
 import sys
 from pkg_resources import iter_entry_points
 
-from txsc.optimize import Optimizer
 from txsc.txscript import TxScriptLanguage
 from txsc.asm import ASMLanguage
 from txsc.btcscript import BtcScriptLanguage
 from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.structural_visitor import StructuralVisitor
+from txsc.ir.linear_optimizer import LinearOptimizer
 
 # Load known languages in case we're running locally.
 languages = [ASMLanguage, BtcScriptLanguage, TxScriptLanguage]
@@ -76,7 +76,7 @@ class ScriptCompiler(object):
 
         # Perform linear IR optimizations.
         if self.optimize:
-            optimizer = Optimizer()
+            optimizer = LinearOptimizer()
             optimizer.optimize(instructions)
             self.outputs['Optimized Linear Representation'] = str(instructions)
 

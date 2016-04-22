@@ -1,12 +1,12 @@
 import unittest
 
 from txsc.ir.instructions import LInstructions
-from txsc.optimize import Optimizer
+from txsc.ir.linear_optimizer import LinearOptimizer
 import txsc.ir.linear_nodes as types
 
 class BaseOptimizationTest(unittest.TestCase):
     def setUp(self):
-        self.optimizer = Optimizer()
+        self.optimizer = LinearOptimizer()
 
     def _do_test(self, expected, script):
         self.optimizer.optimize(script)

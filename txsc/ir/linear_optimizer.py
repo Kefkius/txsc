@@ -106,14 +106,8 @@ def remove_trailing_verifications(instructions):
     while isinstance(instructions[-1], types.Verify):
         instructions.pop(-1)
 
-class Optimizer(object):
-    def __init__(self, debug=False):
-        self.debug = debug
-
-    def debug_print(self, s):
-        if self.debug:
-            print('[%s] %s' % (self.__class__.__name__, s))
-
+class LinearOptimizer(object):
+    """Performs optimizations on the linear IR."""
     def optimize(self, instructions):
         for func in optimizers:
             func(instructions)
