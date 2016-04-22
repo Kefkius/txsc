@@ -1,4 +1,5 @@
 """Script optimizations."""
+import itertools
 
 from txsc.ir.linear_context import LinearContextualizer
 import txsc.ir.linear_nodes as types
@@ -13,6 +14,10 @@ def peephole(func):
     """Decorator for peephole optimizers."""
     peephole_optimizers.append(func)
     return func
+
+def permutations(nodes):
+    """Return combinations of nodes."""
+    return [list(i) for i in itertools.permutations(nodes, len(nodes))]
 
 @peephole
 def merge_op_and_verify(instructions):
@@ -63,20 +68,37 @@ def optimize_stack_ops(instructions):
 @peephole
 def replace_shortcut_ops(instructions):
     """Replace opcodes with a corresponding shortcut form."""
-    optimizations = [
-        # OP_1 OP_ADD -> OP_1ADD
-        ([types.One(), types.Add()], [types.Add1()]),
-        # OP_1 OP_SUB -> OP_1SUB
-        ([types.One(), types.Sub()], [types.Sub1()]),
-        # OP_2 OP_MUL -> OP_2MUL
-        ([types.Two(), types.Mul()], [types.Mul2()]),
-        # OP_2 OP_DIV -> OP_2DIV
-        ([types.Two(), types.Div()], [types.Div2()]),
-        # OP_1 OP_NEGATE -> OP_1NEGATE
-        ([types.One(), types.Negate()], [types.NegativeOne()]),
-    ]
-    for template, replacement in optimizations:
-        callback = lambda values, replacement=replacement: replacement
+    optimizations = []
+    # Replace division by 2.
+    optimizations.append(([types.Two(), types.Div()], lambda values: [types.Div2()]))
+    # Replace subtraction by 1.
+    optimizations.append(([types.One(), types.Sub()], lambda values: [types.Sub1()]))
+    # Replace 1 * -1 with -1.
+    optimizations.append(([types.One(), types.Negate()], lambda values: [types.NegativeOne()]))
+    # Replace addition by 1.
+    for permutation in permutations([None, types.One()]):
+        idx = 0 if permutation[0] is None else 1
+        optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx], types.Add1()]))
+    # Replace multiplication by 2.
+    for permutation in permutations([None, types.Two()]):
+        idx = 0 if permutation[0] is None else 1
+        optimizations.append((permutation + [types.Mul()], lambda values, idx=idx: [values[idx], types.Mul2()]))
+
+
+    for template, callback in optimizations:
+        instructions.replace_template(template, callback)
+
+@peephole
+def replace_null_ops(instructions):
+    """Replace operations that do nothing."""
+    # Remove subtraction by 0.
+    optimizations = [([types.Zero(), types.Sub()], lambda values: [])]
+    # Remove addition by 0.
+    for permutation in permutations([None, types.Zero()]):
+        idx = 0 if permutation[0] is None else 1
+        optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx]]))
+
+    for template, callback in optimizations:
         instructions.replace_template(template, callback)
 
 @peephole

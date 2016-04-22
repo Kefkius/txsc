@@ -9,9 +9,10 @@ class BaseOptimizationTest(unittest.TestCase):
         self.optimizer = LinearOptimizer()
 
     def _do_test(self, expected, script):
+        original = str(script)
         self.optimizer.optimize(script)
         expected = str(expected.split(' '))
-        self.assertEqual(expected, str(script))
+        self.assertEqual(expected, str(script), '%s != %s (original: %s)' % (expected, str(script), original))
 
 class OptimizationTest(BaseOptimizationTest):
     def test_repeated_ops(self):
@@ -30,20 +31,35 @@ class OptimizationTest(BaseOptimizationTest):
         self._do_test('OP_DUP', script)
 
     def test_shortcut_ops(self):
-        script = LInstructions([types.Five(), types.One(), types.Add()])
-        self._do_test('OP_5 OP_1ADD', script)
+        for script in [
+            LInstructions([types.Five(), types.One(), types.Add()]),
+            LInstructions([types.One(), types.Five(), types.Add()]),
+        ]:
+            self._do_test('OP_5 OP_1ADD', script)
 
         script = LInstructions([types.Five(), types.One(), types.Sub()])
         self._do_test('OP_5 OP_1SUB', script)
 
-        script = LInstructions([types.Five(), types.Two(), types.Mul()])
-        self._do_test('OP_5 OP_2MUL', script)
+        for script in [
+            LInstructions([types.Five(), types.Two(), types.Mul()]),
+            LInstructions([types.Two(), types.Five(), types.Mul()]),
+        ]:
+            self._do_test('OP_5 OP_2MUL', script)
 
         script = LInstructions([types.Five(), types.Two(), types.Div()])
         self._do_test('OP_5 OP_2DIV', script)
 
         script = LInstructions([types.Five(), types.One(), types.Negate()])
         self._do_test('OP_5 OP_1NEGATE', script)
+
+    def test_null_ops(self):
+        for script in [
+            LInstructions([types.Five(), types.Zero(), types.Add()]),
+            LInstructions([types.Zero(), types.Five(), types.Add()]),
+            LInstructions([types.Five(), types.Zero(), types.Sub()]),
+        ]:
+            self._do_test('OP_5', script)
+
 
     def test_merge_op_and_verify(self):
         script = LInstructions([types.Five(), types.Five(), types.Equal(), types.Verify()])
