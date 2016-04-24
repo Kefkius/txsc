@@ -25,7 +25,7 @@ class TxScriptSourceVisitor(SourceVisitor):
         if isinstance(source, list):
             source = ' ; '.join(source)
 
-        node = self.parser.parse(source, symbol_table)
+        node = self.parser.parse(source)
         if not isinstance(node, ast.Module):
             node = ast.Module(body=node)
         ast.fix_missing_locations(node)

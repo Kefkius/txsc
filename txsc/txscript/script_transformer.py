@@ -109,6 +109,12 @@ class ScriptTransformer(BaseTransformer):
     def visit_Pass(self, node):
         return None
 
+    def visit_Assign(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot store name. Transformer was started without a symbol table.')
+        if len(node.targets) == 1 and node.targets[0].id == '_stack':
+            self.symbol_table.add_stack_assumptions([i.id for i in node.value.elts])
+
     def visit_Name(self, node):
         if not self.symbol_table:
             raise Exception('Cannot lookup name. Transformer was started without a symbol table.')
