@@ -76,7 +76,6 @@ def main():
         if os.path.exists(s):
             with open(s, 'r') as f:
                 src = f.readlines()
-                src = map(lambda line: line.replace('\n', ''), src)
             # Automatically detect source language from file extension.
             names = s.split('.')
             if len(names) > 1 and names[-1] in source_choices:

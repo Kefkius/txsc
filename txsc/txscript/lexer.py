@@ -67,6 +67,14 @@ def t_NUMBER(t):
         print("Line %d: Number %s is too large!" % (t.lineno, t.value))
     return t
 
+def t_COMMENT(t):
+    r'\#.*'
+    pass
+
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
+
 def t_error(t):
     print("Illegal character '%s'" % t.value[0])
 

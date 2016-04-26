@@ -52,3 +52,6 @@ class CompoundStatementTest(BaseFrontendTest):
     def test_trailing_semicolon(self):
         """Trailing semicolon should not cause a syntax failure."""
         self._test_transform('1 + 2; 3 + 4;', "[BinOpCode('OP_ADD', Push(0x51), Push(0x52)), BinOpCode('OP_ADD', Push(0x53), Push(0x54))]")
+
+    def test_comment(self):
+        self._test_transform('1 + 2;\n#Comment line.\n3 + 4', "[BinOpCode('OP_ADD', Push(0x51), Push(0x52)), BinOpCode('OP_ADD', Push(0x53), Push(0x54))]")
