@@ -1,6 +1,6 @@
 # txsc
 
-txsc is a Bitcoin script compiler.
+txsc (**tx** **s**cript **c**ompiler) is a Bitcoin transaction script compiler.
 
 ## Usage
 
@@ -13,7 +13,7 @@ language is `BTC` (see below for explanations of what these languages are).
 You can either invoke `txsc` with a string or with a filename. If a filename is specified, the file
 extension will be used to determine the source language if one is present.
 
-Compile a raw `BTC` to `ASM`:
+Compile raw `BTC` to `ASM`:
 
 ```
 txsc "5255935788" -s btc -t asm
@@ -60,6 +60,10 @@ their size.
 See the package `txsc.txscript` for its source. It works by parsing Python code and generating a
 structural intermediate representation, then transforming that into the linear intermediate representation
 that other languages can use.
+
+## Examples
+
+See the *examples* folder for scripts that `txsc` can be called with directly.
 
 ## Credits
 

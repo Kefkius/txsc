@@ -1,0 +1,14 @@
+# Pay-to-Public-Key-Hash script.
+
+# Compiler directives.
+@target asm
+@verbosity 1
+
+# The input script puts two values on the stack.
+assume sig, pubkey;
+
+# Verify that the RIPEMD-160 hash of pubkey is 0x1010101010101010101010101010101010101010.
+verify hash160(pubkey) == 0x1010101010101010101010101010101010101010;
+
+# Check that sig is valid.
+checkSig(sig, pubkey);
