@@ -1,13 +1,15 @@
 """Symbol table implementation for languages that can use one."""
-import ast
 
-class Symbol(ast.Str):
-    """Base symbol class."""
-    _fields = ('name',)
+class SymbolType(object):
+    """Symbol type constants."""
+    StackItem = 'stack_item'
 
-class StackItem(Symbol):
-    """Assumed stack item"""
-    _fields = ('name', 'depth')
+class Symbol(object):
+    """A symbol."""
+    def __init__(self, name=None, value=None, type_=None):
+        self.type_ = type_
+        self.name = name
+        self.value = value
 
 class SymbolTable(object):
     """A symbol table."""
@@ -31,4 +33,4 @@ class SymbolTable(object):
 
         for height, name in items:
             depth = size - height - 1
-            self.insert(StackItem(name=name, depth=depth))
+            self.insert(Symbol(name=name, value=depth, type_=SymbolType.StackItem))

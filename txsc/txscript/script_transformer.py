@@ -112,7 +112,10 @@ class ScriptTransformer(BaseTransformer):
     def visit_Assign(self, node):
         if not self.symbol_table:
             raise Exception('Cannot store name. Transformer was started without a symbol table.')
-        if len(node.targets) == 1 and node.targets[0].id == '_stack':
+        if len(node.targets) > 1:
+            raise Exception('Cannot assign value(s) to more than one symbol.')
+        target = node.targets[0]
+        if target.id == '_stack':
             self.symbol_table.add_stack_assumptions([i.id for i in node.value.elts])
 
     def visit_Name(self, node):
@@ -121,9 +124,11 @@ class ScriptTransformer(BaseTransformer):
         symbol = self.symbol_table.lookup(node.id)
         if symbol is None:
             raise NameError('Symbol "%s" was not declared.' % node.id)
-        # Assume node is a stack assumption.
-        assumption = types.Assumption(name=symbol.name, depth=symbol.depth)
-        return assumption
+        # Generate a node depending on the symbol type.
+        op = None
+        if symbol.type_ == 'stack_item':
+            op = types.Assumption(name=symbol.name, depth=symbol.value)
+        return op
 
     def visit_Num(self, node):
         s = SourceVisitor.int_to_bytearray(node.n)
