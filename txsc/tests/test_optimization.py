@@ -89,3 +89,18 @@ class OptimizationTest(BaseOptimizationTest):
         script = LInstructions([types.Five(), types.Five(), types.Equal(), types.Verify(),
                                types.Five(), types.Five(), types.Equal(), types.Verify()])
         self._do_test('OP_5 OP_5 OP_EQUALVERIFY OP_5 OP_5 OP_EQUALVERIFY', script)
+
+class InlineTest(BaseOptimizationTest):
+    def test_implicit_assume(self):
+        script = LInstructions([types.Assumption('testItem', 0), types.Five(), types.Add()])
+        self._do_test('OP_5 OP_ADD', script)
+
+    def test_assume_to_pick_or_roll(self):
+        script = LInstructions([types.Five(), types.Assumption('testItem', 0), types.Add()])
+        self._do_test('OP_5 OP_1 OP_ROLL OP_ADD', script)
+
+        script = LInstructions([types.Five(), types.Five(), types.Assumption('testItem', 0), types.Add()])
+        self._do_test('OP_5 OP_5 OP_2 OP_ROLL OP_ADD', script)
+
+        script = LInstructions([types.Five(), types.Five(), types.Assumption('testItem', 0), types.Add(), types.Assumption('testItem', 0)])
+        self._do_test('OP_5 OP_5 OP_2 OP_PICK OP_ADD OP_3 OP_ROLL', script)

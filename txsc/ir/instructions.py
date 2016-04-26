@@ -71,9 +71,12 @@ class LInstructions(Instructions, list):
             if strict and not equal:
                 return False
 
-            if (not equal
-                    and isinstance(template[i], linear_nodes.Push) and isinstance(self[index + i], linear_nodes.Push)
-                    and template[i].data != self[index + i].data):
+            # Non-strict evaluation.
+            template_item = template[i]
+            script_item = self[index + i]
+            if template_item.__class__.__name__ == 'SmallIntOpCode' and isinstance(script_item, linear_nodes.SmallIntOpCode):
+                equal = True
+            elif isinstance(template_item, linear_nodes.Push) and isinstance(script_item, linear_nodes.Push):
                 equal = True
 
             if not equal:
@@ -87,13 +90,13 @@ class LInstructions(Instructions, list):
         values = self.copy_slice(start, end)
         self.replace_slice(start, end, callback(values))
 
-    def replace_template(self, template, callback):
+    def replace_template(self, template, callback, strict=True):
         """Call callback with any instructions matching template."""
         idx = 0
         while 1:
             if idx >= len(self):
                 break
-            if (idx <= len(self) - len(template)) and self.matches_template(template, idx):
+            if (idx <= len(self) - len(template)) and self.matches_template(template, idx, strict):
                 self.replace(idx, len(template), callback)
                 idx += len(template)
             else:
