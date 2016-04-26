@@ -16,7 +16,7 @@ def peephole(func):
     return func
 
 def permutations(nodes):
-    """Return combinations of nodes."""
+    """Return permutations of nodes."""
     return [list(i) for i in itertools.permutations(nodes, len(nodes))]
 
 @peephole
@@ -81,14 +81,17 @@ def replace_shortcut_ops(instructions):
     optimizations.append(([types.One(), types.Negate()], lambda values: [types.NegativeOne()]))
     # Replace addition by 1.
     for permutation in permutations([types.Push(), types.One()]):
-        idx = 0 if permutation[0] is None else 1
+        idx = 0 if isinstance(permutation[0], types.Push) else 1
         optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx], types.Add1()]))
     for permutation in permutations([types.SmallIntOpCode(), types.One()]):
         idx = 0 if not isinstance(permutation[0], types.One) else 1
         optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx], types.Add1()]))
     # Replace multiplication by 2.
-    for permutation in permutations([None, types.Two()]):
-        idx = 0 if permutation[0] is None else 1
+    for permutation in permutations([types.Push(), types.Two()]):
+        idx = 0 if isinstance(permutation[0], types.Push) else 1
+        optimizations.append((permutation + [types.Mul()], lambda values, idx=idx: [values[idx], types.Mul2()]))
+    for permutation in permutations([types.SmallIntOpCode(), types.Two()]):
+        idx = 0 if not isinstance(permutation[0], types.Two) else 1
         optimizations.append((permutation + [types.Mul()], lambda values, idx=idx: [values[idx], types.Mul2()]))
 
 
