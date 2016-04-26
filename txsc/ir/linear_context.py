@@ -104,7 +104,7 @@ class LinearInliner(BaseTransformer):
         """Get the total delta of script operations before idx."""
         return sum(i.delta for i in self.instructions[:idx])
 
-    def inline(self, instructions, contextualizer):
+    def inline(self, instructions, contextualizer, peephole_optimizer):
         """Perform inlining of variables in instructions.
 
         Inlining is performed by iterating through each instruction and
@@ -124,6 +124,7 @@ class LinearInliner(BaseTransformer):
 
         # Loop until no inlining can be done.
         while 1:
+            peephole_optimizer.optimize(instructions)
             self.contextualizer.contextualize(instructions)
             inlined = False
             for i, node in enumerate(instructions):

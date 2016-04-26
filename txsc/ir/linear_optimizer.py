@@ -63,6 +63,8 @@ def optimize_stack_ops(instructions):
         ([types.Zero(), types.Pick()], [types.Dup()]),
         # OP_0 OP_ROLL -> _
         ([types.Zero(), types.Roll()], []),
+        # OP_1 OP_ROLL OP_1 OP_ROLL -> _
+        ([types.One(), types.Roll(), types.One(), types.Roll()], []),
     ]:
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
@@ -131,19 +133,16 @@ def remove_trailing_verifications(instructions):
     while isinstance(instructions[-1], types.Verify):
         instructions.pop(-1)
 
-class LinearOptimizer(object):
-    """Performs optimizations on the linear IR."""
-    MAX_PASSES = 10
-    def optimize(self, instructions, contextualizer=None, inliner=None):
-        if not contextualizer:
-            contextualizer = LinearContextualizer()
-        if not inliner:
-            inliner = LinearInliner()
-        inliner.inline(instructions, contextualizer)
+class PeepholeOptimizer(object):
+    """Performs peephole optimization on the linear IR."""
+    MAX_PASSES = 5
+    def optimize(self, instructions, max_passes=-1):
+        if max_passes == -1:
+            max_passes = self.MAX_PASSES
 
         pass_number = 0
         while 1:
-            if pass_number > self.MAX_PASSES:
+            if pass_number > max_passes:
                 break
 
             state = str(instructions)
@@ -156,3 +155,14 @@ class LinearOptimizer(object):
             if state == new:
                 break
 
+class LinearOptimizer(object):
+    """Performs optimizations on the linear IR."""
+    def optimize(self, instructions, contextualizer=None, inliner=None):
+        if not contextualizer:
+            contextualizer = LinearContextualizer()
+        if not inliner:
+            inliner = LinearInliner()
+        self.peephole_optimizer = PeepholeOptimizer()
+        inliner.inline(instructions, contextualizer, self.peephole_optimizer)
+
+        self.peephole_optimizer.optimize(instructions)

@@ -33,6 +33,9 @@ class OptimizationTest(BaseOptimizationTest):
         script = LInstructions([types.Five(), types.Zero(), types.Roll()])
         self._do_test('OP_5', script)
 
+        script = LInstructions([types.Five(), types.Six(), types.One(), types.Roll(), types.One(), types.Roll()])
+        self._do_test('OP_5 OP_6', script)
+
     def test_shortcut_ops(self):
         for script in [
             LInstructions([types.Five(), types.One(), types.Add()]),
