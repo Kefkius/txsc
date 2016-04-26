@@ -72,16 +72,13 @@ def main():
 
     s = args.source
     src = [s]
-    try:
-        if os.path.exists(s):
-            with open(s, 'r') as f:
-                src = f.readlines()
-            # Automatically detect source language from file extension.
-            names = s.split('.')
-            if len(names) > 1 and names[-1] in source_choices:
-                args.source_lang = names[-1]
-    except Exception:
-        pass
+    if os.path.exists(s):
+        with open(s, 'r') as f:
+            src = f.readlines()
+        # Automatically detect source language from file extension.
+        names = s.split('.')
+        if len(names) > 1 and names[-1] in source_choices:
+            args.source_lang = names[-1]
 
     compiler.setup_options(args)
     compiler.compile(src)

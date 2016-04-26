@@ -18,10 +18,18 @@ for entry_point in iter_entry_points(group='txsc.language'):
     if lang.name not in [i.name for i in languages]:
         languages.append(lang)
 
+class DirectiveError(Exception):
+    """Exception raised when a directive-related error is encountered."""
+    def __init__(self, msg):
+        super(DirectiveError, self).__init__('Directive error: %s' % msg)
+
 class Verbosity(object):
     """Options that depend on verbosity."""
     max_verbosity = 3
     def __init__(self, value):
+        self.set_value(value)
+
+    def set_value(self, value):
         self.value = value
         self.quiet = value == 0     # Only output the compiled source.
         self.show_linear_ir = value > 0 # Show the linear intermediate representation.
@@ -48,8 +56,42 @@ class ScriptCompiler(object):
 
         self.output_file = self.options.output_file
 
+    def process_directives(self, source_lines):
+        """Parse any directives in source_lines."""
+        # Extract directive lines from source_lines.
+        directives = {}
+        directive_lines = filter(lambda line: line.startswith('@'), source_lines)
+        for i in directive_lines:
+            source_lines.remove(i)
+            try:
+                key, value = i[1:].split(' ')
+            except ValueError:
+                raise DirectiveError('Invalid directive format.')
+            else:
+                directives[key] = value.replace('\n', '')
+
+        # Target language.
+        target = directives.get('target')
+        if target:
+            if target not in self.output_languages.keys():
+                raise DirectiveError('Invalid choice for target: "%s"' % target)
+            else:
+                self.target_lang = self.output_languages[target]
+
+        # Verbosity level.
+        verbosity = directives.get('verbosity')
+        if verbosity is not None:
+            try:
+                verbosity = int(verbosity) if verbosity != 'max' else Verbosity.max_verbosity
+            except Exception:
+                raise DirectiveError('Invalid verbosity level: "%s"' % verbosity)
+            else:
+                self.verbosity.set_value(verbosity)
+
+
     def compile(self, source_lines):
         self.outputs.clear()
+        self.process_directives(source_lines)
 
         if self.verbosity.echo_input:
             self.outputs['Input'] = source_lines
