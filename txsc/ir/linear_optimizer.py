@@ -163,12 +163,11 @@ class PeepholeOptimizer(object):
 
 class LinearOptimizer(object):
     """Performs optimizations on the linear IR."""
-    def optimize(self, instructions, contextualizer=None, inliner=None):
-        if not contextualizer:
-            contextualizer = LinearContextualizer()
-        if not inliner:
-            inliner = LinearInliner()
+    def optimize(self, instructions, inline=True):
         self.peephole_optimizer = PeepholeOptimizer()
-        inliner.inline(instructions, contextualizer, self.peephole_optimizer)
+        if inline:
+            contextualizer = LinearContextualizer()
+            inliner = LinearInliner()
+            inliner.inline(instructions, contextualizer, self.peephole_optimizer)
 
         self.peephole_optimizer.optimize(instructions)

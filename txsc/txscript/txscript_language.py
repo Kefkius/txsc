@@ -15,13 +15,10 @@ class TxScriptSourceVisitor(SourceVisitor):
     ir_type = STRUCTURAL
     def __init__(self, *args, **kwargs):
         super(TxScriptSourceVisitor, self).__init__(*args, **kwargs)
-        self.symbol_table = SymbolTable()
         # Set up yacc.
         self.parser = ScriptParser()
 
-    def transform(self, source):
-        self.symbol_table.clear()
-        symbol_table = self.symbol_table
+    def transform(self, source, symbol_table):
         if isinstance(source, list):
             source = '\n'.join(source)
 
@@ -40,3 +37,4 @@ class TxScriptLanguage(Language):
     """Python-based TxScript language."""
     name = 'txscript'
     source_visitor = TxScriptSourceVisitor
+    supports_symbol_table = True

@@ -21,6 +21,7 @@ It also has two optional class attributes:
 
 - `source_visitor`: A class that can transform source into instructions.
 - `target_visitor`: A class that can transform instructions into source.
+- `supports_symbol_table`: Whether or not the language supports symbols.
 
 If a language has a `source_visitor`, it can process input. If it has a `target_visitor`,
 it can process instructions and output source. If a language has neither of these attributes,

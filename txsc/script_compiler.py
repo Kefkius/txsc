@@ -6,6 +6,7 @@ from pkg_resources import iter_entry_points
 from txsc.txscript import TxScriptLanguage
 from txsc.asm import ASMLanguage
 from txsc.btcscript import BtcScriptLanguage
+from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.structural_visitor import StructuralVisitor
 from txsc.ir.linear_optimizer import LinearOptimizer
@@ -39,6 +40,7 @@ class ScriptCompiler(object):
     """Script compiler."""
     def __init__(self):
         self.outputs = OrderedDict()
+        self.symbol_table = None
         self.setup_languages()
 
     def setup_languages(self):
@@ -96,8 +98,14 @@ class ScriptCompiler(object):
         if self.verbosity.echo_input:
             self.outputs['Input'] = source_lines
 
+        self.symbol_table = SymbolTable()
+        # Add symbol_table to arguments if the source lang supports it.
+        args = [source_lines]
+        if self.source_lang.supports_symbol_table:
+            args.append(self.symbol_table)
+
         try:
-            instructions = self.source_lang().process_source(source_lines)
+            instructions = self.source_lang().process_source(*args)
         except SyntaxError as e:
             print('Error encountered during compilation of source:')
             print(e)
@@ -115,8 +123,9 @@ class ScriptCompiler(object):
             self.outputs['Linear Intermediate Representation'] = str(instructions)
 
         # Perform linear IR optimizations.
+        # TODO: If the target language supports symbols, do not inline.
         optimizer = LinearOptimizer()
-        optimizer.optimize(instructions)
+        optimizer.optimize(instructions, inline=True)
         self.outputs['Optimized Linear Representation'] = str(instructions)
 
         self.process_targets(instructions)
