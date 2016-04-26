@@ -122,7 +122,7 @@ class ScriptTransformer(BaseTransformer):
         if symbol is None:
             raise NameError('Symbol "%s" was not declared.' % node.id)
         # Assume node is a stack assumption.
-        assumption = types.Assumption(name=symbol.name, depth=symbol.depth, stack_size=symbol.stack_size)
+        assumption = types.Assumption(name=symbol.name, depth=symbol.depth)
         return assumption
 
     def visit_Num(self, node):

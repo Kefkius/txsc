@@ -1,7 +1,7 @@
 """Script optimizations."""
 import itertools
 
-from txsc.ir.linear_context import LinearContextualizer
+from txsc.ir.linear_context import LinearContextualizer, LinearInliner
 import txsc.ir.linear_nodes as types
 
 peephole_optimizers = []
@@ -61,6 +61,8 @@ def optimize_stack_ops(instructions):
         ([types.One(), types.Roll(), types.Drop()], [types.Nip()]),
         # OP_0 OP_PICK -> OP_DUP
         ([types.Zero(), types.Pick()], [types.Dup()]),
+        # OP_0 OP_ROLL -> _
+        ([types.Zero(), types.Roll()], []),
     ]:
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
@@ -132,10 +134,12 @@ def remove_trailing_verifications(instructions):
 class LinearOptimizer(object):
     """Performs optimizations on the linear IR."""
     MAX_PASSES = 10
-    def optimize(self, instructions, contextualizer=None):
+    def optimize(self, instructions, contextualizer=None, inliner=None):
         if not contextualizer:
             contextualizer = LinearContextualizer()
-        contextualizer.contextualize(instructions)
+        if not inliner:
+            inliner = LinearInliner()
+        inliner.inline(instructions, contextualizer)
 
         pass_number = 0
         while 1:

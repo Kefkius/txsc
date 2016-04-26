@@ -7,7 +7,7 @@ class Symbol(ast.Str):
 
 class StackItem(Symbol):
     """Assumed stack item"""
-    _fields = ('name', 'depth', 'stack_size')
+    _fields = ('name', 'depth')
 
 class SymbolTable(object):
     """A symbol table."""
@@ -31,4 +31,4 @@ class SymbolTable(object):
 
         for height, name in items:
             depth = size - height - 1
-            self.insert(StackItem(name=name, depth=depth, stack_size=size))
+            self.insert(StackItem(name=name, depth=depth))

@@ -12,7 +12,7 @@ class Script(ScriptOp):
 
 class Assumption(ScriptOp):
     """Assumption that a stack item exists."""
-    _fields = ('name', 'depth', 'stack_size')
+    _fields = ('name', 'depth')
 
 class Push(ScriptOp):
     """A data push operation."""
