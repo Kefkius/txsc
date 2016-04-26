@@ -27,7 +27,7 @@ class Instructions(object):
         try:
             op = CScriptOp(num)
             return op.decode_op_n()
-        except ValueError:
+        except Exception:
             pass
         return num
 

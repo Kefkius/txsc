@@ -129,6 +129,10 @@ class ScriptTransformer(BaseTransformer):
         s = SourceVisitor.int_to_bytearray(node.n)
         return types.Push(s)
 
+    def visit_Str(self, node):
+        s = SourceVisitor.hex_to_bytearray(node.s)
+        return types.Push(s)
+
     def visit_Assert(self, node):
         self.debug_print('visit_Assert')
         if not self.is_script_op(node.test):

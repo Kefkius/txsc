@@ -145,7 +145,6 @@ class ScriptParser(object):
         if self.debug: print('expr : NUMBER %s' % p[1])
         p[0] = ast.Num(n=p[1])
 
-    def p_statement_expr(self, p):
-        '''statement : expr'''
-        p[0] = p[1]
-
+    def p_expr_hex(self, p):
+        '''expr : HEX'''
+        p[0] = ast.Str(p[1])

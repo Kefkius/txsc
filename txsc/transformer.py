@@ -1,4 +1,5 @@
 import ast
+import binascii
 
 from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
@@ -53,6 +54,12 @@ class SourceVisitor(BaseTransformer):
         except ValueError:
             pass
         return _bignum.bn2vch(value)
+
+    @staticmethod
+    def hex_to_bytearray(value):
+        """Encode a hex string as a byte array."""
+        value = value.replace('0x','').replace('L','')
+        return binascii.unhexlify(value)
 
     def __init__(self, *args, **kwargs):
         super(SourceVisitor, self).__init__(*args, **kwargs)

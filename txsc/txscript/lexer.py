@@ -1,6 +1,6 @@
 import ply.lex as lex
 
-tokens = ['NAME', 'NUMBER',
+tokens = ['NAME', 'NUMBER', 'HEX',
         'PLUS', 'MINUS',
         'TIMES', 'DIVIDE',
         'MOD',
@@ -47,8 +47,16 @@ t_ASSUME = r'assume'
 t_VERIFY = r'verify'
 
 def t_NAME(t):
-    r'[a-zA-Z_][a-zA-Z0-9_]*'
+    r'[a-zA-Z][a-zA-Z0-9_]*'
     t.type = reserved_words.get(t.value, 'NAME')
+    return t
+
+def t_HEX(t):
+    r'(0x)[0-9a-fA-F]+'
+    try:
+        _ = int(t.value, 16)
+    except ValueError:
+        print("Line %d: Hex number %s is too large!" % (t.lineno, t.value))
     return t
 
 def t_NUMBER(t):
