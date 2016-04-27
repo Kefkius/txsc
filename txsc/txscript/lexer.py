@@ -1,6 +1,11 @@
-import ply.lex as lex
+from ply import lex
+from ply.lex import TOKEN
 
-tokens = ['NAME', 'NUMBER', 'HEX',
+hexdigit = r'[0-9a-fA-F]'
+implicit_hex = hexdigit + r'+'
+explicit_hex = r'(0x)' + implicit_hex
+
+tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'PLUS', 'MINUS',
         'TIMES', 'DIVIDE',
         'MOD',
@@ -51,20 +56,17 @@ def t_NAME(t):
     t.type = reserved_words.get(t.value, 'NAME')
     return t
 
-def t_HEX(t):
-    r'(0x)[0-9a-fA-F]+'
-    try:
-        _ = int(t.value, 16)
-    except ValueError:
-        print("Line %d: Hex number %s is too large!" % (t.lineno, t.value))
-    return t
-
+@TOKEN(r'(' + explicit_hex + r')|(\d+)')
 def t_NUMBER(t):
-    r'\d+'
+    is_hex = t.value.startswith('0x')
     try:
-        t.value = int(t.value)
+        t.value = int(t.value, 16 if is_hex else 10)
     except ValueError:
         print("Line %d: Number %s is too large!" % (t.lineno, t.value))
+    return t
+
+@TOKEN(r'\'' + implicit_hex + r'\'')
+def t_HEXSTR(t):
     return t
 
 def t_COMMENT(t):

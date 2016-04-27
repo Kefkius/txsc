@@ -1,3 +1,4 @@
+import ast
 from collections import namedtuple
 
 import txsc.ir.structural_nodes as types
@@ -110,13 +111,30 @@ class ScriptTransformer(BaseTransformer):
         return None
 
     def visit_Assign(self, node):
+        """Populate symbol table."""
         if not self.symbol_table:
-            raise Exception('Cannot store name. Transformer was started without a symbol table.')
+            raise Exception('Cannot assign value(s). Transformer was started without a symbol table.')
         if len(node.targets) > 1:
             raise Exception('Cannot assign value(s) to more than one symbol.')
-        target = node.targets[0]
-        if target.id == '_stack':
-            self.symbol_table.add_stack_assumptions([i.id for i in node.value.elts])
+
+        target = node.targets[0].id
+        value = node.value
+        sym_value = None
+        sym_type = None
+        # '_stack' is an invalid variable name that signifies stack assumptions.
+        if target == '_stack':
+            self.symbol_table.add_stack_assumptions([i.id for i in value.elts])
+        else:
+            # Integer value.
+            if isinstance(value, ast.Num):
+                sym_value = value.n
+                sym_type = self.symbol_table.Integer
+            # Byte array value.
+            elif isinstance(value, ast.List):
+                sym_value = value.elts
+                sym_type = self.symbol_table.ByteArray
+            self.symbol_table.add_symbol(target, sym_value, sym_type)
+        return None
 
     def visit_Name(self, node):
         if not self.symbol_table:
@@ -124,10 +142,7 @@ class ScriptTransformer(BaseTransformer):
         symbol = self.symbol_table.lookup(node.id)
         if symbol is None:
             raise NameError('Symbol "%s" was not declared.' % node.id)
-        # Generate a node depending on the symbol type.
-        op = None
-        if symbol.type_ == 'stack_item':
-            op = types.Assumption(name=symbol.name, depth=symbol.value)
+        op = types.Symbol(name=symbol.name)
         return op
 
     def visit_Num(self, node):
@@ -136,6 +151,10 @@ class ScriptTransformer(BaseTransformer):
 
     def visit_Str(self, node):
         s = SourceVisitor.hex_to_bytearray(node.s)
+        return types.Push(s)
+
+    def visit_List(self, node):
+        s = SourceVisitor.hex_to_bytearray(''.join(node.elts))
         return types.Push(s)
 
     def visit_Assert(self, node):

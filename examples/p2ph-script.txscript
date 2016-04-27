@@ -8,7 +8,7 @@
 assume sig, pubkey;
 
 # Verify that the RIPEMD-160 hash of pubkey is 0x1010101010101010101010101010101010101010.
-verify hash160(pubkey) == 0x1010101010101010101010101010101010101010;
+verify hash160(pubkey) == '1010101010101010101010101010101010101010';
 
 # Check that sig is valid.
 checkSig(sig, pubkey);

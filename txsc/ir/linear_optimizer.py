@@ -136,7 +136,7 @@ def remove_trailing_verifications(instructions):
     A trailing OP_VERIFY is redundant since a truthy value
     is required for a script to pass.
     """
-    while isinstance(instructions[-1], types.Verify):
+    while len(instructions) and isinstance(instructions[-1], types.Verify):
         instructions.pop(-1)
 
 class PeepholeOptimizer(object):

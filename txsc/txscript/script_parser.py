@@ -38,7 +38,6 @@ class ScriptParser(object):
 
     def p_statement_assign(self, p):
         '''statement : NAME EQUALS expr'''
-        if self.debug: print('statement : NAME = expr; %s, %s' % (p[1], p[3]))
         p[0] = ast.Assign(targets=[
             ast.Name(id=p[1], ctx=ast.Store()),
         ], value=p[3])
@@ -56,6 +55,8 @@ class ScriptParser(object):
 
     def p_assume(self, p):
         '''expr : ASSUME args'''
+        if not all(isinstance(i, ast.Name) for i in p[2].elts):
+            raise Exception('Assumptions can only be assigned to names.')
         p[0] = ast.Assign(targets=[ast.Name(id='_stack', ctx=ast.Store())], value=p[2])
 
     def p_function_call(self, p):
@@ -131,6 +132,16 @@ class ScriptParser(object):
 
         p[0] = ast.Compare(left=p[1], ops=[op], comparators=[p[3]])
 
+    def p_expr_str(self, p):
+        '''expr : HEXSTR'''
+        s = p[1].replace('\'','')
+        try:
+            _ = int(s, 16)
+        except ValueError:
+            raise Exception('Invalid hex literal.')
+        byte_arr = [s[i:i+2] for i in range(0, len(s), 2)]
+        p[0] = ast.List(elts=byte_arr, ctx=ast.Store())
+
     def p_expr_name(self, p):
         '''expr : NAME'''
         if self.debug: print('expr : NAME')
@@ -145,6 +156,3 @@ class ScriptParser(object):
         if self.debug: print('expr : NUMBER %s' % p[1])
         p[0] = ast.Num(n=p[1])
 
-    def p_expr_hex(self, p):
-        '''expr : HEX'''
-        p[0] = ast.Str(p[1])

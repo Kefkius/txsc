@@ -117,7 +117,7 @@ class ScriptCompiler(object):
         """Process intermediate representation."""
         # Convert structural to linear representation.
         if instructions.ir_type == STRUCTURAL:
-            instructions = StructuralVisitor().transform(instructions.script)
+            instructions = StructuralVisitor().transform(instructions.script, self.symbol_table)
 
         if self.verbosity.show_linear_ir:
             self.outputs['Linear Intermediate Representation'] = str(instructions)

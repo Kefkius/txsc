@@ -5,14 +5,24 @@ import txsc.ir.linear_nodes as types
 
 class StructuralVisitor(SourceVisitor):
     """Tranforms a structural representation into a linear one."""
-    def transform(self, node):
+    def transform(self, node, symbol_table=None):
+        self.symbol_table = symbol_table
         self.visit(node)
         return self.instructions
 
-    def visit_Assumption(self, node):
-        assume = types.Assumption(node.name, node.depth)
-        self.add_instruction(assume)
-        return node
+    def visit_Symbol(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot process symbol: No symbol table was supplied.')
+        symbol = self.symbol_table.lookup(node.name)
+        if not symbol:
+            raise Exception('Symbol "%s" was not declared.' % node.name)
+        if symbol.type_ == 'stack_item':
+            self.add_instruction(types.Assumption(symbol.name, symbol.value))
+        elif symbol.type_ == 'int':
+            self.visit(structural_nodes.Push(self.int_to_bytearray(symbol.value)))
+        elif symbol.type_ == 'byte_array':
+            s = ''.join(symbol.value)
+            self.visit(structural_nodes.Push(self.hex_to_bytearray(s)))
 
     def visit_Push(self, node):
         value = Instructions.decode_number(node.data)
