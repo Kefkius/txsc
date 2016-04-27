@@ -9,7 +9,7 @@ from txsc.txscript import ScriptParser, ScriptTransformer
 def setUpModule():
     parser = ScriptParser(debug=False)
 
-class BaseFrontendTest(unittest.TestCase):
+class BaseScriptTransformerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.transformer = ScriptTransformer()
@@ -28,7 +28,7 @@ class BaseFrontendTest(unittest.TestCase):
         t = self.transformer.visit(t)
         self.assertEqual(expected, self.transformer.dump(t))
 
-class SingleStatementTest(BaseFrontendTest):
+class SingleStatementTest(BaseScriptTransformerTest):
     def test_arithmetic(self):
         self._test_transform('5 + 2', "[BinOpCode('OP_ADD', Push(0x55), Push(0x52))]")
         self._test_transform('5 - 2', "[BinOpCode('OP_SUB', Push(0x55), Push(0x52))]")
@@ -41,7 +41,7 @@ class SingleStatementTest(BaseFrontendTest):
         self._test_transform('max(1, 2)', "[BinOpCode('OP_MAX', Push(0x51), Push(0x52))]")
         self._test_transform('verify max(1, 2) == 2', "[VerifyOpCode('OP_VERIFY', BinOpCode('OP_EQUAL', BinOpCode('OP_MAX', Push(0x51), Push(0x52)), Push(0x52)))]")
 
-class CompoundStatementTest(BaseFrontendTest):
+class CompoundStatementTest(BaseScriptTransformerTest):
     def test_arithmetic(self):
         self._test_transform('5 + 2; 1 + 3', "[BinOpCode('OP_ADD', Push(0x55), Push(0x52)), BinOpCode('OP_ADD', Push(0x51), Push(0x53))]")
 

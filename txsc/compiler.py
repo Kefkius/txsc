@@ -82,6 +82,7 @@ def main():
 
     compiler.setup_options(args)
     compiler.compile(src)
+    print(compiler.output())
 
 if __name__ == '__main__':
     main()

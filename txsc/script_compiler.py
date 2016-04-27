@@ -134,8 +134,6 @@ class ScriptCompiler(object):
         """Process compilation targets."""
         self.outputs[self.target_lang.name] = self.target_lang().compile_instructions(instructions)
 
-        self.output()
-
     def output(self):
         """Output results."""
         formats = OrderedDict(self.outputs)
@@ -154,5 +152,6 @@ class ScriptCompiler(object):
         if self.output_file:
             with open(self.output_file, 'w') as f:
                 f.write(s)
+            return 'Compiled %s to %s in %s' % (self.source_lang.name, self.target_lang.name, self.output_file)
         else:
-            print(s)
+            return s
