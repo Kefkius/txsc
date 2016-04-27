@@ -9,19 +9,25 @@ class StructuralVisitor(SourceVisitor):
         self.visit(node)
         return self.instructions
 
+    def visit_Assignment(self, node):
+        return None
+
     def visit_Symbol(self, node):
         if not self.symbol_table:
             raise Exception('Cannot process symbol: No symbol table was supplied.')
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise Exception('Symbol "%s" was not declared.' % node.name)
+        # Add an assumption for the stack item.
         if symbol.type_ == 'stack_item':
             self.add_instruction(types.Assumption(symbol.name, symbol.value))
-        elif symbol.type_ == 'int':
-            self.visit(structural_nodes.Push(formats.int_to_bytearray(symbol.value)))
+        # Push the bytes of the byte array.
         elif symbol.type_ == 'byte_array':
-            s = ''.join(symbol.value)
-            self.visit(structural_nodes.Push(formats.hex_to_bytearray(s)))
+            self.visit(structural_nodes.Push(''.join(symbol.value)))
+        # If the type is an expression, then StructuralOptimizer could not simplify it.
+        # Evaluate the expression as if it were encountered in the structural IR.
+        elif symbol.type_ == 'expression':
+            self.visit(symbol.value)
 
     def visit_Push(self, node):
         try:

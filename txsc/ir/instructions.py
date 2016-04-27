@@ -92,3 +92,6 @@ class SInstructions(Instructions):
     ir_type = STRUCTURAL
     def __init__(self, script=structural_nodes.Script()):
         self.script = script
+
+    def dump(self, *args):
+        return self.script.dump(*args)

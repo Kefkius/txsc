@@ -13,7 +13,7 @@ class BaseCompilerTest(unittest.TestCase):
 
     @classmethod
     def _options(cls):
-        return Namespace(output_file=None, source_lang='txscript',
+        return Namespace(optimize_structural=False, output_file=None, source_lang='txscript',
                 target_lang='asm', verbosity=0)
 
     def _compile(self, src):

@@ -10,9 +10,16 @@ class Script(ScriptOp):
     """A complete script."""
     _fields = ('statements',)
 
+    def dump(self, *args):
+        return ast.dump(self, *args)
+
 class Symbol(ScriptOp):
     """A symbol occurrence."""
     _fields = ('name')
+
+class Assignment(ScriptOp):
+    """An assignment to a symbol."""
+    _fields = ('name', 'value')
 
 class Push(ScriptOp):
     """A data push operation.

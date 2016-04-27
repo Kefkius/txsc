@@ -126,18 +126,24 @@ class ScriptTransformer(BaseTransformer):
         if target == '_stack':
             self.symbol_table.add_stack_assumptions([i.id for i in value.elts])
         else:
-            # Integer value.
-            if isinstance(value, ast.Num):
-                sym_value = value.n
-                sym_type = self.symbol_table.Integer
+            value = self.visit(value)
             # Byte array value.
-            elif isinstance(value, ast.List):
-                sym_value = value.elts
+            if isinstance(value, types.Push):
+                sym_value = formats.hex_to_list(value.data)
                 sym_type = self.symbol_table.ByteArray
+            # Expression value.
+            else:
+                sym_value = value
+                sym_type = self.symbol_table.Expr
             self.symbol_table.add_symbol(target, sym_value, sym_type)
-        return None
+
+        return types.Assignment(name=target, value=value)
 
     def visit_Name(self, node):
+        # Return the node if it's being assigned.
+        if isinstance(node.ctx, ast.Store):
+            return node
+
         if not self.symbol_table:
             raise Exception('Cannot lookup name. Transformer was started without a symbol table.')
         symbol = self.symbol_table.lookup(node.id)
@@ -242,6 +248,6 @@ class ScriptTransformer(BaseTransformer):
             return op
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
-        if hasattr(node, 'dump'):
+        if hasattr(node, 'dump') and not isinstance(node, types.Script):
             return node.dump(annotate_fields)
         return super(ScriptTransformer, self).format_dump(node, annotate_fields, include_attributes)

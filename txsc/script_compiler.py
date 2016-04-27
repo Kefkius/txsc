@@ -9,6 +9,7 @@ from txsc.btcscript import BtcScriptLanguage
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.structural_visitor import StructuralVisitor
+from txsc.ir.structural_optimizer import StructuralOptimizer
 from txsc.ir.linear_optimizer import LinearOptimizer
 
 # Load known languages in case we're running locally.
@@ -34,6 +35,7 @@ class Verbosity(object):
         self.value = value
         self.quiet = value == 0     # Only output the compiled source.
         self.show_linear_ir = value > 0 # Show the linear intermediate representation.
+        self.show_structural_ir = value > 1 # Show the structural intermediate representation.
         self.echo_input = value > 2 # Echo the source that was input.
 
 class ScriptCompiler(object):
@@ -51,6 +53,9 @@ class ScriptCompiler(object):
     def setup_options(self, options):
         self.options = options
         self.verbosity = Verbosity(self.options.verbosity)
+
+        # Whether to optimize the structural IR.
+        self.optimize_structural = getattr(self.options, 'optimize_structural', True)
 
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]
@@ -117,6 +122,13 @@ class ScriptCompiler(object):
         """Process intermediate representation."""
         # Convert structural to linear representation.
         if instructions.ir_type == STRUCTURAL:
+            if self.verbosity.show_structural_ir:
+                self.outputs['Structural Intermediate Representation'] = instructions.dump()
+            # Optimize structural IR.
+            if self.optimize_structural:
+                StructuralOptimizer().optimize(instructions, self.symbol_table)
+                if self.verbosity.show_structural_ir:
+                    self.outputs['Optimized Structural Representation'] = instructions.dump()
             instructions = StructuralVisitor().transform(instructions.script, self.symbol_table)
 
         if self.verbosity.show_linear_ir:
@@ -137,10 +149,14 @@ class ScriptCompiler(object):
     def output(self):
         """Output results."""
         formats = OrderedDict(self.outputs)
-        # Hide optimized linear representation if no optimizations were performed.
-        if formats.get('Optimized Linear Representation') and formats.get('Linear Intermediate Representation'):
-            if formats['Linear Intermediate Representation'] == formats['Optimized Linear Representation']:
-                del formats['Optimized Linear Representation']
+        # Hide optimized representation if no optimizations were performed.
+        for normal, optimized in [
+            ('Linear Intermediate Representation', 'Optimized Linear Representation'),
+            ('Structural Intermediate Representation', 'Optimized Structural Representation'),
+        ]:
+            outputs = map(formats.get, [normal, optimized])
+            if all(i is not None for i in outputs) and outputs[0] == outputs[1]:
+                del formats[optimized]
 
         s = ['%s:\n  %s\n' % (k, v) for k, v in formats.items()]
         s = '\n'.join(s)

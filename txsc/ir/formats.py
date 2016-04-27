@@ -9,6 +9,11 @@ def strip_hex(s):
     """Strip extraneous characters from s."""
     return s.replace('0x', '').replace('L', '')
 
+def hex_to_list(s):
+    """Create a list of the bytes in s."""
+    s = strip_hex(s)
+    return [s[i:i+2] for i in range(0, len(s), 2)]
+
 def int_to_bytearray(value):
     """Encode an integer as a byte array or opcode value."""
     try:
