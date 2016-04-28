@@ -1,6 +1,7 @@
 import ast
 
 from txsc.transformer import SourceVisitor, TargetVisitor
+from txsc.ir import formats
 import txsc.ir.linear_nodes as types
 from txsc.language import Language
 
@@ -44,7 +45,7 @@ class ASMSourceVisitor(SourceVisitor):
     def process_value(self, value):
         # Encode integer.
         if isinstance(value, int):
-            push = self.int_to_bytearray(value)
+            push = formats.int_to_bytearray(value)
             self.add_instruction(types.Push(data=push))
         else:
             try:

@@ -1,6 +1,5 @@
 from txsc.transformer import SourceVisitor
-from txsc.ir.instructions import Instructions
-from txsc.ir import structural_nodes
+from txsc.ir import formats, structural_nodes
 import txsc.ir.linear_nodes as types
 
 class StructuralVisitor(SourceVisitor):
@@ -19,13 +18,13 @@ class StructuralVisitor(SourceVisitor):
         if symbol.type_ == 'stack_item':
             self.add_instruction(types.Assumption(symbol.name, symbol.value))
         elif symbol.type_ == 'int':
-            self.visit(structural_nodes.Push(self.int_to_bytearray(symbol.value)))
+            self.visit(structural_nodes.Push(formats.int_to_bytearray(symbol.value)))
         elif symbol.type_ == 'byte_array':
             s = ''.join(symbol.value)
-            self.visit(structural_nodes.Push(self.hex_to_bytearray(s)))
+            self.visit(structural_nodes.Push(formats.hex_to_bytearray(s)))
 
     def visit_Push(self, node):
-        value = Instructions.decode_number(node.data)
+        value = formats.bytearray_to_int(node.data)
         if value >= 0 and value <= 16:
             op = self.get_small_int_class(value)
             self.add_instruction(op)

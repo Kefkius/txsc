@@ -19,22 +19,7 @@ def get_instructions_class(instructions_type):
 
 class Instructions(object):
     """Base model for instructions."""
-    @staticmethod
-    def decode_number(data):
-        """Decode data into an integer."""
-        num = _bignum.vch2bn(data)
-        # Decode num if it's a small integer.
-        try:
-            op = CScriptOp(num)
-            return op.decode_op_n()
-        except Exception:
-            pass
-        return num
-
-    @staticmethod
-    def evaluate_bool(data):
-        """Evaluate data as a boolean."""
-        return _CastToBool(data)
+    pass
 
 class LInstructions(Instructions, list):
     """Model for linear instructions."""

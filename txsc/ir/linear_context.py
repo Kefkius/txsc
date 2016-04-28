@@ -1,7 +1,8 @@
 from collections import defaultdict
 
-from txsc.transformer import BaseTransformer, SourceVisitor
-from txsc.ir.instructions import Instructions, LInstructions
+from txsc.transformer import BaseTransformer
+from txsc.ir import formats
+from txsc.ir.instructions import LInstructions
 import txsc.ir.linear_nodes as types
 
 class LinearContextualizer(BaseTransformer):
@@ -12,7 +13,7 @@ class LinearContextualizer(BaseTransformer):
         if isinstance(op, types.SmallIntOpCode):
             return op.value
         elif isinstance(op, types.Push):
-            return Instructions.decode_number(op.data)
+            return formats.bytearray_to_int(op.data)
 
     def __init__(self):
         # {assumption_name: [occurrence_index, ...], ...}
@@ -97,7 +98,7 @@ class LinearInliner(BaseTransformer):
         try:
             return types.opcode_classes['OP_%d'%value]()
         except (KeyError, TypeError):
-            value = SourceVisitor.int_to_bytearray(value)
+            value = formats.int_to_bytearray(value)
             return types.Push(data=value)
 
     def total_delta(self, idx):

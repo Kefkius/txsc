@@ -45,22 +45,6 @@ class SourceVisitor(BaseTransformer):
     """Visitor that operates on a source language."""
     # Type of instructions that this visitor generates.
     ir_type = LINEAR
-
-    @staticmethod
-    def int_to_bytearray(value):
-        """Encode an integer as a byte array."""
-        try:
-            value = int(CScriptOp.encode_op_n(value))
-        except ValueError:
-            pass
-        return _bignum.bn2vch(value)
-
-    @staticmethod
-    def hex_to_bytearray(value):
-        """Encode a hex string as a byte array."""
-        value = value.replace('0x','').replace('L','')
-        return binascii.unhexlify(value)
-
     def __init__(self, *args, **kwargs):
         super(SourceVisitor, self).__init__(*args, **kwargs)
         self.instructions = get_instructions_class(self.ir_type)()

@@ -1,8 +1,8 @@
 import unittest
 
+from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_context import LinearContextualizer
-from txsc.transformer import SourceVisitor
 import txsc.ir.linear_nodes as types
 
 class BaseContextTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestIfDup(BaseContextTest):
             self.assertEqual(expected_delta, ifdup.delta)
 
     def test_push(self):
-        script = LInstructions([types.One(), types.Push(SourceVisitor.int_to_bytearray(20)), types.IfDup()])
+        script = LInstructions([types.One(), types.Push(formats.int_to_bytearray(20)), types.IfDup()])
         self._do_context(script)
         ifdup = script[2]
         self.assertIsInstance(ifdup, types.IfDup)
@@ -43,8 +43,8 @@ class TestIfDup(BaseContextTest):
 
 class TestMultiSig(BaseContextTest):
     def test_multisig(self):
-        sigs = [types.Push(SourceVisitor.int_to_bytearray(i)) for i in [100]]
-        pubs = [types.Push(SourceVisitor.int_to_bytearray(i)) for i in [300, 400]]
+        sigs = [types.Push(formats.int_to_bytearray(i)) for i in [100]]
+        pubs = [types.Push(formats.int_to_bytearray(i)) for i in [300, 400]]
 
         script = [types.Zero()] # Dummy value.
         script.extend(sigs + [types.One()]) # 1 signature.

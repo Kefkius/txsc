@@ -1,8 +1,9 @@
 import ast
 from collections import namedtuple
 
+from txsc.ir import formats
 import txsc.ir.structural_nodes as types
-from txsc.transformer import BaseTransformer, SourceVisitor
+from txsc.transformer import BaseTransformer
 
 # Unary opcodes implemented as operations.
 unary_ops = {
@@ -146,15 +147,15 @@ class ScriptTransformer(BaseTransformer):
         return op
 
     def visit_Num(self, node):
-        s = SourceVisitor.int_to_bytearray(node.n)
+        s = formats.int_to_bytearray(node.n)
         return types.Push(s)
 
     def visit_Str(self, node):
-        s = SourceVisitor.hex_to_bytearray(node.s)
+        s = formats.hex_to_bytearray(node.s)
         return types.Push(s)
 
     def visit_List(self, node):
-        s = SourceVisitor.hex_to_bytearray(''.join(node.elts))
+        s = formats.hex_to_bytearray(''.join(node.elts))
         return types.Push(s)
 
     def visit_Assert(self, node):
