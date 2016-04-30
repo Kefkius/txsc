@@ -24,6 +24,14 @@ class StructuralVisitor(SourceVisitor):
             self.visit(structural_nodes.Push(formats.hex_to_bytearray(s)))
 
     def visit_Push(self, node):
+        try:
+            smallint = self.get_small_int_class(int(node))
+            self.add_instruction(smallint)
+        except (KeyError, TypeError):
+            self.add_instruction(types.Push(formats.hex_to_bytearray(node.data)))
+
+        return node
+
         value = formats.bytearray_to_int(node.data)
         if value >= 0 and value <= 16:
             op = self.get_small_int_class(value)

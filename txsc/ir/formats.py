@@ -5,6 +5,10 @@ from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 from bitcoin.core.scripteval import _CastToBool
 
+def strip_hex(s):
+    """Strip extraneous characters from s."""
+    return s.replace('0x', '').replace('L', '')
+
 def int_to_bytearray(value):
     """Encode an integer as a byte array or opcode value."""
     try:

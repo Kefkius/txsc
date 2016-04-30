@@ -21,13 +21,14 @@ class BaseCompilerTest(unittest.TestCase):
         self.compiler.compile(src)
         return self.compiler.output()
 
-Test = namedtuple('Test', ('expected', 'src'))
-
-class CompileTxScriptTest(BaseCompilerTest):
     def _test(self, test):
         result = self._compile(test.src)
         errmsg = "'%s' != '%s' (source: '%s')" % (test.expected, result, test.src)
         self.assertEqual(test.expected, result, errmsg)
+
+Test = namedtuple('Test', ('expected', 'src'))
+
+class CompileTxScriptTest(BaseCompilerTest):
 
     def test_single_instruction(self):
         for src in ['5', '0x5', '0x05']:
@@ -54,3 +55,29 @@ class CompileTxScriptTest(BaseCompilerTest):
                'verify hash160(pubkey) == \'1111111111111111111111111111111111111111\';',
                'checkSig(sig, pubkey);']
         self._test(Test('DUP HASH160 0x14 0x1111111111111111111111111111111111111111 EQUALVERIFY CHECKSIG', src))
+
+class CompileBtcScriptTest(BaseCompilerTest):
+    @classmethod
+    def _options(cls):
+        namespace = super(CompileBtcScriptTest, cls)._options()
+        namespace.source_lang = 'btc'
+        return namespace
+
+    def test_btc(self):
+        for test in [
+            Test('2 5 ADD', '525593'),
+        ]:
+            self._test(test)
+
+class CompileAsmTest(BaseCompilerTest):
+    @classmethod
+    def _options(cls):
+        namespace = super(CompileAsmTest, cls)._options()
+        namespace.source_lang = 'asm'
+        return namespace
+
+    def test_asm(self):
+        for test in [
+            Test('2 5 ADD', '2 5 ADD'),
+        ]:
+            self._test(test)

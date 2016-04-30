@@ -147,16 +147,15 @@ class ScriptTransformer(BaseTransformer):
         return op
 
     def visit_Num(self, node):
-        s = formats.int_to_bytearray(node.n)
-        return types.Push(s)
+        """Transform int to a hex string."""
+        return self.visit(ast.Str(hex(node.n)))
 
     def visit_Str(self, node):
-        s = formats.hex_to_bytearray(node.s)
-        return types.Push(s)
+        return types.Push(formats.strip_hex(node.s))
 
     def visit_List(self, node):
-        s = formats.hex_to_bytearray(''.join(node.elts))
-        return types.Push(s)
+        """Transform array of bytes to bytes."""
+        return self.visit(ast.Str(''.join(node.elts)))
 
     def visit_Assert(self, node):
         self.debug_print('visit_Assert')

@@ -15,11 +15,17 @@ class Symbol(ScriptOp):
     _fields = ('name')
 
 class Push(ScriptOp):
-    """A data push operation."""
+    """A data push operation.
+
+    Data is hex-encoded.
+    """
     _fields = ('data',)
 
+    def __int__(self):
+        return int(self.data, 16)
+
     def dump(self, annotate_fields=False):
-        return 'Push(%s0x%s)' % ('data=' if annotate_fields else '', self.data.encode('hex'))
+        return 'Push(%s0x%s)' % ('data=' if annotate_fields else '', self.data)
 
 class OpCode(ScriptOp):
     """An opcode."""
