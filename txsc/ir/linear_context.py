@@ -23,6 +23,13 @@ class LinearContextualizer(BaseTransformer):
         """Get the number of occurrences of assumption_name after idx."""
         return len(filter(lambda i: i > idx, self.assumptions[assumption_name]))
 
+    def nextop(self, op):
+        """Get the operation that follows op."""
+        try:
+            return self.instructions[op.idx + 1]
+        except IndexError:
+            return None
+
     def contextualize(self, instructions):
         """Perform contextualization on instructions.
 
@@ -142,6 +149,16 @@ class LinearInliner(BaseTransformer):
             if not inlined:
                 break
 
+    def visit_consecutive_assumptions(self, assumptions):
+        """Handle a row of consecutive assumptions."""
+        # If the first assumption's delta is 0 and the depths are sequential,
+        # then nothing needs to be done.
+        if self.total_delta(assumptions[0].idx) == 0:
+            # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
+            iterator = (i.depth for i in reversed(assumptions))
+            if all(a == b for a, b in enumerate(iterator, next(iterator) + 1)):
+                return []
+
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)
         if not method:
@@ -149,6 +166,19 @@ class LinearInliner(BaseTransformer):
         return method(instruction)
 
     def visit_Assumption(self, op):
+        # Detect whether there are multiple assumptions in a row.
+        assumptions = [op]
+        while 1:
+            nextop = self.contextualizer.nextop(assumptions[-1])
+            if not isinstance(nextop, types.Assumption) or nextop.depth != assumptions[-1].depth - 1:
+                break
+            assumptions.append(nextop)
+        if len(assumptions) > 1:
+            result = self.visit_consecutive_assumptions(assumptions)
+            if result is not None:
+                return result
+
+        # If there are no consecutive assumptions, use opcodes to bring this assumption to the top.
         arg = self.op_for_int(self.total_delta(op.idx) + op.depth)
 
         # Use OP_PICK if there are other occurrences after this one.

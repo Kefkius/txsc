@@ -65,6 +65,8 @@ def optimize_stack_ops(instructions):
         ([types.Zero(), types.Roll()], []),
         # OP_1 OP_ROLL OP_1 OP_ROLL -> _
         ([types.One(), types.Roll(), types.One(), types.Roll()], []),
+        # OP_1 OP_ROLL -> OP_SWAP
+        ([types.One(), types.Roll()], [types.Swap()]),
     ]:
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)

@@ -97,10 +97,10 @@ class InlineTest(BaseOptimizationTest):
 
     def test_assume_to_pick_or_roll(self):
         script = LInstructions([types.Five(), types.Assumption('testItem', 0), types.Add()])
-        self._do_test('OP_5 OP_1 OP_ROLL OP_ADD', script)
+        self._do_test('OP_5 OP_SWAP OP_ADD', script)
 
         script = LInstructions([types.Five(), types.Five(), types.Assumption('testItem', 0), types.Add()])
         self._do_test('OP_5 OP_5 OP_2 OP_ROLL OP_ADD', script)
 
         script = LInstructions([types.Five(), types.Five(), types.Assumption('testItem', 0), types.Add(), types.Assumption('testItem', 0)])
-        self._do_test('OP_5 OP_5 OP_2 OP_PICK OP_ADD OP_3 OP_ROLL', script)
+        self._do_test('OP_5 OP_5 OP_2 OP_PICK OP_ADD OP_2 OP_ROLL', script)

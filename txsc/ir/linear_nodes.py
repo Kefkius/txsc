@@ -169,8 +169,8 @@ Nip = _opcode('Nip', -1, 'OP_NIP', args=[2])
 Over = _opcode('Over', 1, 'OP_OVER', args=[2])
 
 # TODO: Relative arg indices of Pick and Roll can only be guaranteed during execution.
-Pick = _opcode('Pick', 1, 'OP_PICK')
-Roll = _opcode('Roll', 0, 'OP_ROLL')
+Pick = _opcode('Pick', 0, 'OP_PICK')
+Roll = _opcode('Roll', -1, 'OP_ROLL')
 
 Rot = _ternary_opcode('Rot', 0, 'OP_ROT')
 Swap = _binary_opcode('Swap', 0, 'OP_SWAP')
