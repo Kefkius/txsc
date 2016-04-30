@@ -20,11 +20,15 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
         'ASSUME',
         'VERIFY',
+        'AND',
+        'OR',
 ]
 
 reserved_words = {
     'assume': 'ASSUME',
     'verify': 'VERIFY',
+    'and': 'AND',
+    'or': 'OR',
 }
 
 t_ignore = ' \t'

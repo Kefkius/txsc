@@ -1,9 +1,16 @@
 import ast
 from collections import namedtuple
+import sys
 
 from txsc.ir import formats
 import txsc.ir.structural_nodes as types
 from txsc.transformer import BaseTransformer
+
+if sys.version >= '3':
+    import functools
+    _reduce = functools.reduce
+else:
+    _reduce = reduce
 
 # Unary opcodes implemented as operations.
 unary_ops = {
@@ -172,6 +179,17 @@ class ScriptTransformer(BaseTransformer):
                 test=node.test)
 
         return unary_op
+
+    def visit_BoolOp(self, node):
+        for i in range(len(node.values)):
+            if not self.is_script_op(node.values[i]):
+                node.values[i] = self.visit(node.values[i])
+
+        name = self.get_op_name(node.op)
+        # Create nested boolean ops.
+        op = _reduce(lambda left, right: types.BinOpCode(name=name,
+            left=left, right=right), node.values)
+        return op
 
     def visit_UnaryOp(self, node):
         self.debug_print('visit_UnaryOp')

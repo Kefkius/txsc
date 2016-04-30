@@ -65,6 +65,13 @@ class ScriptParser(object):
                 args=p[3].elts,
                 keywords=[])
 
+    def p_boolop(self, p):
+        '''expr : expr AND expr
+                | expr OR expr
+        '''
+        op = ast.And() if p[2] == 'and' else ast.Or()
+        p[0] = ast.BoolOp(op=op, values=[p[1], p[3]])
+
     def p_expr_unaryop(self, p):
         '''expr : MINUS expr %prec UNARYOP
                 | TILDE expr %prec UNARYOP

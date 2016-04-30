@@ -41,6 +41,11 @@ class SingleStatementTest(BaseScriptTransformerTest):
         self._test_transform('max(1, 2)', "[BinOpCode('OP_MAX', Push(0x1), Push(0x2))]")
         self._test_transform('verify max(1, 2) == 2', "[VerifyOpCode('OP_VERIFY', BinOpCode('OP_EQUAL', BinOpCode('OP_MAX', Push(0x1), Push(0x2)), Push(0x2)))]")
 
+    def test_boolops(self):
+        self._test_transform('5 or 2', "[BinOpCode('OP_BOOLOR', Push(0x5), Push(0x2))]")
+        self._test_transform('5 or 2 or 8', "[BinOpCode('OP_BOOLOR', Push(0x5), BinOpCode('OP_BOOLOR', Push(0x2), Push(0x8)))]")
+        self._test_transform('5 and 2', "[BinOpCode('OP_BOOLAND', Push(0x5), Push(0x2))]")
+
 class CompoundStatementTest(BaseScriptTransformerTest):
     def test_arithmetic(self):
         self._test_transform('5 + 2; 1 + 3', "[BinOpCode('OP_ADD', Push(0x5), Push(0x2)), BinOpCode('OP_ADD', Push(0x1), Push(0x3))]")
