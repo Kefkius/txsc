@@ -25,6 +25,19 @@ class DirectiveError(Exception):
     def __init__(self, msg):
         super(DirectiveError, self).__init__('Directive error: %s' % msg)
 
+class OptimizationLevel(object):
+    """Level of optimization."""
+    max_optimization = 2
+    def __init__(self, value):
+        self.set_value(value)
+
+    def set_value(self, value):
+        self.value = value
+        # Whether to optimize the linear IR.
+        self.optimize_linear = value > 0
+        # Whether to optimize the structural IR.
+        self.optimize_structural = value > 1
+
 class Verbosity(object):
     """Options that depend on verbosity."""
     max_verbosity = 3
@@ -52,10 +65,8 @@ class ScriptCompiler(object):
 
     def setup_options(self, options):
         self.options = options
+        self.optimization = OptimizationLevel(getattr(self.options, 'optimization', OptimizationLevel.max_optimization))
         self.verbosity = Verbosity(self.options.verbosity)
-
-        # Whether to optimize the structural IR.
-        self.optimize_structural = getattr(self.options, 'optimize_structural', True)
 
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]
@@ -125,7 +136,7 @@ class ScriptCompiler(object):
             if self.verbosity.show_structural_ir:
                 self.outputs['Structural Intermediate Representation'] = instructions.dump()
             # Optimize structural IR.
-            if self.optimize_structural:
+            if self.optimization.optimize_structural:
                 StructuralOptimizer().optimize(instructions, self.symbol_table)
                 if self.verbosity.show_structural_ir:
                     self.outputs['Optimized Structural Representation'] = instructions.dump()
@@ -134,11 +145,11 @@ class ScriptCompiler(object):
         if self.verbosity.show_linear_ir:
             self.outputs['Linear Intermediate Representation'] = str(instructions)
 
-        # Perform linear IR optimizations.
+        # Perform linear IR optimizations. Perform peephole optimizations if specified.
         # TODO: If the target language supports symbols, do not inline.
-        optimizer = LinearOptimizer()
-        optimizer.optimize(instructions, inline=True)
-        self.outputs['Optimized Linear Representation'] = str(instructions)
+        LinearOptimizer().optimize(instructions, peephole=self.optimization.optimize_linear, inline=True)
+        if self.verbosity.show_linear_ir:
+            self.outputs['Optimized Linear Representation'] = str(instructions)
 
         self.process_targets(instructions)
 

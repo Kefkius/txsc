@@ -19,7 +19,7 @@ if is_local:
         path = path[:-1]
     sys.path.insert(0, path)
 
-from txsc.script_compiler import ScriptCompiler, Verbosity
+from txsc.script_compiler import ScriptCompiler, OptimizationLevel, Verbosity
 
 
 # http://stackoverflow.com/questions/6076690/verbose-level-with-argparse-and-multiple-v-options
@@ -42,6 +42,7 @@ def main():
     argparser.add_argument('source', metavar='SOURCE', nargs='?', type=str, help='Source to compile.')
     argparser.add_argument('-l', '--list', dest='list_langs', action='store_true', default=False, help='List available languages and exit.')
     argparser.add_argument('-o', '--output', dest='output_file', metavar='OUTPUT_FILE', type=str, help='Output to a file.')
+    argparser.add_argument('--optimize', dest='optimization', metavar='OPTIMIZATION_LEVEL', type=int, default=OptimizationLevel.max_optimization, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
 
     argparser.add_argument('-s', '--source', metavar='SOURCE_LANGUAGE', dest='source_lang', choices=source_choices, default='txscript', help='Source language.')
     argparser.add_argument('-t', '--target', metavar='TARGET_LANGUAGE', dest='target_lang', choices=target_choices, default='btc', help='Target language.')

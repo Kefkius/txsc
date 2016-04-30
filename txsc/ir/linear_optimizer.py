@@ -142,7 +142,12 @@ def remove_trailing_verifications(instructions):
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
     MAX_PASSES = 5
+    def __init__(self, enabled=True):
+        self.enabled = enabled
+
     def optimize(self, instructions, max_passes=-1):
+        if not self.enabled:
+            return
         if max_passes == -1:
             max_passes = self.MAX_PASSES
 
@@ -163,8 +168,8 @@ class PeepholeOptimizer(object):
 
 class LinearOptimizer(object):
     """Performs optimizations on the linear IR."""
-    def optimize(self, instructions, inline=True):
-        self.peephole_optimizer = PeepholeOptimizer()
+    def optimize(self, instructions, peephole=True, inline=True):
+        self.peephole_optimizer = PeepholeOptimizer(peephole)
         if inline:
             contextualizer = LinearContextualizer()
             inliner = LinearInliner()
