@@ -9,9 +9,14 @@ def strip_hex(s):
     """Strip extraneous characters from s."""
     return s.replace('0x', '').replace('L', '')
 
+def format_hex(s):
+    """Format s as a hex string of even length."""
+    s = strip_hex(s)
+    return '0' + s if len(s) % 2 else s
+
 def hex_to_list(s):
     """Create a list of the bytes in s."""
-    s = strip_hex(s)
+    s = format_hex(s)
     return [s[i:i+2] for i in range(0, len(s), 2)]
 
 def int_to_bytearray(value):

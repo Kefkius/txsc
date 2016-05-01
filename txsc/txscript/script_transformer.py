@@ -153,7 +153,7 @@ class ScriptTransformer(BaseTransformer):
         return self.visit(ast.Str(hex(node.n)))
 
     def visit_Str(self, node):
-        return types.Push(formats.strip_hex(node.s))
+        return types.Push(formats.format_hex(node.s))
 
     def visit_List(self, node):
         """Transform array of bytes to bytes."""
