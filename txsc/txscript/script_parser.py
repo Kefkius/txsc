@@ -115,6 +115,21 @@ class ScriptParser(object):
 
         p[0] = ast.BinOp(left=p[1], op=op, right=p[3])
 
+    def p_expr_bitwise_op(self, p):
+        '''expr : expr AMPERSAND expr
+                | expr CARET expr
+                | expr PIPE expr
+        '''
+        op = None
+        if p[2] == '&':
+            op = ast.BitAnd()
+        elif p[2] == '^':
+            op = ast.BitXor()
+        elif p[2] == '|':
+            op = ast.BitOr()
+
+        p[0] = ast.BinOp(left=p[1], op=op, right=p[3])
+
     def p_expr_compare(self, p):
         '''expr : expr EQUALITY expr
                 | expr INEQUALITY expr
@@ -151,7 +166,6 @@ class ScriptParser(object):
 
     def p_expr_name(self, p):
         '''expr : NAME'''
-        if self.debug: print('expr : NAME')
         p[0] = ast.Name(id=p[1], ctx=ast.Load())
 
     def p_expr_group(self, p):
@@ -160,6 +174,5 @@ class ScriptParser(object):
 
     def p_expr_number(self, p):
         '''expr : NUMBER'''
-        if self.debug: print('expr : NUMBER %s' % p[1])
         p[0] = ast.Num(n=p[1])
 

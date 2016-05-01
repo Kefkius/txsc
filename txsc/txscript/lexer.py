@@ -6,18 +6,26 @@ implicit_hex = hexdigit + r'+'
 explicit_hex = r'(0x)' + implicit_hex
 
 tokens = ['NAME', 'NUMBER', 'HEXSTR',
+        'EQUALS',
+        'LPAREN', 'RPAREN',
+        'COMMA',
+        'SEMICOLON',
+
+        # Arithmetic operators.
         'PLUS', 'MINUS',
         'TIMES', 'DIVIDE',
         'MOD',
         'LSHIFT', 'RSHIFT',
-        'EQUALS',
+
+        # Bitwise operators.
+        'AMPERSAND', 'CARET', 'PIPE', 'TILDE',
+
+        # Comparison operators.
         'EQUALITY', 'INEQUALITY',
         'LESSTHAN', 'GREATERTHAN',
         'LESSTHANOREQUAL', 'GREATERTHANOREQUAL',
-        'LPAREN', 'RPAREN',
-        'COMMA', 'TILDE',
-        'SEMICOLON',
 
+        # Reserved words.
         'ASSUME',
         'VERIFY',
         'AND',
@@ -32,6 +40,7 @@ reserved_words = {
 }
 
 t_ignore = ' \t'
+
 t_PLUS = r'\+'
 t_MINUS = r'\-'
 t_TIMES = r'\*'
@@ -39,21 +48,29 @@ t_DIVIDE = r'\/'
 t_MOD = r'\%'
 t_LSHIFT = r'\<\<'
 t_RSHIFT = r'\>\>'
-t_EQUALS = r'\='
+
+t_AMPERSAND = r'\&'
+t_CARET = r'\^'
+t_PIPE = r'\|'
+t_TILDE = r'\~'
+
 t_EQUALITY = r'\=\='
 t_INEQUALITY = r'\!\='
 t_LESSTHAN = r'\<'
 t_GREATERTHAN = r'\>'
 t_LESSTHANOREQUAL = r'\<\='
 t_GREATERTHANOREQUAL = r'\>\='
+
+t_EQUALS = r'\='
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_COMMA = r'\,'
-t_TILDE = r'\~'
 t_SEMICOLON = r'\;'
 
 t_ASSUME = r'assume'
 t_VERIFY = r'verify'
+t_AND = r'and'
+t_OR = r'or'
 
 def t_NAME(t):
     r'[a-zA-Z][a-zA-Z0-9_]*'
