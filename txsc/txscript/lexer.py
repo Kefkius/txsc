@@ -30,6 +30,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'VERIFY',
         'AND',
         'OR',
+        'NOT',
 ]
 
 reserved_words = {
@@ -37,6 +38,7 @@ reserved_words = {
     'verify': 'VERIFY',
     'and': 'AND',
     'or': 'OR',
+    'not': 'NOT',
 }
 
 t_ignore = ' \t'

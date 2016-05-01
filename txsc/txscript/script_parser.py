@@ -75,12 +75,15 @@ class ScriptParser(object):
     def p_expr_unaryop(self, p):
         '''expr : MINUS expr %prec UNARYOP
                 | TILDE expr %prec UNARYOP
+                | NOT expr %prec UNARYOP
         '''
         op = None
         if p[1] == '-':
             op = ast.USub()
         elif p[1] == '~':
             op = ast.Invert()
+        elif p[1] == 'not':
+            op = ast.Not()
 
         p[0] = ast.UnaryOp(op=op, operand=p[2])
 

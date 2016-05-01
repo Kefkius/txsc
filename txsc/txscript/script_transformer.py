@@ -16,6 +16,7 @@ else:
 unary_ops = {
     'USub': 'OP_NEGATE',
     'Invert': 'OP_INVERT',
+    'Not': 'OP_NOT',
 }
 
 # Binary opcodes implemented as operations.
@@ -29,16 +30,13 @@ binary_ops = {
     'LShift': 'OP_LSHIFT',
     'RShift': 'OP_RSHIFT',
 
-
-    'And': 'OP_BOOLAND',
-    'Or': 'OP_BOOLOR',
-
-    # NUMEQUAL, NUMEQUALVERIFY, NUMNOTEQUAL
-
     # Bitwise operations.
     'BitAnd': 'OP_AND',
     'BitOr': 'OP_OR',
     'BitXor': 'OP_XOR',
+
+    'And': 'OP_BOOLAND',
+    'Or': 'OP_BOOLOR',
 
     # Comparisons.
     'Eq': 'OP_EQUAL',
@@ -53,17 +51,12 @@ binary_ops = {
 
 # Opcode implemented as a function call.
 OpFunc = namedtuple('OpFunc', ('name', 'nargs', 'op_name'))
-# TODO finish putting these in.
 op_functions = [
     # Unary operations.
     OpFunc('incr', 1, 'OP_1ADD'),
     OpFunc('decr', 1, 'OP_1SUB'),
-    # 2MUL, 2DIV
     OpFunc('abs', 1, 'OP_ABS'),
-    # OP_NOT? , OP_0NOTEQUAL
-
     OpFunc('size', 1, 'OP_SIZE'),
-
 
     # Binary operations.
     OpFunc('min', 2, 'OP_MIN'),
@@ -96,10 +89,6 @@ class ScriptTransformer(BaseTransformer):
     def __init__(self, symbol_table=None):
         super(ScriptTransformer, self).__init__()
         self.symbol_table = symbol_table
-
-    def is_script_op(self, node):
-        """Return whether node is of an intermediate type."""
-        return isinstance(node, types.ScriptOp)
 
     def get_op_name(self, node):
         name = node.__class__.__name__
@@ -171,19 +160,12 @@ class ScriptTransformer(BaseTransformer):
         return self.visit(ast.Str(''.join(node.elts)))
 
     def visit_Assert(self, node):
-        self.debug_print('visit_Assert')
-        if not self.is_script_op(node.test):
-            node.test = self.visit(node.test)
-
-        unary_op = types.VerifyOpCode(name='OP_VERIFY',
+        node.test = self.visit(node.test)
+        return types.VerifyOpCode(name='OP_VERIFY',
                 test=node.test)
 
-        return unary_op
-
     def visit_BoolOp(self, node):
-        for i in range(len(node.values)):
-            if not self.is_script_op(node.values[i]):
-                node.values[i] = self.visit(node.values[i])
+        node.values = map(self.visit, node.values)
 
         name = self.get_op_name(node.op)
         # Create nested boolean ops.
@@ -192,78 +174,47 @@ class ScriptTransformer(BaseTransformer):
         return op
 
     def visit_UnaryOp(self, node):
-        self.debug_print('visit_UnaryOp')
-        if not self.is_script_op(node.operand):
-            node.operand = self.visit(node.operand)
+        node.operand = self.visit(node.operand)
 
-        unary_op = node.op
-        if not isinstance(unary_op, types.UnaryOpCode):
-            unary_op = types.UnaryOpCode(name=self.get_op_name(node.op),
-                    operand=node.operand)
-
-        return unary_op
+        return types.UnaryOpCode(name=self.get_op_name(node.op),
+                operand=node.operand)
 
     def visit_BinOp(self, node):
-        self.debug_print('visit_BinOp')
-        if not self.is_script_op(node.left):
-            node.left = self.visit(node.left)
-        if not self.is_script_op(node.right):
-            node.right = self.visit(node.right)
+        node.left, node.right = map(self.visit, [node.left, node.right])
 
-        bin_op = node.op
-        if not isinstance(bin_op, types.BinOpCode):
-            bin_op = types.BinOpCode(name=self.get_op_name(node.op),
-                    left=node.left, right=node.right)
-
-        return bin_op
+        return types.BinOpCode(name=self.get_op_name(node.op),
+                left=node.left, right=node.right)
 
     def visit_Compare(self, node):
-        self.debug_print('visit_Compare')
-        if not self.is_script_op(node.left):
-            node.left = self.visit(node.left)
-        if not self.is_script_op(node.comparators[0]):
-            node.comparators[0] = self.visit(node.comparators[0])
+        node.left = self.visit(node.left)
+        node.comparators[0] = self.visit(node.comparators[0])
 
         # Assume one op and one comparator.
-        bin_op = node.ops[0]
-        if not isinstance(bin_op, types.BinOpCode):
-            bin_op = types.BinOpCode(name=self.get_op_name(node.ops[0]),
-                    left=node.left, right=node.comparators[0])
-
-        return bin_op
+        return types.BinOpCode(name=self.get_op_name(node.ops[0]),
+                left=node.left, right=node.comparators[0])
 
     def visit_Call(self, node):
         """Transform function calls into their corresponding OpCodes."""
-        self.debug_print('visit_Call')
-
         # Function name must be known.
         if node.func.id not in op_functions_dict:
             return node
 
         op_func = op_functions_dict[node.func.id]
         # Ensure args have been visited.
-        for arg in range(len(node.args)):
-            if not self.is_script_op(node.args[arg]):
-                node.args[arg] = self.visit(node.args[arg])
+        node.args = map(self.visit, node.args)
 
         # Unary opcode.
         if op_func.nargs == 1:
-            unary_op = types.UnaryOpCode(name = op_func.op_name,
+            return types.UnaryOpCode(name = op_func.op_name,
                     operand = node.args[0])
-
-            return unary_op
         # Binary opcode.
         elif op_func.nargs == 2:
-            bin_op = types.BinOpCode(name = op_func.op_name,
+            return types.BinOpCode(name = op_func.op_name,
                     left = node.args[0], right = node.args[1])
-
-            return bin_op
         # Variable arguments.
         elif op_func.nargs == -1:
-            op = types.VariableArgsOpCode(name = op_func.op_name,
+            return types.VariableArgsOpCode(name = op_func.op_name,
                     operands = list(node.args))
-
-            return op
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
         if hasattr(node, 'dump') and not isinstance(node, types.Script):
