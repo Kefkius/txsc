@@ -5,15 +5,17 @@ from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 import txsc.ir.structural_nodes as types
 
+def get_const(op):
+    """Get whether op represents a constant value."""
+    return isinstance(op, types.Push)
+
+def get_all_const(*ops):
+    """Get whether ops all represent constant values."""
+    return all(map(get_const, ops))
+
 
 class StructuralOptimizer(BaseTransformer):
     """Performs optimizations on the structural IR."""
-    @staticmethod
-    def instruction_to_int(op):
-        """Get the integer value that op (a nullary opcode) pushes."""
-        if isinstance(op, types.Push):
-            return int(op)
-
     def __init__(self):
         self.evaluator = ConstEvaluator()
 
@@ -45,20 +47,45 @@ class StructuralOptimizer(BaseTransformer):
 
         return node
 
-    def visit_BinOpCode(self, node):
-        node.left = self.visit(node.left)
-        node.right = self.visit(node.right)
-
-        # Return None if both can't be interpreted as integers.
-        left, right = map(self.instruction_to_int, [node.left, node.right])
-        if any(i is None for i in [left, right]):
+    def visit_UnaryOpCode(self, node):
+        node.operand = self.visit(node.operand)
+        # Return the node if its operand isn't a constant value.
+        if not get_const(node.operand):
             return node
 
-        result = self.evaluator.eval_op(node.name, left, right)
-        if result is not None:
-            return types.Push(formats.strip_hex(hex(result)))
+        return self.evaluator.eval_op(node.name, node.operand) or node
+
+    def visit_BinOpCode(self, node):
+        node.left, node.right = map(self.visit, [node.left, node.right])
+
+        # Return the node if both operands aren't constant values.
+        if not get_all_const(node.left, node.right):
+            return node
+
+        result = self.evaluator.eval_op(node.name, node.left, node.right)
+        return result or node
+
+    def visit_VariableArgsOpcode(self, node):
+        node.operands = map(self.visit, node.operands)
+        # Return the node if not all operands are constant values.
+        if not get_all_const(*node.operands):
+            return node
+
+        result = self.evaluator.eval_op(node.name, *node.operands)
+        return result or node
+
+    def visit_VerifyOpCode(self, node):
+        node.test = self.visit(node.test)
         return node
 
+def params(cls):
+    """Causes the arguments to a method to be converted to cls."""
+    def method_decorator(method):
+        @wraps(method)
+        def wrapper(self, *args):
+            return method(self, *map(cls, args))
+        return wrapper
+    return method_decorator
 
 class ConstEvaluator(object):
     """Evaluates expressions containing only constant values."""
@@ -67,16 +94,45 @@ class ConstEvaluator(object):
         method = getattr(self, op_name, None)
         if method is None:
             return
-        return method(*args)
+        result = method(*args)
+        # Convert result to a Push instance.
+        if isinstance(result, int):
+            result = types.Push(formats.format_hex(hex(result)))
+        elif isinstance(result, str):
+            if len(result) % 2:
+                result = '0' + result
+            result = types.Push(formats.format_hex(result))
+        return result
 
+    @params(int)
     def OP_ADD(self, left, right):
         return left + right
 
+    @params(int)
     def OP_SUB(self, left, right):
         return left - right
 
+    @params(int)
     def OP_MUL(self, left, right):
         return left * right
 
+    @params(int)
     def OP_DIV(self, left, right):
         return left / right
+
+    @params(int)
+    def OP_MOD(self, left, right):
+        return left % right
+
+    @params(int)
+    def OP_LSHIFT(self, left, right):
+        return left << right
+
+    @params(int)
+    def OP_RSHIFT(self, left, right):
+        return left >> right
+
+
+    @params(str)
+    def OP_SIZE(self, s):
+        return len(s) / 2

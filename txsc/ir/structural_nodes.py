@@ -31,6 +31,9 @@ class Push(ScriptOp):
     def __int__(self):
         return int(self.data, 16)
 
+    def __str__(self):
+        return self.data
+
     def dump(self, annotate_fields=False):
         return 'Push(%s0x%s)' % ('data=' if annotate_fields else '', self.data)
 
