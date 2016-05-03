@@ -2,6 +2,8 @@ import ast
 from collections import namedtuple
 import sys
 
+import hexs
+
 from txsc.ir import formats
 import txsc.ir.structural_nodes as types
 from txsc.transformer import BaseTransformer
@@ -153,7 +155,7 @@ class ScriptTransformer(BaseTransformer):
         return self.visit(ast.Str(hex(node.n)))
 
     def visit_Str(self, node):
-        return types.Push(formats.format_hex(node.s))
+        return types.Push(hexs.format_hex(node.s))
 
     def visit_List(self, node):
         """Transform array of bytes to bytes."""

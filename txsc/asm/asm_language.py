@@ -1,5 +1,7 @@
 import ast
 
+import hexs
+
 from txsc.transformer import SourceVisitor, TargetVisitor
 from txsc.ir import formats
 import txsc.ir.linear_nodes as types
@@ -16,16 +18,9 @@ def format_hex(s):
     Ensure the string begins with '0x' and has an even
     number of characters.
     """
-    # Make sure s is hex.
-    try:
-        _ = int(s, 16)
-    except ValueError:
+    if not hexs.is_hex(s):
         return
-    if s.startswith('0x'):
-        s = s[2:]
-    if len(s) % 2 == 1:
-        s = '0' + s
-    return '0x' + s
+    return '0x' + hexs.format_hex(s)
 
 class ASMSourceVisitor(SourceVisitor):
     """Transforms ASM into the linear representation."""

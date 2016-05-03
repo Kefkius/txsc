@@ -1,6 +1,8 @@
 import ast
 from functools import wraps
 
+import hexs
+
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 import txsc.ir.structural_nodes as types
@@ -97,11 +99,11 @@ class ConstEvaluator(object):
         result = method(*args)
         # Convert result to a Push instance.
         if isinstance(result, int):
-            result = types.Push(formats.format_hex(hex(result)))
+            result = types.Push(hexs.hexs(result))
         elif isinstance(result, str):
             if len(result) % 2:
                 result = '0' + result
-            result = types.Push(formats.format_hex(result))
+            result = types.Push(hexs.format_hex(result))
         return result
 
     @params(int)
