@@ -31,21 +31,21 @@ Test = namedtuple('Test', ('expected', 'src'))
 class CompileTxScriptTest(BaseCompilerTest):
 
     def test_single_instruction(self):
-        for src in ['5', '0x5', '0x05']:
+        for src in ['5;', '0x5;', '0x05;']:
             self.assertEqual('5', self._compile(src))
 
     def test_multi_line(self):
         for test in [
-            Test('2 3 ADD 4 5 ADD', '2 + 3; 4 + 5'),
-            Test('2 3 ADD 4 5 ADD', ['2 + 3;', '4 + 5']),
-            Test('2 3 ADD 4 5 ADD 1', ['2 + 3;', '4 + 5;', '1']),
+            Test('2 3 ADD 4 5 ADD', '2 + 3; 4 + 5;'),
+            Test('2 3 ADD 4 5 ADD', ['2 + 3;', '4 + 5;']),
+            Test('2 3 ADD 4 5 ADD 1', ['2 + 3;', '4 + 5;', '1;']),
         ]:
             self._test(test)
 
     def test_single_assumption(self):
         for test in [
-            Test('5 ADD', ['assume a;', 'a + 5']),
-            Test('NEGATE', ['assume a;', '-a']),
+            Test('5 ADD', ['assume a;', 'a + 5;']),
+            Test('NEGATE', ['assume a;', '-a;']),
         ]:
             self._test(test)
 

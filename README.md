@@ -23,16 +23,16 @@ txsc "5255935788" -s btc -t asm
 Compile `txscript` to `BTC` and `ASM`:
 
 ```
-$ txsc "2 + 5 == 7"
+$ txsc "2 + 5 == 7;"
 5255935787
-$ txsc "2 + 5 == 7" -t asm
+$ txsc "2 + 5 == 7;" -t asm
 2 5 ADD 7 EQUAL
 ```
 
 With `-v`, optimizations will be shown:
 
 ```
-$ txsc "verify 2 + 5 == 7" -t asm -v
+$ txsc "verify 2 + 5 == 7;" -t asm -v
 Linear Intermediate Representation:
   ['OP_2', 'OP_5', 'OP_ADD', 'OP_7', 'OP_EQUAL', 'OP_VERIFY']
 

@@ -22,22 +22,19 @@ class ScriptParser(object):
         raise SyntaxError('Syntax error: %s' % p)
 
     def p_module(self, p):
-        '''module : expr
-                  | statement
-                  | module SEMICOLON expr
-                  | module SEMICOLON statement
-                  | module SEMICOLON
+        '''module : statement
+                  | module statement
         '''
         if isinstance(p[1], ast.Module):
             p[0] = p[1]
         else:
             p[0] = ast.Module(body=[p[1]])
 
-        if len(p) > 3:
-            p[0].body.append(p[3])
+        if len(p) == 3:
+            p[0].body.append(p[2])
 
     def p_statement_assign(self, p):
-        '''statement : NAME EQUALS expr'''
+        '''statement : NAME EQUALS expr SEMICOLON'''
         p[0] = ast.Assign(targets=[
             ast.Name(id=p[1], ctx=ast.Store()),
         ], value=p[3])
@@ -179,3 +176,6 @@ class ScriptParser(object):
         '''expr : NUMBER'''
         p[0] = ast.Num(n=p[1])
 
+    def p_statement_expr(self, p):
+        '''statement : expr SEMICOLON'''
+        p[0] = p[1]
