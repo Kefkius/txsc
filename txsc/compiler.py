@@ -33,6 +33,16 @@ class VAction(argparse.Action):
             values=values.count('v')+1
         setattr(args, self.dest, values)
 
+class OAction(argparse.Action):
+    def __call__(self, parser, args, values, option_string=None):
+        if values==None:
+            values='1'
+        try:
+            values=int(values)
+        except ValueError:
+            values=values.count('O')+1
+        setattr(args, self.dest, values)
+
 def main():
     compiler = ScriptCompiler()
     source_choices = sorted(compiler.input_languages.keys())
@@ -42,7 +52,7 @@ def main():
     argparser.add_argument('source', metavar='SOURCE', nargs='?', type=str, help='Source to compile.')
     argparser.add_argument('-l', '--list', dest='list_langs', action='store_true', default=False, help='List available languages and exit.')
     argparser.add_argument('-o', '--output', dest='output_file', metavar='OUTPUT_FILE', type=str, help='Output to a file.')
-    argparser.add_argument('--optimize', dest='optimization', metavar='OPTIMIZATION_LEVEL', type=int, default=OptimizationLevel.max_optimization, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
+    argparser.add_argument('-O', '--optimize', nargs='?', action=OAction, dest='optimization', metavar='OPTIMIZATION_LEVEL', default=2, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
 
     argparser.add_argument('-s', '--source', metavar='SOURCE_LANGUAGE', dest='source_lang', choices=source_choices, default='txscript', help='Source language.')
     argparser.add_argument('-t', '--target', metavar='TARGET_LANGUAGE', dest='target_lang', choices=target_choices, default='btc', help='Target language.')

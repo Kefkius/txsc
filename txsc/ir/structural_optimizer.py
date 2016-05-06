@@ -39,7 +39,8 @@ class StructuralOptimizer(BaseTransformer):
     def __init__(self):
         self.evaluator = ConstEvaluator()
 
-    def optimize(self, instructions, symbol_table):
+    def optimize(self, instructions, symbol_table, evaluate_expressions=True):
+        self.evaluator.enabled = evaluate_expressions
         script = instructions.script
         self.symbol_table = symbol_table
         new = map(self.visit, script.statements)
@@ -70,13 +71,17 @@ class StructuralOptimizer(BaseTransformer):
                 return False
             return any(is_assumption(i) for i in [n.left, n.right])
 
+        def should_commute(n):
+            return is_assumption(n) or has_assumption(n)
+
+        if should_commute(node.left) or not should_commute(node.right):
+            return
+
         if self.is_commutative(node):
-            if get_const(node.left) and (is_assumption(node.right) or has_assumption(node.right)):
-                node.left, node.right = node.right, node.left
+            node.left, node.right = node.right, node.left
         elif self.has_logical_equivalent(node):
-            if get_const(node.left) and (is_assumption(node.right) or has_assumption(node.right)):
-                node.name = logical_equivalents[node.name]
-                node.left, node.right = node.right, node.left
+            node.name = logical_equivalents[node.name]
+            node.left, node.right = node.right, node.left
 
     def visit(self, node):
         method = getattr(self, 'visit_%s' % node.__class__.__name__, None)
@@ -144,8 +149,14 @@ def params(cls):
 
 class ConstEvaluator(object):
     """Evaluates expressions containing only constant values."""
+    def __init__(self):
+        self.enabled = True
+
     def eval_op(self, op_name, *args):
         """Evaluate an opcode."""
+        if not self.enabled:
+            return
+
         method = getattr(self, op_name, None)
         if method is None:
             return

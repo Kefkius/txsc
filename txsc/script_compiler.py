@@ -27,7 +27,7 @@ class DirectiveError(Exception):
 
 class OptimizationLevel(object):
     """Level of optimization."""
-    max_optimization = 2
+    max_optimization = 3
     def __init__(self, value):
         self.set_value(value)
 
@@ -37,6 +37,8 @@ class OptimizationLevel(object):
         self.optimize_linear = value > 0
         # Whether to optimize the structural IR.
         self.optimize_structural = value > 1
+        # Whether to evaluate constant expressions in the structural IR.
+        self.evaluate_structural = value > 2
 
 class Verbosity(object):
     """Options that depend on verbosity."""
@@ -137,7 +139,7 @@ class ScriptCompiler(object):
                 self.outputs['Structural Intermediate Representation'] = instructions.dump()
             # Optimize structural IR.
             if self.optimization.optimize_structural:
-                StructuralOptimizer().optimize(instructions, self.symbol_table)
+                StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural)
                 if self.verbosity.show_structural_ir:
                     self.outputs['Optimized Structural Representation'] = instructions.dump()
             instructions = StructuralVisitor().transform(instructions.script, self.symbol_table)

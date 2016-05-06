@@ -88,6 +88,8 @@ class CompileTxScriptOptimizationsTest(BaseCompilerTest):
     @classmethod
     def _options(cls):
         namespace = super(CompileTxScriptOptimizationsTest, cls)._options()
+        # Optimization is not set to 3 because we don't want the constant
+        # expressions to be evaluated.
         namespace.optimization = 2
         return namespace
 
@@ -120,5 +122,11 @@ class CompileTxScriptOptimizationsTest(BaseCompilerTest):
             EqualTest('5 XOR', 'assume a; a ^ 5;', 'assume a; 5 ^ a;'),
             EqualTest('5 EQUAL', 'assume a; a == 5;', 'assume a; 5 == a;'),
             EqualTest('5 EQUALVERIFY', 'assume a; verify a == 5;', 'assume a; verify 5 == a;'),
+        ]:
+            self._test(test)
+
+    def test_expressions_with_commutative_operations(self):
+        for test in [
+            EqualTest('10 LESSTHAN 2 5 LESSTHAN BOOLAND', 'assume a; 2 < 5 and a < 10;', 'assume a; a < 10 and 2 < 5;'),
         ]:
             self._test(test)
