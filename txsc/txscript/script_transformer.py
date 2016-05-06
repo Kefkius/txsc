@@ -204,6 +204,9 @@ class ScriptTransformer(BaseTransformer):
         op_func = op_functions_dict[node.func.id]
         # Ensure args have been visited.
         node.args = map(self.visit, node.args)
+        # Ensure the number of args is correct.
+        if op_func.nargs != -1 and len(node.args) != op_func.nargs:
+            raise SyntaxError('%s takes %d arguments (%d were given)' % (op_func.name, op_func.nargs, len(node.args)))
 
         # Unary opcode.
         if op_func.nargs == 1:
@@ -214,7 +217,7 @@ class ScriptTransformer(BaseTransformer):
             return types.BinOpCode(name = op_func.op_name,
                     left = node.args[0], right = node.args[1])
         # Variable arguments.
-        elif op_func.nargs == -1:
+        else:
             return types.VariableArgsOpCode(name = op_func.op_name,
                     operands = list(node.args))
 

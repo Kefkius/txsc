@@ -67,7 +67,7 @@ class StructuralOptimizer(BaseTransformer):
         result = self.evaluator.eval_op(node.name, node.left, node.right)
         return result or node
 
-    def visit_VariableArgsOpcode(self, node):
+    def visit_VariableArgsOpCode(self, node):
         node.operands = map(self.visit, node.operands)
         # Return the node if not all operands are constant values.
         if not get_all_const(*node.operands):
@@ -107,6 +107,14 @@ class ConstEvaluator(object):
         return result
 
     @params(int)
+    def OP_ABS(self, value):
+        return abs(value)
+
+    @params(int)
+    def OP_NEGATE(self, value):
+        return -value
+
+    @params(int)
     def OP_ADD(self, left, right):
         return left + right
 
@@ -134,7 +142,55 @@ class ConstEvaluator(object):
     def OP_RSHIFT(self, left, right):
         return left >> right
 
+    @params(int)
+    def OP_LESSTHAN(self, left, right):
+        return left < right
+
+    @params(int)
+    def OP_LESSTHANOREQUAL(self, left, right):
+        return left <= right
+
+    @params(int)
+    def OP_GREATERTHAN(self, left, right):
+        return left > right
+
+    @params(int)
+    def OP_GREATERTHANOREQUAL(self, left, right):
+        return left >= right
+
+    @params(int)
+    def OP_MIN(self, left, right):
+        return min(left, right)
+
+    @params(int)
+    def OP_MAX(self, left, right):
+        return max(left, right)
+
+    @params(int)
+    def OP_WITHIN(self, value, min_, max_):
+        return min_ <= value and value < max_
+
+    @params(int)
+    def OP_NUMEQUAL(self, left, right):
+        return left == right
+
+    @params(int)
+    def OP_NUMNOTEQUAL(self, left, right):
+        return left != right
+
+    @params(int)
+    def OP_BOOLAND(self, left, right):
+        return left != 0 and right != 0
+
+    @params(int)
+    def OP_BOOLOR(self, left, right):
+        return left != 0 or right != 0
+
 
     @params(str)
     def OP_SIZE(self, s):
         return len(s) / 2
+
+    @params(str)
+    def OP_EQUAL(self, left, right):
+        return left == right

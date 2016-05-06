@@ -29,7 +29,7 @@ class Push(ScriptOp):
     _fields = ('data',)
 
     def __int__(self):
-        return int(self.data, 16)
+        return int(self.data, 16) if self.data else 0
 
     def __str__(self):
         return self.data
@@ -43,16 +43,16 @@ class OpCode(ScriptOp):
 
 class VerifyOpCode(OpCode):
     """An opcode that consumes a value and fails if it is not truthy."""
-    _fields = ('name', 'test')
+    _fields = OpCode._fields + ('test',)
 
 class UnaryOpCode(OpCode):
     """An opcode that performs a unary operation."""
-    _fields = ('name', 'operand')
+    _fields = OpCode._fields + ('operand',)
 
 class BinOpCode(OpCode):
     """An opcode that performs a binary operation."""
-    _fields = ('name', 'left', 'right',)
+    _fields = OpCode._fields + ('left', 'right',)
 
 class VariableArgsOpCode(OpCode):
     """An opcode that takes a variable number of arguments."""
-    _fields = ('name', 'operands')
+    _fields = OpCode._fields + ('operands',)
