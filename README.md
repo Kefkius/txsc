@@ -61,6 +61,8 @@ See the package `txsc.txscript` for its source. It works by parsing Python code 
 structural intermediate representation, then transforming that into the linear intermediate representation
 that other languages can use.
 
+See the file `txscript` in the `doc` directory for more information about TxScript.
+
 ## Examples
 
 See the *examples* folder for scripts that `txsc` can be called with directly.
