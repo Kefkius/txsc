@@ -153,6 +153,7 @@ NegativeOne = _opcode('NegativeOne', 1, 'OP_1NEGATE')
 
 # TODO: Conditionals.
 Verify = _unary_opcode('Verify', -1, 'OP_VERIFY', verifier=True)
+Return = _opcode('Return', 0, 'OP_RETURN')
 
 
 # Stack.

@@ -27,6 +27,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
         # Reserved words.
         'ASSUME',
+        'RETURN',
         'VERIFY',
         'AND',
         'OR',
@@ -35,6 +36,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
 reserved_words = {
     'assume': 'ASSUME',
+    'return': 'RETURN',
     'verify': 'VERIFY',
     'and': 'AND',
     'or': 'OR',
@@ -70,6 +72,7 @@ t_COMMA = r'\,'
 t_SEMICOLON = r'\;'
 
 t_ASSUME = r'assume'
+t_RETURN = r'return'
 t_VERIFY = r'verify'
 t_AND = r'and'
 t_OR = r'or'

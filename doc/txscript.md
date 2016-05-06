@@ -52,6 +52,7 @@ The following keywords have meaning in txscript scripts.
 | Keyword   | Meaning       |
 | --------- | ------------- |
 | assume    | Declare assumed stack values by name. |
+| return    | Marks the script as invalid. |
 | verify    | Fail if the expression that follows is not true. |
 | and       | Logical AND operator. |
 | or        | Logical OR operator. |
@@ -70,6 +71,17 @@ assume sig, pubkey;
 
 You can then use the words `sig` and `pubkey` in your script to refer to these expected stack items. Assumption statements
 are internally treated as assignments.
+
+### Return
+
+The `return` keyword marks the script as invalid. This makes a given transaction output provably unspendable. It is often
+used to add arbitrary data to a transaction.
+
+```
+return;
+myArbitraryData = '1122';
+myArbitraryData;
+```
 
 ### Verify
 

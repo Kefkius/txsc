@@ -56,6 +56,10 @@ class ScriptParser(object):
             raise Exception('Assumptions can only be assigned to names.')
         p[0] = ast.Assign(targets=[ast.Name(id='_stack', ctx=ast.Store())], value=p[2])
 
+    def p_return(self, p):
+        '''expr : RETURN'''
+        p[0] = ast.Return(p[1])
+
     def p_function_call(self, p):
         '''expr : NAME LPAREN args RPAREN'''
         p[0] = ast.Call(func=ast.Name(id=p[1], ctx=ast.Load()),

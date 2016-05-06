@@ -166,6 +166,9 @@ class ScriptTransformer(BaseTransformer):
         return types.VerifyOpCode(name='OP_VERIFY',
                 test=node.test)
 
+    def visit_Return(self, node):
+        return types.OpCode(name='OP_RETURN')
+
     def visit_BoolOp(self, node):
         node.values = map(self.visit, node.values)
 
