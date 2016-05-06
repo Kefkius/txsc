@@ -87,6 +87,15 @@ class LInstructions(Instructions, list):
             else:
                 idx += 1
 
+    def find_occurrences(self, op):
+        """Return all the indices that op occurs at."""
+        occurrences = []
+        template = [op]
+        for i in range(len(self)):
+            if self.matches_template(template, i):
+                occurrences.append(i)
+        return occurrences
+
 class SInstructions(Instructions):
     """Model for structural instructions."""
     ir_type = STRUCTURAL

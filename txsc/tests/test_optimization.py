@@ -90,6 +90,13 @@ class OptimizationTest(BaseOptimizationTest):
                                types.Five(), types.Five(), types.Equal(), types.Verify()])
         self._do_test('OP_5 OP_5 OP_EQUALVERIFY OP_5 OP_5 OP_EQUALVERIFY', script)
 
+    def test_promote_return(self):
+        for script in [
+            LInstructions([types.Five(), types.Return()]),
+            LInstructions([types.Return(), types.Five(), types.Return()]),
+        ]:
+            self._do_test('OP_RETURN OP_5', script)
+
 class InlineTest(BaseOptimizationTest):
     def test_implicit_assume(self):
         script = LInstructions([types.Assumption('testItem', 0), types.Five(), types.Add()])

@@ -141,6 +141,16 @@ def remove_trailing_verifications(instructions):
     while len(instructions) and isinstance(instructions[-1], types.Verify):
         instructions.pop(-1)
 
+@peephole
+def promote_return(instructions):
+    """Place any OP_RETURN occurrence at the beginning of the script."""
+    # Get the indices of all OP_RETURN occurrences.
+    occurrences = instructions.find_occurrences(types.Return())
+    if not occurrences or occurrences == [0]:
+        return
+    map(instructions.pop, reversed(occurrences))
+    instructions.insert(0, types.Return())
+
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
     MAX_PASSES = 5
