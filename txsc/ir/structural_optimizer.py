@@ -15,6 +15,24 @@ def get_all_const(*ops):
     """Get whether ops all represent constant values."""
     return all(map(get_const, ops))
 
+# Operations that are commutative.
+# StructuralOptimizer will attempt to change the order
+# of operands in these operations so that it requires less
+# stack manipulation to execute them.
+commutative_operations = (
+    'OP_ADD', 'OP_MUL', 'OP_BOOLAND', 'OP_BOOLOR',
+    'OP_NUMEQUAL', 'OP_NUMEQUALVERIFY', 'OP_NUMNOTEQUAL',
+    'OP_MIN', 'OP_MAX',
+    'OP_AND', 'OP_OR', 'OP_XOR', 'OP_EQUAL', 'OP_EQUALVERIFY',
+)
+# Logically equivalent operations.
+# StructuralOptimizer will attempt to change the operators and
+# the order of operands in these operations so that it requires less
+# stack manipulation to execute them.
+logical_equivalents = {
+    'OP_LESSTHAN': 'OP_GREATERTHAN',
+    'OP_GREATERTHAN': 'OP_LESSTHAN',
+}
 
 class StructuralOptimizer(BaseTransformer):
     """Performs optimizations on the structural IR."""
@@ -26,6 +44,39 @@ class StructuralOptimizer(BaseTransformer):
         self.symbol_table = symbol_table
         new = map(self.visit, script.statements)
         script.statements = filter(lambda i: i is not None, new)
+
+    def is_commutative(self, node):
+        """Get whether node represents a commutative operation."""
+        return node.name in commutative_operations
+
+    def has_logical_equivalent(self, node):
+        """Get whether node represents an operation with a logical equivalent."""
+        return node.name in logical_equivalents
+
+    def commute_operands(self, node):
+        """Attempt to reorder the operands of node."""
+        def is_assumption(n):
+            """Return whether a node is an assumption."""
+            if not isinstance(n, types.Symbol):
+                return False
+            symbol = self.symbol_table.lookup(n.name)
+            if symbol and symbol.type_ == 'stack_item':
+                return True
+            return False
+
+        def has_assumption(n):
+            """Return whether a BinOpCode contains an assumption."""
+            if not isinstance(n, types.BinOpCode):
+                return False
+            return any(is_assumption(i) for i in [n.left, n.right])
+
+        if self.is_commutative(node):
+            if get_const(node.left) and (is_assumption(node.right) or has_assumption(node.right)):
+                node.left, node.right = node.right, node.left
+        elif self.has_logical_equivalent(node):
+            if get_const(node.left) and (is_assumption(node.right) or has_assumption(node.right)):
+                node.name = logical_equivalents[node.name]
+                node.left, node.right = node.right, node.left
 
     def visit(self, node):
         method = getattr(self, 'visit_%s' % node.__class__.__name__, None)
@@ -60,6 +111,8 @@ class StructuralOptimizer(BaseTransformer):
     def visit_BinOpCode(self, node):
         node.left, node.right = map(self.visit, [node.left, node.right])
 
+        # Optimize order if commutative.
+        self.commute_operands(node)
         # Return the node if both operands aren't constant values.
         if not get_all_const(node.left, node.right):
             return node
