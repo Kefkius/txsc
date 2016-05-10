@@ -7,7 +7,7 @@ in that nearly every language construct changes the state of the stack.
 
 TxScript source code is comprised of one or more statements. Statements in this sense also
 encompass expressions.
-Every statement must end with a semicolon (`;`).
+Every statement must end with a semicolon (`;`). Whitespace is ignored.
 
 ### Comments
 
@@ -43,6 +43,17 @@ There are built-in functions for opcodes. They are named using camelCase convent
 ```
 myVar = 2 + 5;
 verify min(myVar, 10) == myVar;
+```
+
+### Inner Scripts
+
+TxScript supports "inner scripts," which are scripts within a script. The most relevant example is in Pay-To-Script-Hash
+redeem scripts, which are serialized scripts that are executed during P2SH spending.
+
+Any statements within braces are treated as an inner script.
+
+```
+{ 2 + 5; 3 + 6; }
 ```
 
 ## Keywords

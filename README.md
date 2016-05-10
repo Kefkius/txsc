@@ -56,10 +56,9 @@ their size.
 
 ### TxScript
 
-`txsc` includes a language used to construct transaction scripts. It's essentially a subset of Python.
-See the package `txsc.txscript` for its source. It works by parsing Python code and generating a
-structural intermediate representation, then transforming that into the linear intermediate representation
-that other languages can use.
+`txsc` includes a language used to construct transaction scripts. It's based on Python.
+It works by parsing code and generating a structural intermediate representation,
+then transforming that into the linear intermediate representation that other languages can use.
 
 See the file `txscript` in the `doc` directory for more information about TxScript.
 
