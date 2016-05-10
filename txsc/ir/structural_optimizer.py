@@ -175,6 +175,14 @@ class ConstEvaluator(object):
         return abs(value)
 
     @params(int)
+    def OP_NOT(self, value):
+        return int(value == 0)
+
+    @params(int)
+    def OP_0NOTEQUAL(self, value):
+        return int(value != 0)
+
+    @params(int)
     def OP_NEGATE(self, value):
         return -value
 

@@ -42,7 +42,6 @@ binary_ops = {
 
     # Comparisons.
     'Eq': 'OP_EQUAL',
-    'NotEq': 'OP_EQUAL OP_NOT',
 
     'Lt': 'OP_LESSTHAN',
     'Gt': 'OP_GREATERTHAN',
@@ -193,6 +192,12 @@ class ScriptTransformer(BaseTransformer):
     def visit_Compare(self, node):
         node.left = self.visit(node.left)
         node.comparators[0] = self.visit(node.comparators[0])
+
+        # Special case for NotEq (!=).
+        if node.ops[0].__class__.__name__ == 'NotEq':
+            binop = types.BinOpCode(name='OP_EQUAL',
+                    left=node.left, right=node.comparators[0])
+            return types.UnaryOpCode(name='OP_NOT', operand=binop)
 
         # Assume one op and one comparator.
         return types.BinOpCode(name=self.get_op_name(node.ops[0]),
