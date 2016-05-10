@@ -30,35 +30,35 @@ class StructuralVisitor(SourceVisitor):
             self.visit(symbol.value)
 
     def visit_Push(self, node):
-        try:
-            smallint = self.get_small_int_class(int(node))
-            self.add_instruction(smallint)
-        except TypeError:
+        smallint = types.small_int_opcode(int(node))
+        if smallint:
+            self.add_instruction(smallint())
+        else:
             self.add_instruction(types.Push(formats.hex_to_bytearray(node.data)))
 
     def visit_OpCode(self, node):
-        op = self.get_opcode_class(node.name)
+        op = types.opcode_by_name(node.name)()
         self.add_instruction(op)
 
     def visit_VerifyOpCode(self, node):
         self.visit(node.test)
-        op = self.get_opcode_class(node.name)
+        op = types.opcode_by_name(node.name)()
         self.add_instruction(op)
 
     def visit_UnaryOpCode(self, node):
         self.visit(node.operand)
-        op = self.get_opcode_class(node.name)
+        op = types.opcode_by_name(node.name)()
         self.add_instruction(op)
 
     def visit_BinOpCode(self, node):
         self.visit(node.left)
         self.visit(node.right)
-        op = self.get_opcode_class(node.name)
+        op = types.opcode_by_name(node.name)()
         self.add_instruction(op)
 
     def visit_VariableArgsOpCode(self, node):
         for arg in node.operands:
             self.visit(arg)
-        op = self.get_opcode_class(node.name)
+        op = types.opcode_by_name(node.name)()
         self.add_instruction(op)
 

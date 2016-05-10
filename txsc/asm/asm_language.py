@@ -44,10 +44,9 @@ class ASMSourceVisitor(SourceVisitor):
             self.add_instruction(types.Push(data=push))
         else:
             try:
-                smallint = int(value)
-                opcode = self.get_small_int_class(smallint)
+                opcode = types.small_int_opcode(int(value))()
             except (TypeError, ValueError):
-                opcode = self.get_opcode_class('OP_%s' % value)
+                opcode = types.opcode_by_name('OP_%s' % value)()
             self.add_instruction(opcode)
 
 class ASMTargetVisitor(TargetVisitor):

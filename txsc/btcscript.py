@@ -26,9 +26,9 @@ class BtcScriptSourceVisitor(SourceVisitor):
             op = None
             s = str(value)
             if s.startswith('OP_'):
-                op = self.get_opcode_class(s)
+                op = types.opcode_by_name(s)()
             elif isinstance(value, int):
-                op = self.get_small_int_class(value)
+                op = types.small_int_opcode(value)()
             else:
                 op = types.Push(data=value)
 

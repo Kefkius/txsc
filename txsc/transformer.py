@@ -59,18 +59,6 @@ class SourceVisitor(BaseTransformer):
         """Visit source and generate instructions."""
         return self.instructions
 
-    def get_opcode_class(self, name):
-        """Get the linear node opcode type for name."""
-        if self.ir_type != LINEAR:
-            raise Exception('Visitor must generate linear IR instructions to use this method')
-        return types.opcode_by_name(name)()
-
-    def get_small_int_class(self, value):
-        """Get the linear node small int opcode type for value."""
-        if self.ir_type != LINEAR:
-            raise Exception('Visitor must generate linear IR instructions to use this method')
-        return self.get_opcode_class('OP_%d'%value)
-
 class TargetVisitor(BaseTransformer):
     """Visitor that operates on the linear intermediate representation."""
     def process_instruction(self, instruction):

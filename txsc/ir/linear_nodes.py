@@ -269,6 +269,10 @@ def opcode_by_name(name):
     """Get an opcode class by name."""
     return opcode_classes.get(name)
 
+def small_int_opcode(value):
+    """Get a small int opcode by the value it pushes."""
+    return opcode_by_name('OP_%d' % value)
+
 def iter_opcode_classes():
     for cls in opcode_classes.values():
         yield cls
