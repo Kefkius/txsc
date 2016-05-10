@@ -8,6 +8,7 @@ import txsc.ir.linear_nodes as types
 from txsc.language import Language
 
 from txsc.asm import ASMParser
+from txsc.btcscript import BtcScriptTargetVisitor
 
 def get_lang():
     return ASMLanguage()
@@ -49,11 +50,14 @@ class ASMSourceVisitor(SourceVisitor):
                 opcode = types.opcode_by_name('OP_%s' % value)()
             self.add_instruction(opcode)
 
-class ASMTargetVisitor(TargetVisitor):
+class ASMTargetVisitor(BtcScriptTargetVisitor):
     """Transforms the linear representation into ASM."""
     def __init__(self, *args, **kwargs):
         super(ASMTargetVisitor, self).__init__(*args, **kwargs)
         self.values = []
+        # If we're transforming an InnerScript, we use BtcScriptTargetVisitor
+        # to get the actual values of opcodes.
+        self.visiting_innerscript = False
 
     def process_instruction(self, instruction):
         result = self.visit(instruction)
@@ -65,6 +69,13 @@ class ASMTargetVisitor(TargetVisitor):
     def output(self):
         return ' '.join(self.values)
 
+    def visit_InnerScript(self, node):
+        """Use BtcScriptTargetVisitor to transform node."""
+        self.visiting_innerscript = True
+        value = super(ASMTargetVisitor, self).visit_InnerScript(node)
+        self.visiting_innerscript = False
+        return value
+
     def visit_Push(self, node):
         length = len(node.data)
         asm = []
@@ -73,9 +84,13 @@ class ASMTargetVisitor(TargetVisitor):
         return asm
 
     def generic_visit_OpCode(self, node):
+        if self.visiting_innerscript:
+            return super(ASMTargetVisitor, self).generic_visit_OpCode(node)
         return node.name[3:]
 
     def generic_visit_SmallIntOpCode(self, node):
+        if self.visiting_innerscript:
+            return super(ASMTargetVisitor, self).generic_visit_SmallIntOpCode(node)
         return node.name[3:]
 
 

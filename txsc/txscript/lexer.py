@@ -10,6 +10,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'LPAREN', 'RPAREN',
         'COMMA',
         'SEMICOLON',
+        'LBRACE', 'RBRACE',
 
         # Arithmetic operators.
         'PLUS', 'MINUS',
@@ -70,6 +71,8 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_COMMA = r'\,'
 t_SEMICOLON = r'\;'
+t_LBRACE = r'\{'
+t_RBRACE = r'\}'
 
 t_ASSUME = r'assume'
 t_RETURN = r'return'

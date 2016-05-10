@@ -160,6 +160,11 @@ class ScriptTransformer(BaseTransformer):
         """Transform array of bytes to bytes."""
         return self.visit(ast.Str(''.join(node.elts)))
 
+    def visit_Tuple(self, node):
+        """Tuple denotes an embedded "inner" script."""
+        node.elts = map(self.visit, node.elts)
+        return types.InnerScript(node.elts)
+
     def visit_Assert(self, node):
         node.test = self.visit(node.test)
         return types.VerifyOpCode(name='OP_VERIFY',

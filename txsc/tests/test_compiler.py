@@ -49,6 +49,13 @@ class CompileTxScriptTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_inner_script(self):
+        for test in [
+            Test('0x03 0x525393 SWAP 7 ADD', 'assume a; {2 + 3;} a + 7;'),
+            Test('0x06 0x525393555494 SWAP 7 ADD', 'assume a; {2 + 3; 5 - 4;} a + 7;'),
+        ]:
+            self._test(test)
+
     def test_standard_tx(self):
         # P2PKH output script.
         src = ['assume sig, pubkey;',

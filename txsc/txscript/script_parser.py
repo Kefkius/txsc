@@ -23,7 +23,9 @@ class ScriptParser(object):
 
     def p_module(self, p):
         '''module : statement
+                  | block
                   | module statement
+                  | module block
         '''
         if isinstance(p[1], ast.Module):
             p[0] = p[1]
@@ -33,8 +35,23 @@ class ScriptParser(object):
         if len(p) == 3:
             p[0].body.append(p[2])
 
+    def p_block(self, p):
+        '''block : blockstatements RBRACE'''
+        p[0] = p[1]
+
+    def p_block_statements(self, p):
+        '''blockstatements : LBRACE statement
+                           | blockstatements statement
+        '''
+        body = [p[2]]
+        if p[1] != '{':
+            body = p[1].elts + body
+        p[0] = ast.Tuple(elts=body)
+
     def p_statement_assign(self, p):
-        '''statement : NAME EQUALS expr SEMICOLON'''
+        '''statement : NAME EQUALS expr SEMICOLON
+                     | NAME EQUALS block SEMICOLON
+        '''
         p[0] = ast.Assign(targets=[
             ast.Name(id=p[1], ctx=ast.Store()),
         ], value=p[3])

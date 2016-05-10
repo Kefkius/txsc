@@ -50,6 +50,16 @@ class BtcScriptTargetVisitor(TargetVisitor):
     def output(self):
         return ''.join(self.hex_strs)
 
+    def visit_InnerScript(self, node):
+        s = []
+        for op in node.ops:
+            result = self.visit(op)
+            if isinstance(result, list):
+                result = ''.join(result).replace('0x','')
+            s.append(result)
+        s = ''.join(s)
+        return self.visit(types.Push(data=x(s)))
+
     def visit_Push(self, node):
         value = script.CScriptOp.encode_op_pushdata(node.data)
         return b2x(value)

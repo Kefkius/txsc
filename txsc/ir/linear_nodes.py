@@ -32,6 +32,16 @@ class Node(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+class InnerScript(Node):
+    """A script contained inside a script."""
+    name = 'innerscript'
+    ops = None
+    comparators = Node.comparators + ('ops',)
+    def __init__(self, ops=None, **kwargs):
+        kwargs['delta'] = 1
+        super(InnerScript, self).__init__(**kwargs)
+        self.ops = ops if ops is not None else []
+
 class Assumption(Node):
     """Assumption that a stack value exists."""
     name = 'assume'

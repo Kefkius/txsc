@@ -13,6 +13,10 @@ class Script(ScriptOp):
     def dump(self, *args):
         return ast.dump(self, *args)
 
+class InnerScript(ScriptOp):
+    """A script contained inside a script."""
+    _fields = ('statements',)
+
 class Symbol(ScriptOp):
     """A symbol occurrence."""
     _fields = ('name')
