@@ -33,7 +33,7 @@ class StructuralVisitor(SourceVisitor):
         try:
             smallint = self.get_small_int_class(int(node))
             self.add_instruction(smallint)
-        except (KeyError, TypeError):
+        except TypeError:
             self.add_instruction(types.Push(formats.hex_to_bytearray(node.data)))
 
     def visit_OpCode(self, node):

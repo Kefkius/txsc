@@ -102,11 +102,11 @@ class LinearInliner(BaseTransformer):
     @classmethod
     def op_for_int(self, value):
         """Get a small int or push operation for value."""
-        try:
-            return types.opcode_classes['OP_%d'%value]()
-        except (KeyError, TypeError):
-            value = formats.int_to_bytearray(value)
-            return types.Push(data=value)
+        cls = types.opcode_by_name('OP_%d'%value)
+        if cls:
+            return cls()
+        value = formats.int_to_bytearray(value)
+        return types.Push(data=value)
 
     def total_delta(self, idx):
         """Get the total delta of script operations before idx."""

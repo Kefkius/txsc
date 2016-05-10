@@ -46,7 +46,7 @@ class ASMSourceVisitor(SourceVisitor):
             try:
                 smallint = int(value)
                 opcode = self.get_small_int_class(smallint)
-            except ValueError:
+            except (TypeError, ValueError):
                 opcode = self.get_opcode_class('OP_%s' % value)
             self.add_instruction(opcode)
 

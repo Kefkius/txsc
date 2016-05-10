@@ -265,3 +265,10 @@ _opcode_classes = inspect.getmembers(sys.modules[__name__], is_op_subclass)
 # Opcodes by name.
 opcode_classes = dict((i.name, i) for _, i in _opcode_classes)
 
+def opcode_by_name(name):
+    """Get an opcode class by name."""
+    return opcode_classes.get(name)
+
+def iter_opcode_classes():
+    for cls in opcode_classes.values():
+        yield cls

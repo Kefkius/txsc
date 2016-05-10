@@ -6,10 +6,6 @@ import txsc.ir.linear_nodes as types
 
 peephole_optimizers = []
 
-def op_by_name(name):
-    """Get the linear representation class for name."""
-    return types.opcode_classes[name]
-
 def peephole(func):
     """Decorator for peephole optimizers."""
     peephole_optimizers.append(func)
@@ -26,15 +22,13 @@ def merge_op_and_verify(instructions):
     e.g. OP_EQUAL OP_VERIFY -> OP_EQUALVERIFY
     """
     optimizations = []
-    for op_name, op in types.opcode_classes.items():
-        if op_name.endswith('VERIFY') and op_name != 'OP_VERIFY':
-            try:
-                base_op = op_by_name(op_name[:-6])
-            except KeyError:
+    for op in types.iter_opcode_classes():
+        if op.name.endswith('VERIFY') and op.name != 'OP_VERIFY':
+            base_op = types.opcode_by_name(op.name[:-6])
+            if not base_op:
                 continue
-            else:
-                template = [base_op(), types.Verify()]
-                optimizations.append((template, [op()]))
+            template = [base_op(), types.Verify()]
+            optimizations.append((template, [op()]))
 
     for template, replacement in optimizations:
         callback = lambda values, replacement=replacement: replacement

@@ -63,7 +63,7 @@ class SourceVisitor(BaseTransformer):
         """Get the linear node opcode type for name."""
         if self.ir_type != LINEAR:
             raise Exception('Visitor must generate linear IR instructions to use this method')
-        return types.opcode_classes[name]()
+        return types.opcode_by_name(name)()
 
     def get_small_int_class(self, value):
         """Get the linear node small int opcode type for value."""
