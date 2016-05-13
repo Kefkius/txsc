@@ -12,6 +12,7 @@ class SymbolTable(object):
     # Symbol type constants.
     ByteArray = 'byte_array'
     Expr = 'expression'
+    Integer = 'integer'
     StackItem = 'stack_item'
 
     def __init__(self):

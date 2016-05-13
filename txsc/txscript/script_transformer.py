@@ -123,11 +123,15 @@ class ScriptTransformer(BaseTransformer):
         if target == '_stack':
             self.symbol_table.add_stack_assumptions([i.id for i in value.elts])
         else:
+            if isinstance(value, ast.Num):
+                sym_type = self.symbol_table.Integer
+            elif isinstance(value, ast.List):
+                sym_type = self.symbol_table.ByteArray
+
             value = self.visit(value)
             # Byte array value.
             if isinstance(value, types.Push):
                 sym_value = formats.hex_to_list(value.data)
-                sym_type = self.symbol_table.ByteArray
             # Expression value.
             else:
                 sym_value = value

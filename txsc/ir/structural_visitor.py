@@ -54,7 +54,7 @@ class StructuralVisitor(SourceVisitor):
         if symbol.type_ == 'stack_item':
             return types.Assumption(symbol.name, symbol.value)
         # Push the bytes of the byte array.
-        elif symbol.type_ == 'byte_array':
+        elif symbol.type_ in ['byte_array', 'integer']:
             return self.visit(structural_nodes.Push(''.join(symbol.value)))
         # If the type is an expression, then StructuralOptimizer could not simplify it.
         # Evaluate the expression as if it were encountered in the structural IR.
