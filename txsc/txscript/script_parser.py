@@ -51,10 +51,22 @@ class ScriptParser(object):
     def p_statement_assign(self, p):
         '''statement : NAME EQUALS expr SEMICOLON
                      | NAME EQUALS block SEMICOLON
+                     | MUTABLE NAME EQUALS expr SEMICOLON
+                     | MUTABLE NAME EQUALS block SEMICOLON
         '''
+        if p[1] == 'mutable':
+            name = p[2]
+            value = p[4]
+            mutable = True
+        else:
+            name = p[1]
+            value = p[3]
+            mutable = False
+
         p[0] = ast.Assign(targets=[
-            ast.Name(id=p[1], ctx=ast.Store()),
-        ], value=p[3])
+            ast.Name(id=name, ctx=ast.Store()),
+        ], value=value)
+        p[0].mutable = mutable
 
     def p_function_args(self, p):
         '''args : expr
@@ -72,6 +84,7 @@ class ScriptParser(object):
         if not all(isinstance(i, ast.Name) for i in p[2].elts):
             raise Exception('Assumptions can only be assigned to names.')
         p[0] = ast.Assign(targets=[ast.Name(id='_stack', ctx=ast.Store())], value=p[2])
+        p[0].mutable = False
 
     def p_return(self, p):
         '''expr : RETURN'''

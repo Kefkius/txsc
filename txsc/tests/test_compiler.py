@@ -56,6 +56,12 @@ class CompileTxScriptTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_mutable_value(self):
+        for test in [
+            Test('2 5 ADD', 'mutable varA = 2; varA + 5; varA = 20;'),
+        ]:
+            self._test(test)
+
     def test_standard_tx(self):
         # P2PKH output script.
         src = ['assume sig, pubkey;',

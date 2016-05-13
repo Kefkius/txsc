@@ -28,12 +28,16 @@ myHash = '1111111111111111111111111111111111111111';
 
 ### Assignments
 
-TxScript supports immutable assignments. To bind a name to a value, use the equals sign (`=`).
+TxScript supports immutable and mutable assignments. To bind an immutable name to a value, use the equals sign (`=`).
+To bind a mutable name to a value, use the keyword `mutable` before the name.
+
 Names can be bound to literal values or expressions. If bound to an expression, txsc will attempt to evaluate it during optimization.
 Names may not begin with an underscore or a number.
 
 ```
 myVar = 5 + 12;
+mutable myOtherVar = 9;
+myOtherVar = 2;
 ```
 
 ### Built-in Functions
@@ -63,6 +67,7 @@ The following keywords have meaning in txscript scripts.
 | Keyword   | Meaning       |
 | --------- | ------------- |
 | assume    | Declare assumed stack values by name. |
+| mutable   | Declare a mutable name. |
 | return    | Marks the script as invalid. |
 | verify    | Fail if the expression that follows is not true. |
 | and       | Logical AND operator. |

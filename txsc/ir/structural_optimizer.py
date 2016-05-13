@@ -89,6 +89,9 @@ class StructuralOptimizer(BaseTransformer):
             return node
         return method(node)
 
+    def visit_list(self, node):
+        return types.Push(''.join(node))
+
     def visit_Assignment(self, node):
         node.value = self.visit(node.value)
         return node
@@ -96,12 +99,23 @@ class StructuralOptimizer(BaseTransformer):
     def visit_Symbol(self, node):
         """Attempt to simplify the value of a symbol."""
         symbol = self.symbol_table.lookup(node.name)
+        value = symbol.value
+        if symbol.mutable:
+            value = value[node.idx]
+
+        if symbol.type_ in ['byte_array', 'integer']:
+            return types.Push(''.join(value))
         # Try to optimize the expression.
         if symbol.type_ == 'expression':
-            expr = self.visit(symbol.value)
+            expr = self.visit(value)
             if isinstance(expr, types.Push):
-                symbol.value = formats.hex_to_list(expr.data)
-                symbol.type_ = self.symbol_table.ByteArray
+                if symbol.mutable:
+                    symbol.value[node.idx] = formats.hex_to_list(expr.data)
+                else:
+                    symbol.value = formats.hex_to_list(expr.data)
+                    symbol.type_ = self.symbol_table.ByteArray
+
+                return expr
 
         return node
 

@@ -28,6 +28,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
         # Reserved words.
         'ASSUME',
+        'MUTABLE',
         'RETURN',
         'VERIFY',
         'AND',
@@ -37,8 +38,10 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
 reserved_words = {
     'assume': 'ASSUME',
+    'mutable': 'MUTABLE',
     'return': 'RETURN',
     'verify': 'VERIFY',
+
     'and': 'AND',
     'or': 'OR',
     'not': 'NOT',
@@ -75,6 +78,7 @@ t_LBRACE = r'\{'
 t_RBRACE = r'\}'
 
 t_ASSUME = r'assume'
+t_MUTABLE = r'mutable'
 t_RETURN = r'return'
 t_VERIFY = r'verify'
 t_AND = r'and'

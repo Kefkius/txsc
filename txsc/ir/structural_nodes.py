@@ -19,7 +19,7 @@ class InnerScript(ScriptOp):
 
 class Symbol(ScriptOp):
     """A symbol occurrence."""
-    _fields = ('name')
+    _fields = ('name', 'idx')
 
 class Assignment(ScriptOp):
     """An assignment to a symbol."""

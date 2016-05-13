@@ -119,6 +119,14 @@ class ScriptTransformer(BaseTransformer):
         value = node.value
         sym_value = None
         sym_type = None
+
+        # Check for assignment to immutables.
+        existing = self.symbol_table.lookup(target)
+        if existing:
+            node.mutable = existing.mutable
+            if not existing.mutable:
+                raise Exception('Cannot assign value to immutable symbol "%s".' % target)
+
         # '_stack' is an invalid variable name that signifies stack assumptions.
         if target == '_stack':
             self.symbol_table.add_stack_assumptions([i.id for i in value.elts])
@@ -132,11 +140,19 @@ class ScriptTransformer(BaseTransformer):
             # Byte array value.
             if isinstance(value, types.Push):
                 sym_value = formats.hex_to_list(value.data)
+            # Symbol value.
+            elif isinstance(value, types.Symbol):
+                other = self.symbol_table.lookup(value.name)
+                sym_value = other.value[value.idx] if node.mutable else other.value
             # Expression value.
             else:
                 sym_value = value
                 sym_type = self.symbol_table.Expr
-            self.symbol_table.add_symbol(target, sym_value, sym_type)
+
+            # Mutable values are considered expressions.
+            if node.mutable:
+                sym_type = self.symbol_table.Expr
+            self.symbol_table.add_symbol(target, sym_value, sym_type, node.mutable)
 
         return types.Assignment(name=target, value=value)
 
@@ -150,7 +166,11 @@ class ScriptTransformer(BaseTransformer):
         symbol = self.symbol_table.lookup(node.id)
         if symbol is None:
             raise NameError('Symbol "%s" was not declared.' % node.id)
-        op = types.Symbol(name=symbol.name)
+
+        idx = 0
+        if symbol.mutable:
+            idx = max(0, len(symbol.value) - 1)
+        op = types.Symbol(name=symbol.name, idx=idx)
         return op
 
     def visit_Num(self, node):
