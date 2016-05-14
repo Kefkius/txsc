@@ -271,9 +271,10 @@ class CheckMultiSigVerify(CheckMultiSig):
 is_op_subclass = lambda cls: (inspect.isclass(cls)
                     and issubclass(cls, OpCode)
                     and cls != OpCode)
-_opcode_classes = inspect.getmembers(sys.modules[__name__], is_op_subclass)
+# Do NOT modify this.
+__opcode_classes = inspect.getmembers(sys.modules[__name__], is_op_subclass)
 # Opcodes by name.
-opcode_classes = dict((i.name, i) for _, i in _opcode_classes)
+opcode_classes = dict((i.name, i) for _, i in __opcode_classes)
 
 def opcode_by_name(name):
     """Get an opcode class by name."""
@@ -286,3 +287,23 @@ def small_int_opcode(value):
 def iter_opcode_classes():
     for cls in opcode_classes.values():
         yield cls
+
+def get_opcodes():
+    """Return the complete set of opcodes."""
+    return dict(opcode_classes)
+
+def get_default_opcodes():
+    """Return the default set of opcodes."""
+    return dict((i.name, i) for _, i in __opcode_classes)
+
+def set_opcodes(classes):
+    """Set opcode_classes to classes.
+
+    Allows for extensibility via plugins.
+    """
+    global opcode_classes
+    opcode_classes = dict(classes)
+
+def reset_opcodes():
+    """Reset opcodes to the default set."""
+    set_opcodes(get_default_opcodes())
