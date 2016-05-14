@@ -3,22 +3,16 @@ import ast
 import sys
 from pkg_resources import iter_entry_points
 
-from txsc.txscript import TxScriptLanguage
-from txsc.asm import ASMLanguage
-from txsc.btcscript import BtcScriptLanguage
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.structural_visitor import StructuralVisitor
 from txsc.ir.structural_optimizer import StructuralOptimizer
 from txsc.ir.linear_optimizer import LinearOptimizer
+from txsc import config
 
-# Load known languages in case we're running locally.
-languages = [ASMLanguage, BtcScriptLanguage, TxScriptLanguage]
-for entry_point in iter_entry_points(group='txsc.language'):
-    lang_maker = entry_point.load()
-    lang = lang_maker()
-    if lang.name not in [i.name for i in languages]:
-        languages.append(lang)
+# Will not reload the entry points if they've already been loaded.
+config.load_entry_points()
+
 
 class DirectiveError(Exception):
     """Exception raised when a directive-related error is encountered."""
@@ -61,18 +55,35 @@ class ScriptCompiler(object):
         self.setup_languages()
 
     def setup_languages(self):
-        self.langs = list(languages)
+        self.langs = config.get_languages()
         self.input_languages = {i.name: i for i in filter(lambda cls: cls.has_source_visitor(), self.langs)}
         self.output_languages = {i.name: i for i in filter(lambda cls: cls.has_target_visitor(), self.langs)}
 
     def setup_options(self, options):
         self.options = options
-        self.optimization = OptimizationLevel(getattr(self.options, 'optimization', OptimizationLevel.max_optimization))
+        # Default values for options.
+        defaults = {
+            'optimization': OptimizationLevel.max_optimization,
+            'verbosity': 0,
+            'source_lang': 'txscript',
+            'target_lang': 'btc',
+            'opcode_set': 'default',
+            'output_file': '',
+        }
+        for k, v in defaults.items():
+            if not hasattr(self.options, k):
+                setattr(self.options, k, v)
+
+
+        self.optimization = OptimizationLevel(self.options.optimization)
         self.verbosity = Verbosity(self.options.verbosity)
 
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]
         self.target_lang = self.output_languages[self.options.target_lang]
+
+        # Opcode set.
+        config.set_opcode_set(self.options.opcode_set)
 
         self.output_file = self.options.output_file
 
