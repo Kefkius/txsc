@@ -101,11 +101,21 @@ class ScriptCompiler(object):
             else:
                 directives[key] = value.replace('\n', '')
 
+        # Opcode set.
+        opcode_set = directives.get('opcode-set')
+        if opcode_set:
+            if opcode_set not in config.get_opcode_sets().keys():
+                valid_opcode_sets = ''.join(['\n- %s' % name for name in config.get_opcode_sets().keys()])
+                raise DirectiveError('Invalid choice for opcode set: "%s"\nValid choices are:%s' % (opcode_set, valid_opcode_sets))
+            else:
+                config.set_opcode_set(opcode_set)
+
         # Target language.
         target = directives.get('target')
         if target:
             if target not in self.output_languages.keys():
-                raise DirectiveError('Invalid choice for target: "%s"' % target)
+                valid_targets = ''.join(['\n- %s' % name for name in self.output_languages.keys()])
+                raise DirectiveError('Invalid choice for target: "%s"\nValid choices are:%s' % (target, valid_targets))
             else:
                 self.target_lang = self.output_languages[target]
 
