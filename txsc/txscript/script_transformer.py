@@ -83,7 +83,30 @@ op_functions = [
     OpFunc('within', 3, 'OP_WITHIN'),
 ]
 
-op_functions_dict = dict((i.name, i) for i in op_functions)
+# Do NOT modify this.
+__op_funcs = list(op_functions)
+
+def get_op_functions():
+    """Return the builtin opcode functions."""
+    return list(op_functions)
+
+def get_default_op_functions():
+    """Return the default set of builtin opcode functions."""
+    return list(__op_funcs)
+
+def set_op_functions(funcs):
+    """Set the builtin opcode functions."""
+    global op_functions
+    op_functions = list(funcs)
+
+def reset_op_functions():
+    set_op_functions(get_default_op_functions())
+
+def get_op_func(name):
+    """Get the OpFunc for name."""
+    for i in op_functions:
+        if i.name == name:
+            return i
 
 class ScriptTransformer(BaseTransformer):
     """Transforms input into a structural intermediate representation."""
@@ -235,10 +258,10 @@ class ScriptTransformer(BaseTransformer):
     def visit_Call(self, node):
         """Transform function calls into their corresponding OpCodes."""
         # Function name must be known.
-        if node.func.id not in op_functions_dict:
-            return node
+        op_func = get_op_func(node.func.id)
+        if not op_func:
+            raise SyntaxError('No function "%s" exists.' % node.func.id)
 
-        op_func = op_functions_dict[node.func.id]
         # Ensure args have been visited.
         node.args = map(self.visit, node.args)
         # Ensure the number of args is correct.

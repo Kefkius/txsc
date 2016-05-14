@@ -9,7 +9,9 @@ Entry points have the following requirements:
         - name (str): The name of the opcode set.
         - opcodes (dict): A dict of {opcode_name: opcode_class}.
 
-        Opcode classes must be subclasses of txsc.ir.linear_nodes.OpCode.
+        Opcode classes must be subclasses of txsc.ir.linear_nodes.OpCode. They
+        may optionally have an attribute, "func", which is a txsc.txscript.script_transformer.OpFunc
+        instance. If this attribute is present, the OpFunc name will be available as a built-in function.
 """
 
 import os
@@ -24,6 +26,9 @@ from txsc.btcscript import BtcScriptLanguage
 
 # Default opcodes.
 from txsc.ir import linear_nodes
+
+# Default builtin functions.
+from txsc.txscript import script_transformer
 
 # Whether entry points have been loaded.
 _loaded = False
@@ -81,8 +86,19 @@ def set_opcode_set(name):
 
     This is a wrapper around txsc.linear_nodes.set_opcodes().
     """
+    linear_nodes.reset_opcodes()
     d = opcode_sets[name]
     linear_nodes.set_opcodes(d)
+
+    # Set the builtin opcode functions if any are present.
+    op_funcs = []
+    for cls in d.values():
+        if hasattr(cls, 'func') and isinstance(cls.func, script_transformer.OpFunc):
+            op_funcs.append(cls.func)
+    script_transformer.reset_op_functions()
+    # Extend the existing opcode functions with the custom ones.
+    op_funcs = script_transformer.get_op_functions() + op_funcs
+    script_transformer.set_op_functions(op_funcs)
 
 
 def load_entry_points():
