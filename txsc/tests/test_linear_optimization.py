@@ -85,6 +85,17 @@ class OptimizationTest(BaseOptimizationTest):
         script = LInstructions([types.Five(), types.Sha256(), types.RipeMD160()])
         self._do_test('OP_5 OP_HASH160', script)
 
+    def test_arithmetic_ops(self):
+        script = LInstructions([types.Five(), types.Five(), types.Equal(), types.Not()])
+        self._do_test('OP_5 OP_5 OP_NUMNOTEQUAL', script)
+
+        script = LInstructions([types.Five(), types.Push(b'\x01\x02\x03\x04'), types.Equal(), types.Not()])
+        self._do_test('OP_5 01020304 OP_NUMNOTEQUAL', script)
+
+        # A value longer than 4 bytes won't be optimized this way.
+        script = LInstructions([types.Five(), types.Push(b'\x01\x02\x03\x04\x05'), types.Equal(), types.Not()])
+        self._do_test('OP_5 0102030405 OP_EQUAL OP_NOT', script)
+
     def test_multiple_optimization_occurrences(self):
         script = LInstructions([types.Five(), types.Five(), types.Equal(), types.Verify(),
                                types.Five(), types.Five(), types.Equal(), types.Verify()])
