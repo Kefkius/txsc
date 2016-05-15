@@ -1,6 +1,8 @@
 """Script optimizations."""
 import itertools
 
+from txsc.ir import formats
+from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_context import LinearContextualizer, LinearInliner
 import txsc.ir.linear_nodes as types
 
@@ -124,6 +126,30 @@ def optimize_hashes(instructions):
     ]:
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
+
+@peephole
+def use_arithmetic_ops(instructions):
+    """Replace ops with more convenient arithmetic ops."""
+    optimizations = []
+    _two_values = permutations([types.SmallIntOpCode(), types.Push()])
+    _two_values.append([types.SmallIntOpCode()] * 2)
+    _two_values.append([types.Push()] * 2)
+
+    def all_strict_nums(numbers):
+        """Evaluate whether instances represent strict numbers."""
+        return all(formats.is_strict_num(i) for i in map(LInstructions.instruction_to_int, numbers))
+
+    # Use NUMNOTEQUAL if both values are numbers.
+    def numnotequal_callback(values):
+        if not all_strict_nums(values[0:2]):
+            return values
+        return values[0:2] + [types.NumNotEqual()]
+
+    for permutation in _two_values:
+        optimizations.append((permutation + [types.Equal(), types.Not()], numnotequal_callback))
+
+    for template, callback in optimizations:
+        instructions.replace_template(template, callback, strict=False)
 
 @peephole
 def remove_trailing_verifications(instructions):

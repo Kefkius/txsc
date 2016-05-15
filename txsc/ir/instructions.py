@@ -6,6 +6,7 @@ from bitcoin.core.scripteval import _CastToBool
 
 from txsc.ir import linear_nodes
 from txsc.ir import structural_nodes
+from txsc.ir import formats
 
 # Constants for instructions type.
 LINEAR = 1
@@ -24,6 +25,14 @@ class Instructions(object):
 class LInstructions(Instructions, list):
     """Model for linear instructions."""
     ir_type = LINEAR
+    @staticmethod
+    def instruction_to_int(op):
+        """Get the integer value that op (a nullary opcode) pushes."""
+        if isinstance(op, linear_nodes.SmallIntOpCode):
+            return op.value
+        elif isinstance(op, linear_nodes.Push):
+            return formats.bytearray_to_int(op.data)
+
 
     def __init__(self, *args):
         # Perform a deep copy if an LInstructions instance is passed.
