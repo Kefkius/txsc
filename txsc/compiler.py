@@ -65,6 +65,8 @@ def main():
     argparser.add_argument('--opcode-set', metavar='OPCODE_SET', dest='opcode_set', choices=opcode_set_choices,
                            default='default', help='Opcode set (Use --list-opcode-sets to view options).')
 
+    argparser.add_argument('--strict-num', dest='strict_num', action='store_true', default=False, help='Fail if values larger than 4 bytes are treated as integers.')
+
     argparser.add_argument('-v', '--verbose', nargs='?', action=VAction, dest='verbosity', default=0, help='Verbosity level (Max: %d).' % Verbosity.max_verbosity)
 
     args = argparser.parse_args()

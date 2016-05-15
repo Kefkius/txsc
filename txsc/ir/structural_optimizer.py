@@ -39,8 +39,9 @@ class StructuralOptimizer(BaseTransformer):
     def __init__(self):
         self.evaluator = ConstEvaluator()
 
-    def optimize(self, instructions, symbol_table, evaluate_expressions=True):
+    def optimize(self, instructions, symbol_table, evaluate_expressions=True, strict_num=False):
         self.evaluator.enabled = evaluate_expressions
+        self.evaluator.strict_num = strict_num
         script = instructions.script
         self.symbol_table = symbol_table
         new = map(self.visit, script.statements)
@@ -165,6 +166,19 @@ class ConstEvaluator(object):
     """Evaluates expressions containing only constant values."""
     def __init__(self):
         self.enabled = True
+        self.strict_num = False
+
+    def strict_num(method):
+        """Decorator that checks if numbers are valid."""
+        @wraps(method)
+        def wrapper(self, *args):
+            args = map(int, args)
+            if self.strict_num:
+                valid = [formats.is_strict_num(i) for i in args]
+                if False in valid:
+                    raise ValueError('Input value is longer than 4 bytes: 0x%x.' % args[valid.index(False)])
+            return method(self, *args)
+        return wrapper
 
     def eval_op(self, op_name, *args):
         """Evaluate an opcode."""
@@ -184,91 +198,91 @@ class ConstEvaluator(object):
             result = types.Push(hexs.format_hex(result))
         return result
 
-    @params(int)
+    @strict_num
     def OP_ABS(self, value):
         return abs(value)
 
-    @params(int)
+    @strict_num
     def OP_NOT(self, value):
         return int(value == 0)
 
-    @params(int)
+    @strict_num
     def OP_0NOTEQUAL(self, value):
         return int(value != 0)
 
-    @params(int)
+    @strict_num
     def OP_NEGATE(self, value):
         return -value
 
-    @params(int)
+    @strict_num
     def OP_ADD(self, left, right):
         return left + right
 
-    @params(int)
+    @strict_num
     def OP_SUB(self, left, right):
         return left - right
 
-    @params(int)
+    @strict_num
     def OP_MUL(self, left, right):
         return left * right
 
-    @params(int)
+    @strict_num
     def OP_DIV(self, left, right):
         return left / right
 
-    @params(int)
+    @strict_num
     def OP_MOD(self, left, right):
         return left % right
 
-    @params(int)
+    @strict_num
     def OP_LSHIFT(self, left, right):
         return left << right
 
-    @params(int)
+    @strict_num
     def OP_RSHIFT(self, left, right):
         return left >> right
 
-    @params(int)
+    @strict_num
     def OP_LESSTHAN(self, left, right):
         return left < right
 
-    @params(int)
+    @strict_num
     def OP_LESSTHANOREQUAL(self, left, right):
         return left <= right
 
-    @params(int)
+    @strict_num
     def OP_GREATERTHAN(self, left, right):
         return left > right
 
-    @params(int)
+    @strict_num
     def OP_GREATERTHANOREQUAL(self, left, right):
         return left >= right
 
-    @params(int)
+    @strict_num
     def OP_MIN(self, left, right):
         return min(left, right)
 
-    @params(int)
+    @strict_num
     def OP_MAX(self, left, right):
         return max(left, right)
 
-    @params(int)
+    @strict_num
     def OP_WITHIN(self, value, min_, max_):
         return min_ <= value and value < max_
 
-    @params(int)
+    @strict_num
     def OP_NUMEQUAL(self, left, right):
         return left == right
 
-    @params(int)
+    @strict_num
     def OP_NUMNOTEQUAL(self, left, right):
         return left != right
 
-    @params(int)
+    @strict_num
     def OP_BOOLAND(self, left, right):
         return left != 0 and right != 0
 
-    @params(int)
+    @strict_num
     def OP_BOOLOR(self, left, right):
         return left != 0 or right != 0
 

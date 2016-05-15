@@ -69,6 +69,7 @@ class ScriptCompiler(object):
             'target_lang': 'btc',
             'opcode_set': 'default',
             'output_file': '',
+            'strict_num': False,
         }
         for k, v in defaults.items():
             if not hasattr(self.options, k):
@@ -160,7 +161,7 @@ class ScriptCompiler(object):
                 self.outputs['Structural Intermediate Representation'] = instructions.dump()
             # Optimize structural IR.
             if self.optimization.optimize_structural:
-                StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural)
+                StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural, self.options.strict_num)
                 if self.verbosity.show_structural_ir:
                     self.outputs['Optimized Structural Representation'] = instructions.dump()
             instructions = StructuralVisitor().transform(instructions.script, self.symbol_table)

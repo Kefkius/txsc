@@ -43,3 +43,11 @@ def bytearray_to_int(data, decode_small_int=True):
 
 def bytearray_to_bool(data):
     return _CastToBool(data)
+
+max_int_32 = (1 << 31) - 1
+min_int_32 = -1 << 31
+def is_strict_num(value):
+    """Return whether value is limited to 4 bytes."""
+    val = min(value, max_int_32)
+    val = max(val, min_int_32)
+    return val == value
