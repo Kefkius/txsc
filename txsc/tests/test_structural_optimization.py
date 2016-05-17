@@ -52,3 +52,9 @@ class CompileTxScriptOptimizationsTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_commutative_expressions(self):
+        for expected, src in [
+            ('2 3 ADD ADD', 'assume a; 2 + a + 3;'),
+        ]:
+            result = self._compile(src)
+            self.assertEqual(expected, result)

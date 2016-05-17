@@ -79,6 +79,18 @@ class StructuralOptimizer(BaseTransformer):
         def should_commute(n):
             return is_assumption(n) or has_assumption(n)
 
+        # Commute operands of different operations.
+        # e.g. 2 + assumption + 3 --> 2 + 3 + assumption
+        if self.is_commutative(node) and has_assumption(node.left) and node.left.name == node.name:
+            # Move the assumption so we can be sure it's in the attribute 'right'.
+            if is_assumption(node.left.left):
+                node.left.left, node.left.right = node.left.right, node.left.left
+
+            logger.debug('Commuting operations for %s and %s' % (format_structural_op(node.left), format_structural_op(node.right)))
+            right = node.right
+            node.right = node.left.right
+            node.left.right = right
+
         if should_commute(node.left) or not should_commute(node.right):
             return
 
@@ -137,10 +149,11 @@ class StructuralOptimizer(BaseTransformer):
         return self.evaluator.eval_op(node.name, node.operand) or node
 
     def visit_BinOpCode(self, node):
-        node.left, node.right = map(self.visit, [node.left, node.right])
-
         # Optimize order if commutative.
         self.commute_operands(node)
+
+        node.left, node.right = map(self.visit, [node.left, node.right])
+
         # Return the node if both operands aren't constant values.
         if not get_all_const(node.left, node.right):
             return node

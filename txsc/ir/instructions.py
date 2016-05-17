@@ -21,18 +21,18 @@ def get_instructions_class(instructions_type):
 
 def format_structural_op(op):
     """Format an op for human-readability."""
-    if isinstance(op, structural_nodes.Push):
+    if isinstance(op, (structural_nodes.Push, structural_nodes.Symbol)):
         return str(op)
     linear = linear_nodes.opcode_by_name(op.name)
     if not linear or not linear.opstr:
         return
 
     if linear.is_unary():
-        return linear.opstr.format(op.operand)
+        return linear.opstr.format(format_structural_op(op.operand))
     elif linear.is_binary():
-        return linear.opstr.format(op.left, op.right)
+        return linear.opstr.format(*map(format_structural_op, [op.left, op.right]))
     elif linear.is_ternary():
-        return linear.opstr.format(op.operands[0:3])
+        return linear.opstr.format(*map(format_structural_op, op.operands[0:3]))
 
 
 class Instructions(object):
