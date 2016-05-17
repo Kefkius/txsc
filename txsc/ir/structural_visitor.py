@@ -1,9 +1,12 @@
 from functools import wraps
+import logging
 
 from txsc.transformer import SourceVisitor
 from txsc.ir import formats, structural_nodes
-from txsc.ir.instructions import LInstructions
+from txsc.ir.instructions import LInstructions, SInstructions
 import txsc.ir.linear_nodes as types
+
+logger = logging.getLogger(__name__)
 
 def returnlist(func):
     """Decorator that ensures a function returns a list."""
@@ -20,8 +23,9 @@ def returnlist(func):
 
 class StructuralVisitor(SourceVisitor):
     """Tranforms a structural representation into a linear one."""
-    def transform(self, node, symbol_table=None):
+    def transform(self, node, symbol_table=None, strict_num=False):
         self.symbol_table = symbol_table
+        self.strict_num = strict_num
         self.instructions = LInstructions(self.visit(node))
         return self.instructions
 
@@ -95,6 +99,19 @@ class StructuralVisitor(SourceVisitor):
 
     @returnlist
     def visit_BinOpCode(self, node):
+        # Check for values longer than 4 bytes.
+        if SInstructions.is_arithmetic_op(node):
+            operands = [node.left, node.right]
+            if all(isinstance(i, structural_nodes.Push) for i in operands):
+                valid = [formats.is_strict_num(int(i)) for i in operands]
+                if False in valid:
+                    msg = 'Input value is longer than 4 bytes: 0x%x' % operands[valid.index(False)]
+                    if self.strict_num:
+                        logger.error(msg)
+                        raise ValueError(msg)
+                    else:
+                        logger.warning(msg)
+
         return_value = self.visit(node.left)
         return_value.extend(self.visit(node.right))
         op = types.opcode_by_name(node.name)()

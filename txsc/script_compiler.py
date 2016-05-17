@@ -182,7 +182,7 @@ class ScriptCompiler(object):
                 StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural, self.options.strict_num)
                 if self.verbosity.show_structural_ir:
                     self.outputs['Optimized Structural Representation'] = instructions.dump()
-            instructions = StructuralVisitor().transform(instructions.script, self.symbol_table)
+            instructions = StructuralVisitor().transform(instructions.script, self.symbol_table, self.options.strict_num)
 
         if self.verbosity.show_linear_ir:
             self.outputs['Linear Intermediate Representation'] = str(instructions)

@@ -200,6 +200,7 @@ class ConstEvaluator(object):
             if False in valid:
                 msg = 'Input value is longer than 4 bytes: 0x%x' % args[valid.index(False)]
                 if self.strict_num:
+                    logger.error(msg)
                     raise ValueError(msg)
                 else:
                     logger.warning(msg)
