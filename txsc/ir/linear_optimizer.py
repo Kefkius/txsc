@@ -78,19 +78,15 @@ def replace_shortcut_ops(instructions):
     # Replace 1 * -1 with -1.
     optimizations.append(([types.One(), types.Negate()], lambda values: [types.NegativeOne()]))
     # Replace addition by 1.
-    for permutation in permutations([types.Push(), types.One()]):
-        idx = 0 if isinstance(permutation[0], types.Push) else 1
-        optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx], types.Add1()]))
-    for permutation in permutations([types.SmallIntOpCode(), types.One()]):
+    for permutation in permutations([types.Push(), types.One()]) + permutations([types.SmallIntOpCode(), types.One()]):
         idx = 0 if not isinstance(permutation[0], types.One) else 1
         optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx], types.Add1()]))
+    optimizations.append(([types.Assumption(), types.One(), types.Add()], lambda values: [values[0], types.Add1()]))
     # Replace multiplication by 2.
-    for permutation in permutations([types.Push(), types.Two()]):
-        idx = 0 if isinstance(permutation[0], types.Push) else 1
-        optimizations.append((permutation + [types.Mul()], lambda values, idx=idx: [values[idx], types.Mul2()]))
-    for permutation in permutations([types.SmallIntOpCode(), types.Two()]):
+    for permutation in permutations([types.Push(), types.Two()]) + permutations([types.SmallIntOpCode(), types.Two()]):
         idx = 0 if not isinstance(permutation[0], types.Two) else 1
         optimizations.append((permutation + [types.Mul()], lambda values, idx=idx: [values[idx], types.Mul2()]))
+    optimizations.append(([types.Assumption(), types.Two(), types.Mul()], lambda values: [values[0], types.Mul2()]))
 
 
     for template, callback in optimizations:

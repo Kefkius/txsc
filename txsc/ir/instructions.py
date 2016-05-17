@@ -71,8 +71,10 @@ class LInstructions(Instructions, list):
     def matches_template(self, template, index, strict=True):
         """Returns whether a block that matches templates starts at index.
 
-        If strict is True, then Push opcodes must push the same value that
-        those in the template push.
+        If strict is True:
+            - Push opcodes must push the same value that those in the template push.
+            - Small int opcodes must have the same value that those in the template have.
+            - Assumptions must have the same value that those in the template have.
         """
         for i in range(len(template)):
             if not template[i]:
@@ -87,7 +89,9 @@ class LInstructions(Instructions, list):
             script_item = self[index + i]
             if template_item.__class__.__name__ == 'SmallIntOpCode' and isinstance(script_item, linear_nodes.SmallIntOpCode):
                 equal = True
-            elif isinstance(template_item, linear_nodes.Push) and isinstance(script_item, linear_nodes.Push):
+            elif all(isinstance(item, linear_nodes.Push) for item in [script_item, template_item]):
+                equal = True
+            elif all(isinstance(item, linear_nodes.Assumption) for item in [script_item, template_item]):
                 equal = True
 
             if not equal:

@@ -43,6 +43,8 @@ class OptimizationTest(BaseOptimizationTest):
         ]:
             self._do_test('OP_5 OP_1ADD', script)
 
+        self._do_test('OP_1ADD', LInstructions([types.Assumption('testItem', 0), types.One(), types.Add()]))
+
         script = LInstructions([types.Five(), types.One(), types.Sub()])
         self._do_test('OP_5 OP_1SUB', script)
 
@@ -51,6 +53,8 @@ class OptimizationTest(BaseOptimizationTest):
             LInstructions([types.Two(), types.Five(), types.Mul()]),
         ]:
             self._do_test('OP_5 OP_2MUL', script)
+
+        self._do_test('OP_2MUL', LInstructions([types.Assumption('testItem', 0), types.Two(), types.Mul()]))
 
         script = LInstructions([types.Five(), types.Two(), types.Div()])
         self._do_test('OP_5 OP_2DIV', script)
