@@ -71,15 +71,20 @@ class OpCode(Node):
     """An opcode.
 
     Attributes:
+        - arithmetic (bool): Whether this opcode performs an arithmetic operation.
+        - opstr (str): A string that format() can be called on to visually represent the opcode.
         - verifier (bool): Whether this opcode performs verification.
         - args (list): The relative indices of nodes that this opcode affects.
 
     """
+    arithmetic = False
+    opstr = None
     verifier = False
     args = None
     def __init__(self, **kwargs):
         super(OpCode, self).__init__(**kwargs)
-        self.args = kwargs.get('args', [])
+        if kwargs.get('args'):
+            self.args = list(kwargs['args'])
 
     def __str__(self):
         return str(self.name)
@@ -88,17 +93,20 @@ class OpCode(Node):
         return ('OpCode(name=%s, verifier=%s, delta=%s' % (self.name,
                 self.verifier, self.delta))
 
-    def is_unary(self):
+    @classmethod
+    def is_unary(cls):
         """Get whether this is a unary opcode."""
-        return self.args == [1]
+        return list(cls.args) == [1]
 
-    def is_binary(self):
+    @classmethod
+    def is_binary(cls):
         """Get whether this is a binary opcode."""
-        return self.args == [1, 2]
+        return list(cls.args) == [1, 2]
 
-    def is_ternary(self):
+    @classmethod
+    def is_ternary(cls):
         """Get whether this is a ternary opcode."""
-        return self.args == [1, 2, 3]
+        return list(cls.args) == [1, 2, 3]
 
 class SmallIntOpCode(OpCode):
     """Small integer opcode."""
@@ -213,37 +221,37 @@ EqualVerify = _binary_opcode('EqualVerify', -2, 'OP_EQUALVERIFY', verifier=True)
 
 # Arithmetic.
 
-Add1 = _unary_opcode('Add1', 0, 'OP_1ADD')
-Sub1 = _unary_opcode('Sub1', 0, 'OP_1SUB')
-Mul2 = _unary_opcode('Mul2', 0, 'OP_2MUL')
-Div2 = _unary_opcode('Div2', 0, 'OP_2DIV')
-Negate = _unary_opcode('Negate', 0, 'OP_NEGATE')
-Abs = _unary_opcode('Abs', 0, 'OP_ABS')
-Not = _unary_opcode('Not', 0, 'OP_NOT')
+Add1 = _unary_opcode('Add1', 0, 'OP_1ADD', arithmetic=True, opstr='{}++')
+Sub1 = _unary_opcode('Sub1', 0, 'OP_1SUB', arithmetic=True, opstr='{}--')
+Mul2 = _unary_opcode('Mul2', 0, 'OP_2MUL', arithmetic=True, opstr='{} * 2')
+Div2 = _unary_opcode('Div2', 0, 'OP_2DIV', arithmetic=True, opstr='{} / 2')
+Negate = _unary_opcode('Negate', 0, 'OP_NEGATE', arithmetic=True, opstr='-{}')
+Abs = _unary_opcode('Abs', 0, 'OP_ABS', arithmetic=True, opstr='|{}|')
+Not = _unary_opcode('Not', 0, 'OP_NOT', arithmetic=True)
 
-ZeroNotEqual = _unary_opcode('ZeroNotEqual', 0, 'OP_0NOTEQUAL')
+ZeroNotEqual = _unary_opcode('ZeroNotEqual', 0, 'OP_0NOTEQUAL', arithmetic=True)
 
-Add = _binary_opcode('Add', -1, 'OP_ADD')
-Sub = _binary_opcode('Sub', -1, 'OP_SUB')
-Mul = _binary_opcode('Mul', -1, 'OP_MUL')
-Div = _binary_opcode('Div', -1, 'OP_DIV')
-Mod = _binary_opcode('Mod', -1, 'OP_MOD')
-LShift = _binary_opcode('LShift', -1, 'OP_LSHIFT')
-RShift = _binary_opcode('RShift', -1, 'OP_RSHIFT')
+Add = _binary_opcode('Add', -1, 'OP_ADD', arithmetic=True, opstr='{} + {}')
+Sub = _binary_opcode('Sub', -1, 'OP_SUB', arithmetic=True, opstr='{} - {}')
+Mul = _binary_opcode('Mul', -1, 'OP_MUL', arithmetic=True, opstr='{} * {}')
+Div = _binary_opcode('Div', -1, 'OP_DIV', arithmetic=True, opstr='{} / {}')
+Mod = _binary_opcode('Mod', -1, 'OP_MOD', arithmetic=True, opstr='{} % {}')
+LShift = _binary_opcode('LShift', -1, 'OP_LSHIFT', arithmetic=True, opstr='{} << {}')
+RShift = _binary_opcode('RShift', -1, 'OP_RSHIFT', arithmetic=True, opstr='{} >> {}')
 
-BoolAnd = _binary_opcode('BoolAnd', -1, 'OP_BOOLAND')
-BoolOr = _binary_opcode('BoolOr', -1, 'OP_BOOLOR')
+BoolAnd = _binary_opcode('BoolAnd', -1, 'OP_BOOLAND', arithmetic=True, opstr='{} and {}')
+BoolOr = _binary_opcode('BoolOr', -1, 'OP_BOOLOR', arithmetic=True, opstr='{} or {}')
 
-NumEqual = _binary_opcode('NumEqual', -1, 'OP_NUMEQUAL')
-NumEqualVerify = _binary_opcode('NumEqualVerify', -2, 'OP_NUMEQUALVERIFY', verifier=True)
-NumNotEqual = _binary_opcode('NumNotEqual', -1, 'OP_NUMNOTEQUAL')
-LessThan = _binary_opcode('LessThan', -1, 'OP_LESSTHAN')
-GreaterThan = _binary_opcode('GreaterThan', -1, 'OP_GREATERTHAN')
-LessThanOrEqual = _binary_opcode('LessThanOrEqual', -1, 'OP_LESSTHANOREQUAL')
-GreaterThanOrEqual = _binary_opcode('GreaterThanOrEqual', -1, 'OP_GREATERTHANOREQUAL')
-Min = _binary_opcode('Min', -1, 'OP_MIN')
-Max = _binary_opcode('Max', -1, 'OP_MAX')
-Within = _ternary_opcode('Within', -2, 'OP_WITHIN')
+NumEqual = _binary_opcode('NumEqual', -1, 'OP_NUMEQUAL', arithmetic=True, opstr='{} == {}')
+NumEqualVerify = _binary_opcode('NumEqualVerify', -2, 'OP_NUMEQUALVERIFY', verifier=True, arithmetic=True)
+NumNotEqual = _binary_opcode('NumNotEqual', -1, 'OP_NUMNOTEQUAL', arithmetic=True, opstr='{} != {}')
+LessThan = _binary_opcode('LessThan', -1, 'OP_LESSTHAN', arithmetic=True, opstr='{} < {}')
+GreaterThan = _binary_opcode('GreaterThan', -1, 'OP_GREATERTHAN', arithmetic=True, opstr='{} > {}')
+LessThanOrEqual = _binary_opcode('LessThanOrEqual', -1, 'OP_LESSTHANOREQUAL', arithmetic=True, opstr='{} <= {}')
+GreaterThanOrEqual = _binary_opcode('GreaterThanOrEqual', -1, 'OP_GREATERTHANOREQUAL', arithmetic=True, opstr='{} >= {}')
+Min = _binary_opcode('Min', -1, 'OP_MIN', arithmetic=True)
+Max = _binary_opcode('Max', -1, 'OP_MAX', arithmetic=True)
+Within = _ternary_opcode('Within', -2, 'OP_WITHIN', arithmetic=True)
 
 # Crypto.
 

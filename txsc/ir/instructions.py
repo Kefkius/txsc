@@ -18,6 +18,23 @@ def get_instructions_class(instructions_type):
     elif instructions_type == STRUCTURAL:
         return SInstructions
 
+
+def format_structural_op(op):
+    """Format an op for human-readability."""
+    if isinstance(op, structural_nodes.Push):
+        return str(op)
+    linear = linear_nodes.opcode_by_name(op.name)
+    if not linear or not linear.opstr:
+        return
+
+    if linear.is_unary():
+        return linear.opstr.format(op.operand)
+    elif linear.is_binary():
+        return linear.opstr.format(op.left, op.right)
+    elif linear.is_ternary():
+        return linear.opstr.format(op.operands[0:3])
+
+
 class Instructions(object):
     """Base model for instructions."""
     pass
@@ -108,6 +125,12 @@ class LInstructions(Instructions, list):
 class SInstructions(Instructions):
     """Model for structural instructions."""
     ir_type = STRUCTURAL
+
+    @staticmethod
+    def format_op(op):
+        """Format an op for human-readability."""
+        return format_structural_op(op)
+
     def __init__(self, script=structural_nodes.Script()):
         self.script = script
 

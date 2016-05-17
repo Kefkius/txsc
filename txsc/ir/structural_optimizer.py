@@ -1,11 +1,15 @@
 import ast
 from functools import wraps
+import logging
 
 import hexs
 
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
+from txsc.ir.instructions import format_structural_op
 import txsc.ir.structural_nodes as types
+
+logger = logging.getLogger(__name__)
 
 def get_const(op):
     """Get whether op represents a constant value."""
@@ -79,10 +83,14 @@ class StructuralOptimizer(BaseTransformer):
             return
 
         if self.is_commutative(node):
+            logger.debug('Commuting operands for %s' % format_structural_op(node))
             node.left, node.right = node.right, node.left
         elif self.has_logical_equivalent(node):
+            logmsg = 'Replacing %s with logical equivalent ' % format_structural_op(node)
             node.name = logical_equivalents[node.name]
             node.left, node.right = node.right, node.left
+            logmsg += format_structural_op(node)
+            logger.debug(logmsg)
 
     def visit(self, node):
         method = getattr(self, 'visit_%s' % node.__class__.__name__, None)
@@ -138,6 +146,8 @@ class StructuralOptimizer(BaseTransformer):
             return node
 
         result = self.evaluator.eval_op(node.name, node.left, node.right)
+        if result:
+            logger.debug('Optimizing %s to %s' % (format_structural_op(node), format_structural_op(result)))
         return result or node
 
     def visit_VariableArgsOpCode(self, node):
@@ -173,10 +183,13 @@ class ConstEvaluator(object):
         @wraps(method)
         def wrapper(self, *args):
             args = map(int, args)
-            if self.strict_num:
-                valid = [formats.is_strict_num(i) for i in args]
-                if False in valid:
-                    raise ValueError('Input value is longer than 4 bytes: 0x%x.' % args[valid.index(False)])
+            valid = [formats.is_strict_num(i) for i in args]
+            if False in valid:
+                msg = 'Input value is longer than 4 bytes: 0x%x' % args[valid.index(False)]
+                if self.strict_num:
+                    raise ValueError(msg)
+                else:
+                    logger.warning(msg)
             return method(self, *args)
         return wrapper
 

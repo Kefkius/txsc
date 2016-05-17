@@ -21,6 +21,9 @@ class Symbol(ScriptOp):
     """A symbol occurrence."""
     _fields = ('name', 'idx')
 
+    def __str__(self):
+        return self.name
+
 class Assignment(ScriptOp):
     """An assignment to a symbol."""
     _fields = ('name', 'value')

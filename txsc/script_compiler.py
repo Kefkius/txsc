@@ -2,6 +2,7 @@ from collections import OrderedDict
 import ast
 import sys
 from pkg_resources import iter_entry_points
+import logging
 
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
@@ -47,9 +48,23 @@ class Verbosity(object):
         self.show_structural_ir = value > 1 # Show the structural intermediate representation.
         self.echo_input = value > 2 # Echo the source that was input.
 
+        # Logging verbosity level.
+        log_level = logging.ERROR
+        if value > 2:
+            log_level = logging.DEBUG
+        elif value > 1:
+            log_level = logging.INFO
+        elif value > 0:
+            log_level = logging.WARNING
+        self.log_level = log_level
+
+        logging.getLogger('txsc').setLevel(self.log_level)
+
+
 class ScriptCompiler(object):
     """Script compiler."""
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.outputs = OrderedDict()
         self.symbol_table = None
         self.setup_languages()
@@ -110,6 +125,7 @@ class ScriptCompiler(object):
                 raise DirectiveError('Invalid choice for opcode set: "%s"\nValid choices are:%s' % (opcode_set, valid_opcode_sets))
             else:
                 config.set_opcode_set(opcode_set)
+                self.logger.debug('Compiler directive: Opcode set = %s' % opcode_set)
 
         # Target language.
         target = directives.get('target')
@@ -119,6 +135,7 @@ class ScriptCompiler(object):
                 raise DirectiveError('Invalid choice for target: "%s"\nValid choices are:%s' % (target, valid_targets))
             else:
                 self.target_lang = self.output_languages[target]
+                self.logger.debug('Compiler directive: Target lang = %s' % target)
 
         # Verbosity level.
         verbosity = directives.get('verbosity')
@@ -129,6 +146,7 @@ class ScriptCompiler(object):
                 raise DirectiveError('Invalid verbosity level: "%s"' % verbosity)
             else:
                 self.verbosity.set_value(verbosity)
+                self.logger.debug('Compiler directive: Verbosity = %s' % verbosity)
 
 
     def compile(self, source_lines):
@@ -191,6 +209,7 @@ class ScriptCompiler(object):
         ]:
             outputs = map(formats.get, [normal, optimized])
             if all(i is not None for i in outputs) and outputs[0] == outputs[1]:
+                self.logger.info('Omitting redundant output "%s"' % optimized)
                 del formats[optimized]
 
         s = ['%s:\n  %s\n' % (k, v) for k, v in formats.items()]
@@ -199,6 +218,8 @@ class ScriptCompiler(object):
             s = s[:-1]
         if self.verbosity.quiet:
             s = self.outputs[self.target_lang.name]
+        else:
+            s = '------ Results ------\n' + s
 
         if self.output_file:
             with open(self.output_file, 'w') as f:

@@ -2,6 +2,7 @@
 import argparse
 import os
 import sys
+import logging
 
 # Check is txsc is being run locally.
 is_local = False
@@ -48,6 +49,12 @@ class OAction(argparse.Action):
         setattr(args, self.dest, values)
 
 def main():
+    logger = logging.getLogger('txsc')
+    ch = logging.StreamHandler()
+    ch.setFormatter(logging.Formatter('%(levelname)s [%(name)s] %(message)s'))
+    logger.addHandler(ch)
+
+
     compiler = ScriptCompiler()
     source_choices = sorted(compiler.input_languages.keys())
     target_choices = sorted(compiler.output_languages.keys())
