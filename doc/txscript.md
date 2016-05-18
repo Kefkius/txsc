@@ -54,10 +54,10 @@ verify min(myVar, 10) == myVar;
 TxScript supports "inner scripts," which are scripts within a script. The most relevant example is in Pay-To-Script-Hash
 redeem scripts, which are serialized scripts that are executed during P2SH spending.
 
-Any statements within braces are treated as an inner script.
+Inner scripts are created with the built-in function `raw()`. Every argument passed to `raw()` is an expression.
 
 ```
-{ 2 + 5; 3 + 6; }
+raw(2 + 5, 3 + 6);
 ```
 
 ## Keywords

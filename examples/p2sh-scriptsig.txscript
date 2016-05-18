@@ -1,7 +1,7 @@
 # P2SH signature script.
 # Based on https://gist.github.com/gavinandresen/3966071
 # This script is intended mainly to demonstrate the ability to
-# create an inner script via braces.
+# create an inner script via raw().
 @target asm
 
 # Public keys.
@@ -13,13 +13,13 @@ pubKeyC = '048d2455d2403e08708fc1f556002f1b6cd83f992d085097f9974ab08a28838f07896
 sigA = '304502200187af928e9d155c4b1ac9c1c9118153239aba76774f775d7c1f9c3e106ff33c0221008822b0f658edec22274d0b6ae9de10ebf2da06b1bbdaaba4e50eb078f39e3d7801';
 sigB = '30440220795f0f4f5941a77ae032ecb9e33753788d7eb5cb0c78d805575d6b00a1d9bfed02203e1f4ad9332d1416ae01e27038e945bc9db59c732728a383a6f1ed2fb99da7a401';
 
-# Serialized redeem script. Statements within braces are treated
+# Serialized redeem script. Statements passed to raw() are treated
 # as a script within the script.
-redeemScript = {
+redeemScript = raw(
     checkMultiSig(2,    # 2 signatures.
                   pubKeyA, pubKeyB, pubKeyC,
-                  3);   # 3 public keys.
-};
+                  3)    # 3 public keys.
+);
 
 # Push an extra stack item due to the OP_CHECKMULTISIG bug.
 0;

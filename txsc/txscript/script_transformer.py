@@ -257,6 +257,9 @@ class ScriptTransformer(BaseTransformer):
 
     def visit_Call(self, node):
         """Transform function calls into their corresponding OpCodes."""
+        # Raw scripts are handled via a function call.
+        if node.func.id == 'raw':
+            return self.visit(ast.Tuple(elts=node.args))
         # Function name must be known.
         op_func = get_op_func(node.func.id)
         if not op_func:
