@@ -125,3 +125,28 @@ class StructuralVisitor(SourceVisitor):
         op = types.opcode_by_name(node.name)()
         return return_value + [op]
 
+    @returnlist
+    def visit_FunctionCall(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot process function call: No symbol table was supplied.')
+        symbol = self.symbol_table.lookup(node.name)
+        if not symbol:
+            raise Exception('No function "%s" exists.' % node.name)
+        elif symbol.type_ != self.symbol_table.Func:
+            raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
+
+        func = symbol.value
+        self.symbol_table.begin_scope()
+        # Bind arguments to formal parameters.
+        for param, arg in zip(func.args, node.args):
+            # TODO use a specific symbol type instead of expression.
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
+        return_value = map(self.visit, func.body)
+        # Visiting returns a list.
+        if len(return_value):
+            values = list(return_value)
+            return_value = []
+            for v in values:
+                return_value.extend(v)
+        self.symbol_table.end_scope()
+        return return_value

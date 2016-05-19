@@ -255,16 +255,11 @@ class ScriptTransformer(BaseTransformer):
         return types.BinOpCode(name=self.get_op_name(node.ops[0]),
                 left=node.left, right=node.comparators[0])
 
-    def visit_Call(self, node):
-        """Transform function calls into their corresponding OpCodes."""
-        # Raw scripts are handled via a function call.
-        if node.func.id == 'raw':
-            return self.visit(ast.Tuple(elts=node.args))
-        # Function name must be known.
+    def visit_op_function_call(self, node):
+        """Transform a function call into its corresponding OpCode."""
         op_func = get_op_func(node.func.id)
         if not op_func:
             raise SyntaxError('No function "%s" exists.' % node.func.id)
-
         # Ensure args have been visited.
         node.args = map(self.visit, node.args)
         # Ensure the number of args is correct.
@@ -283,6 +278,39 @@ class ScriptTransformer(BaseTransformer):
         else:
             return types.VariableArgsOpCode(name = op_func.op_name,
                     operands = list(node.args))
+
+    def visit_Call(self, node):
+        # User-defined function.
+        if self.symbol_table and self.symbol_table.lookup(node.func.id):
+            symbol = self.symbol_table.lookup(node.func.id)
+            if symbol.type_ != self.symbol_table.Func:
+                raise SyntaxError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
+            return types.FunctionCall(node.func.id, map(self.visit, node.args))
+
+        # Raw scripts are handled via a function call.
+        if node.func.id == 'raw':
+            return self.visit(ast.Tuple(elts=node.args))
+        # Handle function calls that correspond to opcodes.
+        if get_op_func(node.func.id):
+            return self.visit_op_function_call(node)
+        # Function name must be known.
+        raise NameError('No function "%s" exists.' % node.func.id)
+
+    # TODO Python 3 compatibility.
+    def visit_FunctionDef(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot define function. Transformer was started without a symbol table.')
+
+        args = node.args.args.elts
+        # Workaround for visit_Name requiring symbols to be defined.
+        self.symbol_table.begin_scope()
+        for arg in args:
+            self.symbol_table.add_symbol(name=arg.id, value=None, type_=self.symbol_table.Expr, mutable=True)
+        body = map(self.visit, node.body)
+        self.symbol_table.end_scope()
+
+        symbol_value = types.Function(args, body)
+        self.symbol_table.add_symbol(name=node.name, value=symbol_value, type_=self.symbol_table.Func, mutable=False)
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
         if hasattr(node, 'dump') and not isinstance(node, types.Script):

@@ -50,6 +50,22 @@ class CompileTxScriptTest(BaseCompilerTest):
                'checkSig(sig, pubkey);']
         self._test(Test('DUP HASH160 0x14 0x1111111111111111111111111111111111111111 EQUALVERIFY CHECKSIG', src))
 
+class CompileTxScriptFunctionTest(BaseCompilerTest):
+    def _test(self, test):
+        return super(CompileTxScriptFunctionTest, self)._test(test.expected, test.src)
+
+    def test_define_function(self):
+        for test in [
+            Test('5 1ADD', ['func addFive(x) {x + 5;}', 'addFive(1);'])
+        ]:
+            self._test(test)
+
+    def test_function_scope(self):
+        for test in [
+            Test('5 1ADD', ['b = 5;', 'func addFive(x) {x + b;}', 'addFive(1);'])
+        ]:
+            self._test(test)
+
 class CompileBtcScriptTest(BaseCompilerTest):
     @classmethod
     def _options(cls):

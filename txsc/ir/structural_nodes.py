@@ -13,6 +13,14 @@ class Script(ScriptOp):
     def dump(self, *args):
         return ast.dump(self, *args)
 
+class Function(ScriptOp):
+    """A function."""
+    _fields = ('args', 'body')
+
+class FunctionCall(ScriptOp):
+    """A call to a function."""
+    _fields = ('name', 'args')
+
 class InnerScript(ScriptOp):
     """A script contained inside a script."""
     _fields = ('statements',)

@@ -7,6 +7,7 @@ explicit_hex = r'(0x)' + implicit_hex
 
 tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'EQUALS',
+        'LBRACE', 'RBRACE',
         'LPAREN', 'RPAREN',
         'COMMA',
         'SEMICOLON',
@@ -27,6 +28,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
         # Reserved words.
         'ASSUME',
+        'FUNC',
         'MUTABLE',
         'RETURN',
         'VERIFY',
@@ -37,6 +39,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
 reserved_words = {
     'assume': 'ASSUME',
+    'func': 'FUNC',
     'mutable': 'MUTABLE',
     'return': 'RETURN',
     'verify': 'VERIFY',
@@ -69,12 +72,15 @@ t_LESSTHANOREQUAL = r'\<\='
 t_GREATERTHANOREQUAL = r'\>\='
 
 t_EQUALS = r'\='
+t_LBRACE = r'\{'
+t_RBRACE = r'\}'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_COMMA = r'\,'
 t_SEMICOLON = r'\;'
 
 t_ASSUME = r'assume'
+t_FUNC = r'func'
 t_MUTABLE = r'mutable'
 t_RETURN = r'return'
 t_VERIFY = r'verify'

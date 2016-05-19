@@ -62,6 +62,13 @@ class ScriptParser(object):
             args.append(p[3])
         p[0] = ast.List(elts=args, ctx=ast.Store())
 
+    def p_function_define(self, p):
+        '''statement : FUNC NAME LPAREN args RPAREN LBRACE module RBRACE'''
+        func_name = p[2]
+        args = p[4]
+        body = p[7].body
+        p[0] = ast.FunctionDef(name=func_name, args=ast.arguments(args=args), body=body)
+
     def p_assume(self, p):
         '''expr : ASSUME args'''
         if not all(isinstance(i, ast.Name) for i in p[2].elts):

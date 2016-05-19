@@ -60,6 +60,16 @@ Inner scripts are created with the built-in function `raw()`. Every argument pas
 raw(2 + 5, 3 + 6);
 ```
 
+### Defining Functions
+
+Functions can be defined in a script. This is done using the keyword `func`:
+
+```
+func addFive(x) {
+    x + 5;
+}
+```
+
 ## Keywords
 
 The following keywords have meaning in txscript scripts.
@@ -67,6 +77,7 @@ The following keywords have meaning in txscript scripts.
 | Keyword   | Meaning       |
 | --------- | ------------- |
 | assume    | Declare assumed stack values by name. |
+| func      | Define a function.|
 | mutable   | Declare a mutable name. |
 | return    | Marks the script as invalid. |
 | verify    | Fail if the expression that follows is not true. |
