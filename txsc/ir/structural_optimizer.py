@@ -46,9 +46,17 @@ class StructuralOptimizer(BaseTransformer):
     def optimize(self, instructions, symbol_table, evaluate_expressions=True, strict_num=False):
         self.evaluator.enabled = evaluate_expressions
         self.evaluator.strict_num = strict_num
+        self.script = instructions
         script = instructions.script
         self.symbol_table = symbol_table
-        new = map(self.visit, script.statements)
+
+        new = []
+        for stmt in script.statements:
+            result = self.visit(stmt)
+            if isinstance(result, list):
+                new.extend(result)
+            else:
+                new.append(result)
         script.statements = filter(lambda i: i is not None, new)
 
     def is_commutative(self, node):
@@ -175,6 +183,21 @@ class StructuralOptimizer(BaseTransformer):
     def visit_VerifyOpCode(self, node):
         node.test = self.visit(node.test)
         return node
+
+    def visit_FunctionCall(self, node):
+        symbol = self.symbol_table.lookup(node.name)
+        func = symbol.value
+
+        self.symbol_table.begin_scope()
+        # Bind arguments to formal parameters.
+        for param, arg in zip(func.args, node.args):
+            # TODO use a specific symbol type instead of expression.
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
+
+        body = self.script.get_function_body(node, self.symbol_table)
+        body = map(self.visit, body)
+        self.symbol_table.end_scope()
+        return body
 
 def params(cls):
     """Causes the arguments to a method to be converted to cls."""
