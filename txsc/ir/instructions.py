@@ -161,6 +161,10 @@ class SInstructions(Instructions):
 
         # Figure out how many times each mutable name was changed before the function call.
         global_values = {}
+        for sym in symbol_table.iter_symbols():
+            if sym.type_ == 'stack_item':
+                global_values[sym.name] = -1
+
         def traverse_tree_before_call(n):
             if isinstance(n, list):
                 return map(traverse_tree_before_call, n)

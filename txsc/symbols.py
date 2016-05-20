@@ -23,6 +23,10 @@ class Scope(object):
     def __setitem__(self, key, value):
         self.symbols[key] = value
 
+    def __iter__(self):
+        for v in self.symbols.values():
+            yield v
+
     def get(self, key):
         return self.symbols.get(key)
 
@@ -41,6 +45,14 @@ class SymbolTable(object):
     def __init__(self):
         self.symbols = Scope(None)
         self.scopes = [self.symbols]
+
+    def iter_symbols(self):
+        symbols = self.symbols
+        while symbols:
+            iterator = iter(symbols)
+            for value in iterator:
+                yield value
+            symbols = symbols.parent
 
     def begin_scope(self):
         self.scopes.append(Scope(self.symbols))
