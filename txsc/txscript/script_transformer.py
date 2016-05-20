@@ -141,7 +141,7 @@ class ScriptTransformer(BaseTransformer):
         target = node.targets[0].id
         value = node.value
         sym_value = None
-        sym_type = None
+        sym_type = self.symbol_table.Expr
 
         # Check for assignment to immutables.
         existing = self.symbol_table.lookup(target)
@@ -167,14 +167,12 @@ class ScriptTransformer(BaseTransformer):
             elif isinstance(value, types.Symbol):
                 other = self.symbol_table.lookup(value.name)
                 sym_value = other.value[value.idx] if node.mutable else other.value
+                sym_type = other.type_[value.idx] if node.mutable else other.type_
             # Expression value.
             else:
                 sym_value = value
                 sym_type = self.symbol_table.Expr
 
-            # Mutable values are considered expressions.
-            if node.mutable:
-                sym_type = self.symbol_table.Expr
             self.symbol_table.add_symbol(target, sym_value, sym_type, node.mutable)
 
         return types.Assignment(name=target, value=value)

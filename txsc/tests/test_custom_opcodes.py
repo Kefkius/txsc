@@ -2,6 +2,7 @@ import unittest
 
 from txsc.ir import linear_nodes as lir
 from txsc.ir import structural_nodes as sir
+from txsc.ir.instructions import SInstructions
 from txsc.ir.structural_visitor import StructuralVisitor
 
 
@@ -20,7 +21,7 @@ def tearDownModule():
 
 class CustomOpcodeTest(unittest.TestCase):
     def _linearize(self, structural):
-        return StructuralVisitor().transform(structural)
+        return StructuralVisitor().transform(SInstructions(structural))
 
     def test_op(self):
         op = sir.OpCode(name='OP_FOO')

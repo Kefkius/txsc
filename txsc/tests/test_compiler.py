@@ -62,7 +62,9 @@ class CompileTxScriptFunctionTest(BaseCompilerTest):
 
     def test_function_scope(self):
         for test in [
-            Test('5 1ADD', ['b = 5;', 'func addFive(x) {x + b;}', 'addFive(1);'])
+            Test('5 1ADD', ['b = 5;', 'func addFive(x) {x + b;}', 'addFive(1);']),
+            Test('5 1ADD', ['mutable b = 5;', 'func addFive(x) {x + b;}', 'addFive(1); b = 6;']),
+            Test('5 1ADD 10 6 ADD', ['mutable b = 5;', 'func addFive(x) {x + b;}', 'addFive(1); b = 6; addFive(10);']),
         ]:
             self._test(test)
 

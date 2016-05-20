@@ -26,7 +26,8 @@ class StructuralVisitor(SourceVisitor):
     def transform(self, node, symbol_table=None, strict_num=False):
         self.symbol_table = symbol_table
         self.strict_num = strict_num
-        self.instructions = LInstructions(self.visit(node))
+        self.script = node
+        self.instructions = LInstructions(self.visit(node.script))
         return self.instructions
 
     @returnlist
@@ -59,17 +60,19 @@ class StructuralVisitor(SourceVisitor):
         if not symbol:
             raise Exception('Symbol "%s" was not declared.' % node.name)
         value = symbol.value
+        type_ = symbol.type_
         if symbol.mutable:
             value = value[node.idx]
+            type_ = type_[node.idx]
         # Add an assumption for the stack item.
-        if symbol.type_ == 'stack_item':
+        if type_ == 'stack_item':
             return types.Assumption(symbol.name, value)
         # Push the bytes of the byte array.
-        elif symbol.type_ in ['byte_array', 'integer']:
+        elif type_ in ['byte_array', 'integer']:
             return self.visit(structural_nodes.Push(''.join(value)))
         # If the type is an expression, then StructuralOptimizer could not simplify it.
         # Evaluate the expression as if it were encountered in the structural IR.
-        elif symbol.type_ == 'expression':
+        elif type_ == 'expression':
             return self.visit(value)
 
     @returnlist
@@ -141,7 +144,9 @@ class StructuralVisitor(SourceVisitor):
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
-        return_value = map(self.visit, func.body)
+
+        body = self.script.get_function_body(node, self.symbol_table)
+        return_value = map(self.visit, body)
         # Visiting returns a list.
         if len(return_value):
             values = list(return_value)
@@ -149,4 +154,5 @@ class StructuralVisitor(SourceVisitor):
             for v in values:
                 return_value.extend(v)
         self.symbol_table.end_scope()
+
         return return_value

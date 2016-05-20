@@ -56,9 +56,11 @@ class SymbolTable(object):
         other = self.symbols.get(symbol.name)
         if not other:
             symbol.value = [value]
+            symbol.type_ = [symbol.type_]
             self.symbols[symbol.name] = symbol
         else:
             other.value.append(symbol.value)
+            other.type_.append(symbol.type_)
 
     def insert(self, symbol):
         if symbol.mutable:

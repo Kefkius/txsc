@@ -1,3 +1,4 @@
+import ast
 import copy
 
 from bitcoin.core import _bignum
@@ -148,6 +149,50 @@ class SInstructions(Instructions):
 
     def __init__(self, script=structural_nodes.Script()):
         self.script = script
+
+    def get_function_body(self, call, symbol_table):
+        """Get the function for call.
+
+        This allows mutable values to be used as globals in functions.
+        """
+        symbol = symbol_table.lookup(call.name)
+        args = symbol.value.args
+        body = copy.deepcopy(symbol.value.body)
+
+        # Figure out how many times each mutable name was changed before the function call.
+        global_values = {}
+        def traverse_tree_before_call(n):
+            if isinstance(n, list):
+                return map(traverse_tree_before_call, n)
+            for child in ast.iter_child_nodes(n):
+                if child == call:
+                    break
+
+                if isinstance(child, structural_nodes.Assignment):
+                    value = global_values.get(child.name, -1)
+                    value += 1
+                    global_values[child.name] = value
+                else:
+                    traverse_tree_before_call(child)
+        traverse_tree_before_call(self.script)
+
+        # Now set the idx of each mutable global symbol used within the function body.
+        arg_names = [i.id for i in args]
+        def visit_stmt(stmt):
+            if isinstance(stmt, structural_nodes.Assignment):
+                if stmt.name in arg_names:
+                    signature = '%s(%s)' % (call.name, ', '.join(arg_names))
+                    raise Exception('In function %s: Cannot assign value to immutable function argument' % signature)
+
+            for child in ast.iter_child_nodes(stmt):
+                if isinstance(child, structural_nodes.Symbol):
+                    if child.name in arg_names:
+                        continue
+
+                    child.idx = global_values[child.name]
+        map(visit_stmt, body)
+
+        return body
 
     def dump(self, *args):
         return self.script.dump(*args)
