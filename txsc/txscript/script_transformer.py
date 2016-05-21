@@ -140,7 +140,6 @@ class ScriptTransformer(BaseTransformer):
 
         target = node.targets[0].id
         value = node.value
-        sym_value = None
         sym_type = self.symbol_table.Expr
 
         # Check for assignment to immutables.
@@ -152,7 +151,7 @@ class ScriptTransformer(BaseTransformer):
 
         # '_stack' is an invalid variable name that signifies stack assumptions.
         if target == '_stack':
-            self.symbol_table.add_stack_assumptions([i.id for i in value.elts])
+            value = [i.id for i in value.elts]
         else:
             if isinstance(value, ast.Num):
                 sym_type = self.symbol_table.Integer
@@ -160,38 +159,18 @@ class ScriptTransformer(BaseTransformer):
                 sym_type = self.symbol_table.ByteArray
 
             value = self.visit(value)
-            # Byte array value.
-            if isinstance(value, types.Push):
-                sym_value = formats.hex_to_list(value.data)
-            # Symbol value.
-            elif isinstance(value, types.Symbol):
-                other = self.symbol_table.lookup(value.name)
-                sym_value = other.value[value.idx] if node.mutable else other.value
-                sym_type = other.type_[value.idx] if node.mutable else other.type_
-            # Expression value.
-            else:
-                sym_value = value
-                sym_type = self.symbol_table.Expr
+            # Symbol type.
+            if isinstance(value, types.Symbol):
+                sym_type = self.symbol_table.Symbol
 
-            self.symbol_table.add_symbol(target, sym_value, sym_type, node.mutable)
-
-        return types.Assignment(name=target, value=value)
+        return types.Assignment(name=target, value=value, type_=sym_type, mutable=node.mutable)
 
     def visit_Name(self, node):
         # Return the node if it's being assigned.
         if isinstance(node.ctx, ast.Store):
             return node
 
-        if not self.symbol_table:
-            raise Exception('Cannot lookup name. Transformer was started without a symbol table.')
-        symbol = self.symbol_table.lookup(node.id)
-        if symbol is None:
-            raise NameError('Symbol "%s" was not declared.' % node.id)
-
-        idx = 0
-        if symbol.mutable:
-            idx = max(0, len(symbol.value) - 1)
-        op = types.Symbol(name=symbol.name, idx=idx)
+        op = types.Symbol(name=node.id)
         return op
 
     def visit_Num(self, node):
@@ -300,15 +279,11 @@ class ScriptTransformer(BaseTransformer):
             raise Exception('Cannot define function. Transformer was started without a symbol table.')
 
         args = node.args.args.elts
-        # Workaround for visit_Name requiring symbols to be defined.
-        self.symbol_table.begin_scope()
-        for arg in args:
-            self.symbol_table.add_symbol(name=arg.id, value=None, type_=self.symbol_table.Expr, mutable=True)
         body = map(self.visit, node.body)
-        self.symbol_table.end_scope()
 
-        symbol_value = types.Function(args, body)
-        self.symbol_table.add_symbol(name=node.name, value=symbol_value, type_=self.symbol_table.Func, mutable=False)
+        func_def = types.Function(node.name, args, body)
+        self.symbol_table.add_function_def(func_def)
+        return func_def
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
         if hasattr(node, 'dump') and not isinstance(node, types.Script):

@@ -4,6 +4,7 @@ import logging
 
 import hexs
 
+from txsc.symbols import SymbolTable
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import format_structural_op
@@ -48,7 +49,7 @@ class StructuralOptimizer(BaseTransformer):
         self.evaluator.strict_num = strict_num
         self.script = instructions
         script = instructions.script
-        self.symbol_table = symbol_table
+        self.symbol_table = SymbolTable.clone(symbol_table)
 
         new = []
         for stmt in script.statements:
@@ -118,31 +119,39 @@ class StructuralOptimizer(BaseTransformer):
             return node
         return method(node)
 
-    def visit_list(self, node):
-        return types.Push(''.join(node))
-
     def visit_Assignment(self, node):
-        node.value = self.visit(node.value)
+        type_ = node.type_
+        value = node.value
+        # '_stack' is an invalid variable name that signifies stack assumptions.
+        if node.name == '_stack':
+            self.symbol_table.add_stack_assumptions(value)
+        else:
+            # Symbol value.
+            if type_ == self.symbol_table.Symbol:
+                other = self.symbol_table.lookup(value.name)
+                type_ = other.type_
+                value = other.value
+            value = self.visit(value)
+            self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
+
         return node
 
     def visit_Symbol(self, node):
         """Attempt to simplify the value of a symbol."""
         symbol = self.symbol_table.lookup(node.name)
+        if not symbol:
+            raise Exception('Symbol "%s" was not declared.' % node.name)
         value = symbol.value
-        if symbol.mutable:
-            value = value[node.idx]
 
-        if symbol.type_ in ['byte_array', 'integer']:
-            return types.Push(''.join(value))
-        # Try to optimize the expression.
-        if symbol.type_ == 'expression':
+        # Constant value.
+        if not symbol.mutable and symbol.type_ in [SymbolTable.ByteArray, SymbolTable.Integer]:
+            return value
+        # Try to evaluate and/or optimize the expression.
+        if symbol.type_ == SymbolTable.Expr:
             expr = self.visit(value)
             if isinstance(expr, types.Push):
-                if symbol.mutable:
-                    symbol.value[node.idx] = formats.hex_to_list(expr.data)
-                else:
-                    symbol.value = formats.hex_to_list(expr.data)
-                    symbol.type_ = self.symbol_table.ByteArray
+                symbol.value = expr
+                symbol.type_ = self.symbol_table.ByteArray
 
                 return expr
 
@@ -186,16 +195,19 @@ class StructuralOptimizer(BaseTransformer):
 
     def visit_FunctionCall(self, node):
         symbol = self.symbol_table.lookup(node.name)
-        func = symbol.value
+        if not symbol:
+            raise Exception('Symbol "%s" was not declared.' % node.name)
+        if symbol.type_ != SymbolTable.Func:
+            raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
+        func = symbol.value
         self.symbol_table.begin_scope()
         # Bind arguments to formal parameters.
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
 
-        body = self.script.get_function_body(node, self.symbol_table)
-        body = map(self.visit, body)
+        body = map(self.visit, func.body)
         self.symbol_table.end_scope()
         return body
 

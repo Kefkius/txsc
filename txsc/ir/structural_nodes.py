@@ -15,7 +15,7 @@ class Script(ScriptOp):
 
 class Function(ScriptOp):
     """A function."""
-    _fields = ('args', 'body')
+    _fields = ('name', 'args', 'body')
 
 class FunctionCall(ScriptOp):
     """A call to a function."""
@@ -27,14 +27,14 @@ class InnerScript(ScriptOp):
 
 class Symbol(ScriptOp):
     """A symbol occurrence."""
-    _fields = ('name', 'idx')
+    _fields = ('name')
 
     def __str__(self):
         return self.name
 
 class Assignment(ScriptOp):
     """An assignment to a symbol."""
-    _fields = ('name', 'value')
+    _fields = ('name', 'value', 'type_', 'mutable')
 
 class Push(ScriptOp):
     """A data push operation.

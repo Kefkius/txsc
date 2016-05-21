@@ -50,6 +50,20 @@ class StructuralVisitor(SourceVisitor):
 
     @returnlist
     def visit_Assignment(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot assign value: No symbol table was supplied.')
+        type_ = node.type_
+        value = node.value
+        # '_stack' is an invalid variable name that signifies stack assumptions.
+        if node.name == '_stack':
+            self.symbol_table.add_stack_assumptions(value)
+        else:
+            # Symbol value.
+            if type_ == self.symbol_table.Symbol:
+                other = self.symbol_table.lookup(value.name)
+                type_ = other.type_
+                value = other.value
+            self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
         return None
 
     @returnlist
@@ -59,17 +73,15 @@ class StructuralVisitor(SourceVisitor):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise Exception('Symbol "%s" was not declared.' % node.name)
+
         value = symbol.value
         type_ = symbol.type_
-        if symbol.mutable:
-            value = value[node.idx]
-            type_ = type_[node.idx]
         # Add an assumption for the stack item.
         if type_ == 'stack_item':
             return types.Assumption(symbol.name, value)
         # Push the bytes of the byte array.
         elif type_ in ['byte_array', 'integer']:
-            return self.visit(structural_nodes.Push(''.join(value)))
+            return self.visit(value)
         # If the type is an expression, then StructuralOptimizer could not simplify it.
         # Evaluate the expression as if it were encountered in the structural IR.
         elif type_ == 'expression':
@@ -145,8 +157,7 @@ class StructuralVisitor(SourceVisitor):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
 
-        body = self.script.get_function_body(node, self.symbol_table)
-        return_value = map(self.visit, body)
+        return_value = map(self.visit, func.body)
         # Visiting returns a list.
         if len(return_value):
             values = list(return_value)
@@ -156,3 +167,7 @@ class StructuralVisitor(SourceVisitor):
         self.symbol_table.end_scope()
 
         return return_value
+
+    @returnlist
+    def visit_Function(self, node):
+        return None

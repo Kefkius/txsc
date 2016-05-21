@@ -1,4 +1,5 @@
 """Symbol table implementation for languages that can use one."""
+import copy
 
 class Symbol(object):
     """A symbol."""
@@ -33,6 +34,11 @@ class Scope(object):
     def clear(self):
         return self.symbols.clear()
 
+class GlobalScope(Scope):
+    """The global scope."""
+    def __init__(self):
+        super(GlobalScope, self).__init__(None)
+
 class SymbolTable(object):
     """A symbol table."""
     # Symbol type constants.
@@ -41,10 +47,25 @@ class SymbolTable(object):
     Func = 'function'
     Integer = 'integer'
     StackItem = 'stack_item'
+    Symbol = 'symbol'
 
     def __init__(self):
-        self.symbols = Scope(None)
+        self.symbols = GlobalScope()
         self.scopes = [self.symbols]
+
+    @classmethod
+    def clone(cls, other):
+        """Create a new symbol table from a symbol table."""
+        scope_index = other.scopes.index(other.symbols)
+        scopes = copy.deepcopy(other.scopes)
+        symtable = cls()
+        symtable.scopes = scopes
+        symtable.symbols = symtable.scopes[scope_index]
+        return symtable
+
+    def is_global_scope(self):
+        """Get whether the current scope is the global scope."""
+        return isinstance(self.symbols, GlobalScope)
 
     def iter_symbols(self):
         symbols = self.symbols
@@ -62,25 +83,16 @@ class SymbolTable(object):
         if self.symbols.parent is None:
             raise Exception('Already at global scope.')
         self.symbols = self.symbols.parent
-        self.scopes.pop()
-
-    def _update_mutable_symbol(self, symbol, value):
-        other = self.symbols.get(symbol.name)
-        if not other:
-            symbol.value = [value]
-            symbol.type_ = [symbol.type_]
-            self.symbols[symbol.name] = symbol
-        else:
-            other.value.append(symbol.value)
-            other.type_.append(symbol.type_)
 
     def insert(self, symbol):
-        if symbol.mutable:
-            self._update_mutable_symbol(symbol, symbol.value)
-        else:
-            self.symbols[symbol.name] = symbol
-
-        symbol = self.symbols[symbol.name]
+        # Check for assignment to immutables in the current scope.
+        if self.symbols.get(symbol.name):
+            other = self.symbols[symbol.name]
+            if not other.mutable:
+                raise Exception('Cannot assign value to immutable "%s"' % (other.name))
+            else:
+                symbol.mutable = True
+        self.symbols[symbol.name] = symbol
 
     def lookup(self, name):
         symbols = self.symbols
@@ -92,7 +104,7 @@ class SymbolTable(object):
         return symbol
 
     def clear(self):
-        self.symbols = Scope(None)
+        self.symbols = GlobalScope()
         self.scopes = [self.symbols]
 
     def add_symbol(self, name, value, type_, mutable=False):
@@ -107,3 +119,9 @@ class SymbolTable(object):
         for height, name in items:
             depth = size - height - 1
             self.insert(Symbol(name=name, value=depth, type_=self.StackItem, mutable=False))
+
+    def add_function_def(self, func_def):
+        """Add a function definition."""
+        if not self.is_global_scope():
+            raise Exception('Functions can only be defined in the global scope')
+        self.insert(Symbol(name=func_def.name, value=func_def, type_=self.Func, mutable=False))
