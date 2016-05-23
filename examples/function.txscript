@@ -1,0 +1,17 @@
+# Function example.
+#
+# Expected output:
+# 5 1ADD
+
+# Compiler directives.
+@target asm
+
+# This function adds its argument and a global variable called A.
+func addA(x) {
+    x + A;
+}
+
+# Note that A can be defined after the function that uses it.
+A = 5;
+
+addA(1);
