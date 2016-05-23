@@ -22,8 +22,9 @@ def int_to_bytearray(value):
 
 def hex_to_bytearray(value):
     """Encode a hex string as a byte array."""
-    value = value.replace('0x','').replace('L','')
-    return binascii.unhexlify(value)
+    value = hexs.format_hex(value)
+    bn = int(value, 16)
+    return _bignum.bn2vch(bn)
 
 
 def bytearray_to_int(data, decode_small_int=True):
