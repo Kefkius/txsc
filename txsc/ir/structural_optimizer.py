@@ -1,4 +1,5 @@
 import ast
+import copy
 from functools import wraps
 import logging
 
@@ -201,15 +202,23 @@ class StructuralOptimizer(BaseTransformer):
             raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
         func = symbol.value
+        body = copy.deepcopy(func.body)
+        node.args = map(self.visit, node.args)
+
         self.symbol_table.begin_scope()
         # Bind arguments to formal parameters.
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
 
-        body = map(self.visit, func.body)
+        new_body = map(self.visit, body)
         self.symbol_table.end_scope()
-        return body
+
+        # If optimization succeeded, return the result.
+        # Otherwise, return the original node.
+        if new_body != body:
+            return new_body[0] if len(new_body) == 1 else new_body
+        return node
 
 def params(cls):
     """Causes the arguments to a method to be converted to cls."""

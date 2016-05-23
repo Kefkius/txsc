@@ -27,7 +27,7 @@ class InnerScript(ScriptOp):
 
 class Symbol(ScriptOp):
     """A symbol occurrence."""
-    _fields = ('name')
+    _fields = ('name',)
 
     def __str__(self):
         return self.name
