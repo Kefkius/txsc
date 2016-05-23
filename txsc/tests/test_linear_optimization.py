@@ -112,6 +112,10 @@ class OptimizationTest(BaseOptimizationTest):
         ]:
             self._do_test('OP_RETURN OP_5', script)
 
+    def test_convert_to_small_int(self):
+        script = LInstructions([types.Push(b'\x05')])
+        self._do_test('OP_5', script)
+
 class InlineTest(BaseOptimizationTest):
     def test_implicit_assume(self):
         script = LInstructions([types.Assumption('testItem', 0), types.Five(), types.Add()])

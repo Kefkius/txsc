@@ -167,6 +167,20 @@ def promote_return(instructions):
     map(instructions.pop, reversed(occurrences))
     instructions.insert(0, types.Return())
 
+@peephole
+def use_small_int_opcodes(instructions):
+    """Convert data pushes to equivalent small integer opcodes."""
+    def convert_push(push):
+        push = push[0]
+        try:
+            i = formats.bytearray_to_int(push.data)
+            return [types.small_int_opcode(i)()]
+        except TypeError:
+            pass
+        return [push]
+    instructions.replace_template([types.Push()], convert_push, strict=False)
+
+
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
     MAX_PASSES = 5

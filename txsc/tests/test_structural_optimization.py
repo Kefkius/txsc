@@ -5,10 +5,11 @@ from txsc.tests import BaseCompilerTest
 
 
 EqualTest = namedtuple('EqualTest', ('expected', 'src1', 'src2'))
-class CompileTxScriptOptimizationsTest(BaseCompilerTest):
+
+class BaseStructuralOptimizationTest(BaseCompilerTest):
     @classmethod
     def _options(cls):
-        namespace = super(CompileTxScriptOptimizationsTest, cls)._options()
+        namespace = super(BaseStructuralOptimizationTest, cls)._options()
         # Optimization is not set to 3 because we don't want the constant
         # expressions to be evaluated.
         namespace.optimization = 2
@@ -25,6 +26,8 @@ class CompileTxScriptOptimizationsTest(BaseCompilerTest):
 
         self.assertEqual(result1, result2)
 
+
+class CompileTxScriptOptimizationsTest(BaseStructuralOptimizationTest):
     def test_logical_equivalence(self):
         for test in [
             EqualTest('10 LESSTHAN',    'assume a; a < 10;', 'assume a; 10 > a;'),
@@ -55,6 +58,29 @@ class CompileTxScriptOptimizationsTest(BaseCompilerTest):
     def test_commutative_expressions(self):
         for expected, src in [
             ('2 3 ADD ADD', 'assume a; 2 + a + 3;'),
+        ]:
+            result = self._compile(src)
+            self.assertEqual(expected, result)
+
+
+class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
+    @classmethod
+    def _options(cls):
+        namespace = super(AggressiveOptimizationsTest, cls)._options()
+        # Optimization level that causes constant expressions to be evaluated.
+        namespace.optimization = 3
+        return namespace
+
+    def test_negative_number(self):
+        for expected, src in [
+            ('0x02 0x8500', '-5;'),
+        ]:
+            result = self._compile(src)
+            self.assertEqual(expected, result)
+
+    def test_constant_arithmetic_expression(self):
+        for expected, src in [
+            ('5', '6 - 1;'),
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)
