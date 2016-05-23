@@ -13,6 +13,10 @@ class Script(ScriptOp):
     def dump(self, *args):
         return ast.dump(self, *args)
 
+class If(ScriptOp):
+    """A conditional statement."""
+    _fields = ('test', 'truebranch', 'falsebranch')
+
 class Function(ScriptOp):
     """A function."""
     _fields = ('name', 'args', 'body')

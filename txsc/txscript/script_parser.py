@@ -33,6 +33,18 @@ class ScriptParser(object):
         if len(p) == 3:
             p[0].body.append(p[2])
 
+    def p_conditional(self, p):
+        '''statement : IF expr LBRACE module RBRACE
+                     | IF expr LBRACE module RBRACE ELSE LBRACE module RBRACE
+        '''
+        test = p[2]
+        iftrue = p[4]
+        iffalse = []
+        if len(p) > 6:
+            iffalse = p[8]
+
+        p[0] = ast.If(test=test, body=iftrue, orelse=iffalse)
+
     def p_statement_assign(self, p):
         '''statement : NAME EQUALS expr SEMICOLON
                      | MUTABLE NAME EQUALS expr SEMICOLON

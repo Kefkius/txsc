@@ -24,6 +24,9 @@ def returnlist(func):
 class StructuralVisitor(SourceVisitor):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None, strict_num=False):
+        # Whether we've finished visiting a conditional that results in a different
+        # number of stack items depending on whether or not it is true.
+        self.after_uneven_conditional = False
         self.symbol_table = symbol_table
         self.strict_num = strict_num
         self.script = node
@@ -78,6 +81,10 @@ class StructuralVisitor(SourceVisitor):
         type_ = symbol.type_
         # Add an assumption for the stack item.
         if type_ == 'stack_item':
+            # Fail if there are assumptions after a conditional and the conditional branches do not result in the
+            # same number of stack items.
+            if self.after_uneven_conditional:
+                raise Exception("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
             return types.Assumption(symbol.name, value)
         # Push the bytes of the byte array.
         elif type_ in ['byte_array', 'integer']:
@@ -86,6 +93,21 @@ class StructuralVisitor(SourceVisitor):
         # Evaluate the expression as if it were encountered in the structural IR.
         elif type_ == 'expression':
             return self.visit(value)
+
+    @returnlist
+    def visit_If(self, node):
+        test = self.visit(node.test)
+        truebranch = self.visit(node.truebranch)
+        falsebranch = []
+        ops = test + [types.If()] + truebranch
+        if node.falsebranch:
+            falsebranch = self.visit(node.falsebranch)
+            ops.extend([types.Else()] + falsebranch)
+        ops.append(types.EndIf())
+
+        if sum([i.delta for i in truebranch]) != sum([i.delta for i in falsebranch]):
+            self.after_uneven_conditional = True
+        return ops
 
     @returnlist
     def visit_Push(self, node):

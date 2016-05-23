@@ -173,6 +173,14 @@ class ScriptTransformer(BaseTransformer):
         op = types.Symbol(name=node.id)
         return op
 
+    def visit_If(self, node):
+        test = self.visit(node.test)
+        truebranch = self.visit(node.body)
+        falsebranch = []
+        if node.orelse:
+            falsebranch = self.visit(node.orelse)
+        return types.If(test=test, truebranch=truebranch, falsebranch=falsebranch)
+
     def visit_Num(self, node):
         """Transform int to a hex string."""
         return self.visit(ast.Str(hex(node.n)))

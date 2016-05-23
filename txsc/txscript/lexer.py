@@ -12,6 +12,10 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'COMMA',
         'SEMICOLON',
 
+        # Conditionals.
+        'IF',
+        'ELSE',
+
         # Arithmetic operators.
         'PLUS', 'MINUS',
         'TIMES', 'DIVIDE',
@@ -39,6 +43,8 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
 
 reserved_words = {
     'assume': 'ASSUME',
+    'if': 'IF',
+    'else': 'ELSE',
     'func': 'FUNC',
     'mutable': 'MUTABLE',
     'return': 'RETURN',
@@ -80,6 +86,8 @@ t_COMMA = r'\,'
 t_SEMICOLON = r'\;'
 
 t_ASSUME = r'assume'
+t_IF = r'if'
+t_ELSE = r'else'
 t_FUNC = r'func'
 t_MUTABLE = r'mutable'
 t_RETURN = r'return'

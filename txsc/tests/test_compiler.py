@@ -68,6 +68,26 @@ class CompileTxScriptFunctionTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+class CompileTxScriptConditionalTest(BaseCompilerTest):
+    def _test(self, test):
+        return super(CompileTxScriptConditionalTest, self)._test(test.expected, test.src)
+
+    def test_conditional(self):
+        for test in [
+            Test('5 IF 6 ELSE 7 ENDIF', ['a = 5;' 'if a {6;} else {7;}']),
+        ]:
+            self._test(test)
+
+    def test_error(self):
+        """An exception should be thrown if an assumption is used after an uneven conditional.
+
+        An uneven conditional means that a different number of stack items are present
+        depending on whether the conditional test passes.
+        """
+        src = ['assume a;', 'if a == 5 {6;}', 'a;']
+        # TODO Use a named exception subclass.
+        self.assertRaises(Exception, self._compile, src)
+
 class CompileBtcScriptTest(BaseCompilerTest):
     @classmethod
     def _options(cls):

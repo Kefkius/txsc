@@ -170,6 +170,9 @@ NegativeOne = _opcode('NegativeOne', 1, 'OP_1NEGATE')
 # Flow control.
 
 # TODO: Conditionals.
+If = _unary_opcode('If', -1, 'OP_IF')
+Else = _opcode('Else', 0, 'OP_ELSE')
+EndIf = _opcode('EndIf', 0, 'OP_ENDIF')
 Verify = _unary_opcode('Verify', -1, 'OP_VERIFY', verifier=True)
 Return = _opcode('Return', 0, 'OP_RETURN')
 

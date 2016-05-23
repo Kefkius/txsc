@@ -5,15 +5,72 @@ from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
 import txsc.ir.linear_nodes as types
 
+class ConditionalBranch(object):
+    """A branch of a conditional.
+
+    Attributes:
+        is_truebranch (bool): Whether is represents a branch that runs if the test passes.
+        start (int): The index of the first op of this branch.
+        end (int): The index of the last op of this branch.
+
+    """
+    def __init__(self, is_truebranch=True, start=0, end=0):
+        self.is_truebranch = is_truebranch
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return '%s(%s, %s)' % (self.is_truebranch, self.start, self.end)
+
+    def __repr__(self):
+        return str(self)
+
+    def is_in_branch(self, idx):
+        if idx >= self.start and idx <= self.end:
+            return True
+        return False
+
 class LinearContextualizer(BaseTransformer):
     """Populates metadata attributes of linear IR instructions."""
     def __init__(self):
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
+        # [ConditionalBranch(), ...]
+        self.branches = []
 
     def following_occurrences(self, assumption_name, idx):
         """Get the number of occurrences of assumption_name after idx."""
-        return len(filter(lambda i: i > idx, self.assumptions[assumption_name]))
+        branches = list(self.branches)
+        match_any_branch = False
+        if not branches or idx <= branches[0].start:
+            match_any_branch = True
+
+        is_truebranch = None
+        for branch in branches:
+            if branch.is_in_branch(idx):
+                is_truebranch = branch.is_truebranch
+                break
+
+        assumptions = self.assumptions[assumption_name]
+        following = 0
+
+        for assumption in assumptions:
+            if assumption <= idx:
+                continue
+            if not branches:
+                following += 1
+            else:
+                for branch in branches:
+                    if not match_any_branch and branch.is_truebranch != is_truebranch:
+                        continue
+                    if branch.end > idx:
+                        following += 1
+
+                # Assumption beyond a conditional.
+                if assumption > branches[-1].end:
+                    following += 1
+
+        return following
 
     def nextop(self, op):
         """Get the operation that follows op."""
@@ -31,6 +88,7 @@ class LinearContextualizer(BaseTransformer):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
+        self.branches = []
         self.instructions = instructions
 
         for i, instruction in enumerate(iter(instructions)):
@@ -45,6 +103,18 @@ class LinearContextualizer(BaseTransformer):
 
     def visit_Assumption(self, op):
         self.assumptions[op.var_name].append(op.idx)
+
+    def visit_If(self, op):
+        self.branches.append(ConditionalBranch(is_truebranch = True, start = op.idx + 1))
+
+    def visit_Else(self, op):
+        if not self.branches:
+            raise Exception('Else statement requires a preceding If statement')
+        self.branches[-1].end = op.idx - 1
+        self.branches.append(ConditionalBranch(is_truebranch = False, start = op.idx + 1))
+
+    def visit_EndIf(self, op):
+        self.branches[-1].end = op.idx - 1
 
     def visit_CheckMultiSig(self, op):
         """Attempt to determine opcode arguments."""
@@ -102,7 +172,36 @@ class LinearInliner(BaseTransformer):
 
     def total_delta(self, idx):
         """Get the total delta of script operations before idx."""
-        return sum(i.delta for i in self.instructions[:idx])
+        branches = list(self.contextualizer.branches)
+        if not branches or idx <= branches[0].start:
+            return sum(i.delta for i in self.instructions[:idx])
+
+        is_truebranch = None
+        for branch in branches:
+            if branch.is_in_branch(idx):
+                is_truebranch = branch.is_truebranch
+                break
+
+        total = sum(i.delta for i in self.instructions[:branches[0].start])
+        for branch in branches:
+            if branch.is_truebranch == is_truebranch and branch.start <= idx:
+                if branch.end > idx:
+                    total += sum(i.delta for i in self.instructions[branch.start:idx])
+                    break
+                else:
+                    total += sum(i.delta for i in self.instructions[branch.start:branch.end])
+
+        # If is_truebranch is None, then idx is after a conditional.
+        # Add the delta of one of the conditional branches.
+        # If the branches do not result in the same number of stack items,
+        # then the script will have failed in StructuralVisitor.
+        if is_truebranch is None:
+            for branch in branches:
+                if branch.is_truebranch == True:
+                    total += sum(i.delta for i in self.instructions[branch.start:branch.end])
+
+        # TODO: Fix delta calculation so that total can't be negative.
+        return max(0, total)
 
     def inline(self, instructions, contextualizer, peephole_optimizer):
         """Perform inlining of variables in instructions.
