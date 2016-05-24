@@ -183,8 +183,7 @@ class ScriptTransformer(BaseTransformer):
         return types.If(test=test, truebranch=truebranch, falsebranch=falsebranch)
 
     def visit_Num(self, node):
-        """Transform int to a hex string."""
-        return self.visit(ast.Str(hex(node.n)))
+        return types.Int(node.n)
 
     def visit_Str(self, node):
         return types.Push(hexs.format_hex(node.s))

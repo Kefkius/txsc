@@ -111,11 +111,18 @@ class StructuralVisitor(SourceVisitor):
         return ops
 
     @returnlist
-    def visit_Push(self, node):
+    def visit_Int(self, node):
         smallint = types.small_int_opcode(int(node))
         if smallint:
             return smallint()
         else:
+            return types.Push(formats.int_to_bytearray(node.value))
+
+    @returnlist
+    def visit_Push(self, node):
+        try:
+            return types.small_int_opcode(int(node.data, 16))()
+        except (TypeError, ValueError):
             return types.Push(formats.hex_to_bytearray(node.data))
 
     @returnlist

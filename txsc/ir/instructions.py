@@ -22,7 +22,7 @@ def get_instructions_class(instructions_type):
 
 def format_structural_op(op):
     """Format an op for human-readability."""
-    if isinstance(op, (structural_nodes.Push, structural_nodes.Symbol)):
+    if isinstance(op, (structural_nodes.Int, structural_nodes.Push, structural_nodes.Symbol)):
         return str(op)
     linear = linear_nodes.opcode_by_name(op.name)
     if not linear or not linear.opstr:

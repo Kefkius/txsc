@@ -40,15 +40,21 @@ class Assignment(ScriptOp):
     """An assignment to a symbol."""
     _fields = ('name', 'value', 'type_', 'mutable')
 
+class Int(ScriptOp):
+    """An integer."""
+    _fields = ('value',)
+    def __int__(self):
+        return self.value
+
+    def __str__(self):
+        return str(self.value)
+
 class Push(ScriptOp):
     """A data push operation.
 
     Data is hex-encoded.
     """
     _fields = ('data',)
-
-    def __int__(self):
-        return int(self.data, 16) if self.data else 0
 
     def __str__(self):
         return self.data

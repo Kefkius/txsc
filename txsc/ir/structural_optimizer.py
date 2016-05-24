@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def get_const(op):
     """Get whether op represents a constant value."""
-    return isinstance(op, types.Push)
+    return isinstance(op, (types.Int, types.Push))
 
 def get_all_const(*ops):
     """Get whether ops all represent constant values."""
@@ -150,10 +150,9 @@ class StructuralOptimizer(BaseTransformer):
         # Try to evaluate and/or optimize the expression.
         if symbol.type_ == SymbolType.Expr:
             expr = self.visit(value)
-            if isinstance(expr, types.Push):
+            if isinstance(expr, (types.Int, types.Push)):
                 symbol.value = expr
-                symbol.type_ = SymbolType.ByteArray
-
+                symbol.type_ = SymbolType.Integer if isinstance(expr, types.Int) else SymbolType.ByteArray
                 return expr
 
         return node
@@ -262,7 +261,7 @@ class ConstEvaluator(object):
         result = method(*args)
         # Convert result to a Push instance.
         if isinstance(result, int):
-            result = types.Push(formats.int_to_bytearray(result).encode('hex'))
+            result = types.Int(result)
         elif isinstance(result, str):
             result = types.Push(formats.hex_to_bytearray(result).encode('hex'))
         return result

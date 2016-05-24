@@ -73,7 +73,7 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
 
     def test_negative_number(self):
         for expected, src in [
-            ('0x02 0x8500', '-5;'),
+            ('0x01 0x85', '-5;'),
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)
