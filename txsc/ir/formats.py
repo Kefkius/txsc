@@ -20,6 +20,13 @@ def int_to_bytearray(value):
         pass
     return _bignum.bn2vch(value)
 
+def int_to_hex(value):
+    """Encode an integer as a hex string.
+
+    This is a convenience function that calls int_to_bytearray().
+    """
+    return int_to_bytearray(value).encode('hex')
+
 def hex_to_bytearray(value):
     """Encode a hex string as a byte array."""
     value = hexs.format_hex(value)
@@ -41,6 +48,10 @@ def bytearray_to_int(data, decode_small_int=True):
         except Exception:
             pass
     return num
+
+def hex_to_int(data):
+    """Decode a hex string into an integer."""
+    return bytearray_to_int(hex_to_bytearray(data))
 
 def bytearray_to_bool(data):
     return _CastToBool(data)

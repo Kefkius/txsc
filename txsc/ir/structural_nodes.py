@@ -1,6 +1,7 @@
 """Structural intermediate representation for scripts."""
 import ast
 
+from txsc.ir import formats
 
 class ScriptOp(ast.Str):
     """Base class for nodes in this intermediate representation."""
@@ -43,6 +44,17 @@ class Assignment(ScriptOp):
 class Int(ScriptOp):
     """An integer."""
     _fields = ('value',)
+    @classmethod
+    def coerce(cls, other):
+        if isinstance(other, int):
+            return cls(other)
+        elif isinstance(other, Int):
+            return cls(other.value)
+        elif isinstance(other, Push):
+            return cls(formats.hex_to_int(other.data))
+        else:
+            raise ValueError('Cannot coerce %s to Int' % other)
+
     def __int__(self):
         return self.value
 
@@ -55,6 +67,21 @@ class Push(ScriptOp):
     Data is hex-encoded.
     """
     _fields = ('data',)
+    @classmethod
+    def coerce(cls, other):
+        if isinstance(other, str):
+            return cls(other)
+        elif isinstance(other, int):
+            return cls(str(other))
+        elif isinstance(other, Push):
+            return cls(other.data)
+        elif isinstance(other, Int):
+            return cls(formats.int_to_hex(other.value))
+        else:
+            raise ValueError('Cannot coerce %s to Push' % other)
+
+    def __int__(self):
+        return int(Int.coerce(self))
 
     def __str__(self):
         return self.data

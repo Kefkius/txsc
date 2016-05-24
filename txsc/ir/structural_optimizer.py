@@ -261,9 +261,9 @@ class ConstEvaluator(object):
         result = method(*args)
         # Convert result to a Push instance.
         if isinstance(result, int):
-            result = types.Int(result)
+            result = types.Int.coerce(result)
         elif isinstance(result, str):
-            result = types.Push(formats.hex_to_bytearray(result).encode('hex'))
+            result = types.Push.coerce(result)
         return result
 
     @strict_num
