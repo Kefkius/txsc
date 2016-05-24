@@ -40,6 +40,24 @@ mutable myOtherVar = 9;
 myOtherVar = 2;
 ```
 
+### Conditionals
+
+Conditional statements are denoted as follows: `if <expression> {body}`. An `else` statement can be specified as well:
+`if <expression> {body} else {elsebody}`.
+
+```
+myVar = 5;
+if myVar == 5 {
+    myVar * 2;
+} else {
+    myVar / 2;
+}
+```
+
+There is a drawback to using conditionals: If the two execution paths of a conditional do not result in the same number of stack
+items being present, then stack assumptions (see below) cannot be used after the conditional. The reason for this is that the number
+of items between a stack assumption and the actual assumed stack item cannot be determined this way.
+
 ### Built-in Functions
 
 There are built-in functions for opcodes. They are named using camelCase conventions.
@@ -83,6 +101,8 @@ The following keywords have meaning in txscript scripts.
 | verify    | Fail if the expression that follows is not true. |
 | and       | Logical AND operator. |
 | or        | Logical OR operator. |
+| if        | Begin an `if` statement. |
+| else      | Begin an `else` statement. |
 
 ### Assumptions
 
