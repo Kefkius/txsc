@@ -1,6 +1,15 @@
 """Symbol table implementation for languages that can use one."""
 import copy
 
+class SymbolType(object):
+    """Symbol types."""
+    ByteArray = 'byte_array'
+    Expr = 'expression'
+    Func = 'function'
+    Integer = 'integer'
+    StackItem = 'stack_item'
+    Symbol = 'symbol'
+
 class Symbol(object):
     """A symbol."""
     def __init__(self, name=None, value=None, type_=None, mutable=False):
@@ -41,13 +50,6 @@ class GlobalScope(Scope):
 
 class SymbolTable(object):
     """A symbol table."""
-    # Symbol type constants.
-    ByteArray = 'byte_array'
-    Expr = 'expression'
-    Func = 'function'
-    Integer = 'integer'
-    StackItem = 'stack_item'
-    Symbol = 'symbol'
 
     def __init__(self):
         self.symbols = GlobalScope()
@@ -118,10 +120,10 @@ class SymbolTable(object):
 
         for height, name in items:
             depth = size - height - 1
-            self.insert(Symbol(name=name, value=depth, type_=self.StackItem, mutable=False))
+            self.insert(Symbol(name=name, value=depth, type_=SymbolType.StackItem, mutable=False))
 
     def add_function_def(self, func_def):
         """Add a function definition."""
         if not self.is_global_scope():
             raise Exception('Functions can only be defined in the global scope')
-        self.insert(Symbol(name=func_def.name, value=func_def, type_=self.Func, mutable=False))
+        self.insert(Symbol(name=func_def.name, value=func_def, type_=SymbolType.Func, mutable=False))

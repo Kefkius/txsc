@@ -4,6 +4,7 @@ import sys
 
 import hexs
 
+from txsc.symbols import SymbolType
 from txsc.ir import formats
 import txsc.ir.structural_nodes as types
 from txsc.transformer import BaseTransformer
@@ -140,7 +141,7 @@ class ScriptTransformer(BaseTransformer):
 
         target = node.targets[0].id
         value = node.value
-        sym_type = self.symbol_table.Expr
+        sym_type = SymbolType.Expr
 
         # Check for assignment to immutables.
         existing = self.symbol_table.lookup(target)
@@ -154,14 +155,14 @@ class ScriptTransformer(BaseTransformer):
             value = [i.id for i in value.elts]
         else:
             if isinstance(value, ast.Num):
-                sym_type = self.symbol_table.Integer
+                sym_type = SymbolType.Integer
             elif isinstance(value, ast.List):
-                sym_type = self.symbol_table.ByteArray
+                sym_type = SymbolType.ByteArray
 
             value = self.visit(value)
             # Symbol type.
             if isinstance(value, types.Symbol):
-                sym_type = self.symbol_table.Symbol
+                sym_type = SymbolType.Symbol
 
         return types.Assignment(name=target, value=value, type_=sym_type, mutable=node.mutable)
 
@@ -268,7 +269,7 @@ class ScriptTransformer(BaseTransformer):
         # User-defined function.
         if self.symbol_table and self.symbol_table.lookup(node.func.id):
             symbol = self.symbol_table.lookup(node.func.id)
-            if symbol.type_ != self.symbol_table.Func:
+            if symbol.type_ != SymbolType.Func:
                 raise SyntaxError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
             return types.FunctionCall(node.func.id, map(self.visit, node.args))
 

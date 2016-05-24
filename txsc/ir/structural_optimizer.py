@@ -5,7 +5,7 @@ import logging
 
 import hexs
 
-from txsc.symbols import SymbolTable
+from txsc.symbols import SymbolTable, SymbolType
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import format_structural_op
@@ -76,7 +76,7 @@ class StructuralOptimizer(BaseTransformer):
             if not isinstance(n, types.Symbol):
                 return False
             symbol = self.symbol_table.lookup(n.name)
-            if symbol and symbol.type_ == 'stack_item':
+            if symbol and symbol.type_ == SymbolType.StackItem:
                 return True
             return False
 
@@ -128,7 +128,7 @@ class StructuralOptimizer(BaseTransformer):
             self.symbol_table.add_stack_assumptions(value)
         else:
             # Symbol value.
-            if type_ == self.symbol_table.Symbol:
+            if type_ == SymbolType.Symbol:
                 other = self.symbol_table.lookup(value.name)
                 type_ = other.type_
                 value = other.value
@@ -145,14 +145,14 @@ class StructuralOptimizer(BaseTransformer):
         value = symbol.value
 
         # Constant value.
-        if not symbol.mutable and symbol.type_ in [SymbolTable.ByteArray, SymbolTable.Integer]:
+        if not symbol.mutable and symbol.type_ in [SymbolType.ByteArray, SymbolType.Integer]:
             return value
         # Try to evaluate and/or optimize the expression.
-        if symbol.type_ == SymbolTable.Expr:
+        if symbol.type_ == SymbolType.Expr:
             expr = self.visit(value)
             if isinstance(expr, types.Push):
                 symbol.value = expr
-                symbol.type_ = self.symbol_table.ByteArray
+                symbol.type_ = SymbolType.ByteArray
 
                 return expr
 
@@ -198,7 +198,7 @@ class StructuralOptimizer(BaseTransformer):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise Exception('Symbol "%s" was not declared.' % node.name)
-        if symbol.type_ != SymbolTable.Func:
+        if symbol.type_ != SymbolType.Func:
             raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
         func = symbol.value
@@ -209,7 +209,7 @@ class StructuralOptimizer(BaseTransformer):
         # Bind arguments to formal parameters.
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr)
 
         new_body = map(self.visit, body)
         self.symbol_table.end_scope()

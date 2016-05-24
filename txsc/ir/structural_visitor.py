@@ -1,6 +1,7 @@
 from functools import wraps
 import logging
 
+from txsc.symbols import SymbolType
 from txsc.transformer import SourceVisitor
 from txsc.ir import formats, structural_nodes
 from txsc.ir.instructions import LInstructions, SInstructions
@@ -62,7 +63,7 @@ class StructuralVisitor(SourceVisitor):
             self.symbol_table.add_stack_assumptions(value)
         else:
             # Symbol value.
-            if type_ == self.symbol_table.Symbol:
+            if type_ == SymbolType.Symbol:
                 other = self.symbol_table.lookup(value.name)
                 type_ = other.type_
                 value = other.value
@@ -80,18 +81,18 @@ class StructuralVisitor(SourceVisitor):
         value = symbol.value
         type_ = symbol.type_
         # Add an assumption for the stack item.
-        if type_ == 'stack_item':
+        if type_ == SymbolType.StackItem:
             # Fail if there are assumptions after a conditional and the conditional branches do not result in the
             # same number of stack items.
             if self.after_uneven_conditional:
                 raise Exception("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
             return types.Assumption(symbol.name, value)
         # Push the bytes of the byte array.
-        elif type_ in ['byte_array', 'integer']:
+        elif type_ in [SymbolType.ByteArray, SymbolType.Integer]:
             return self.visit(value)
         # If the type is an expression, then StructuralOptimizer could not simplify it.
         # Evaluate the expression as if it were encountered in the structural IR.
-        elif type_ == 'expression':
+        elif type_ == SymbolType.Expr:
             return self.visit(value)
 
     @returnlist
@@ -169,7 +170,7 @@ class StructuralVisitor(SourceVisitor):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise Exception('No function "%s" exists.' % node.name)
-        elif symbol.type_ != self.symbol_table.Func:
+        elif symbol.type_ != SymbolType.Func:
             raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
         func = symbol.value
@@ -177,7 +178,7 @@ class StructuralVisitor(SourceVisitor):
         # Bind arguments to formal parameters.
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = self.symbol_table.Expr)
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr)
 
         return_value = map(self.visit, func.body)
         # Visiting returns a list.
