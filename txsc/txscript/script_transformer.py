@@ -125,9 +125,16 @@ class ScriptTransformer(BaseTransformer):
             return binary_ops[name]
 
     def visit_Module(self, node):
-        node.body = map(self.visit, node.body)
+        node.body = map(self.visit_module_body_statement, node.body)
         scr = types.Script(statements=filter(lambda i: i is not None, node.body))
         return scr
+
+    def visit_module_body_statement(self, node):
+        """Wrapper for error raising."""
+        try:
+            return super(ScriptTransformer, self).visit(node)
+        except Exception as e:
+            raise e.__class__(e.message, node.lineno, node.col_offset)
 
     def visit_Pass(self, node):
         return None
@@ -249,7 +256,7 @@ class ScriptTransformer(BaseTransformer):
         node.args = map(self.visit, node.args)
         # Ensure the number of args is correct.
         if op_func.nargs != -1 and len(node.args) != op_func.nargs:
-            raise SyntaxError('%s takes %d arguments (%d were given)' % (op_func.name, op_func.nargs, len(node.args)))
+            raise SyntaxError('%s() requires %d arguments (got %d)' % (op_func.name, op_func.nargs, len(node.args)))
 
         # Unary opcode.
         if op_func.nargs == 1:

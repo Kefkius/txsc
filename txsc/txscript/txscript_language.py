@@ -28,7 +28,14 @@ class TxScriptSourceVisitor(SourceVisitor):
         ast.fix_missing_locations(node)
 
         # Convert AST to structural representation.
-        node = ScriptTransformer(symbol_table).visit(node)
+        try:
+            node = ScriptTransformer(symbol_table).visit(node)
+        except Exception as e:
+            lineno = e.args[1]
+            msg = 'On line %d:\n\t' % lineno
+            msg += source.split('\n')[lineno - 1]
+            msg += '\n' + e.args[0]
+            raise e.__class__(msg)
 
         return SInstructions(node)
 
