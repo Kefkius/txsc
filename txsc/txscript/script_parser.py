@@ -33,9 +33,19 @@ class ScriptParser(object):
         if len(p) == 3:
             p[0].body.append(p[2])
 
+    def p_ifbody(self, p):
+        '''ifbody : module
+                  |
+        '''
+        if len(p) == 1:
+            module = ast.Module(body=[])
+        else:
+            module = p[1]
+        p[0] = module
+
     def p_conditional(self, p):
-        '''statement : IF expr LBRACE module RBRACE
-                     | IF expr LBRACE module RBRACE ELSE LBRACE module RBRACE
+        '''statement : IF expr LBRACE ifbody RBRACE
+                     | IF expr LBRACE ifbody RBRACE ELSE LBRACE ifbody RBRACE
         '''
         test = p[2]
         iftrue = p[4]

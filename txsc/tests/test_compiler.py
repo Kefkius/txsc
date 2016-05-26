@@ -80,6 +80,13 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_empty_conditional(self):
+        for test in [
+            Test('IF 5 ENDIF', ['assume a;', 'if a {5;} else {}'],),
+            Test('IF ELSE 5 ENDIF', ['assume a;', 'if a {} else {5;}'],),
+        ]:
+            self._test(test)
+
     def test_error(self):
         """An exception should be thrown if an assumption is used after an uneven conditional.
 

@@ -100,10 +100,13 @@ class StructuralVisitor(SourceVisitor):
         test = self.visit(node.test)
         truebranch = self.visit(node.truebranch)
         falsebranch = []
-        ops = test + [types.If()] + truebranch
+        ops = test + [types.If()]
+
+        ops.extend(truebranch)
         if node.falsebranch:
             falsebranch = self.visit(node.falsebranch)
-            ops.extend([types.Else()] + falsebranch)
+            if falsebranch:
+                ops.extend([types.Else()] + falsebranch)
         ops.append(types.EndIf())
 
         if sum([i.delta for i in truebranch]) != sum([i.delta for i in falsebranch]):
