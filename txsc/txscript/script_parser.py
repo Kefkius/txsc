@@ -82,7 +82,7 @@ class ScriptParser(object):
         p[0] = ast.FunctionDef(name=func_name, args=ast.arguments(args=args), body=body)
 
     def p_assume(self, p):
-        '''expr : ASSUME args'''
+        '''statement : ASSUME args SEMICOLON'''
         if not all(isinstance(i, ast.Name) for i in p[2].elts):
             raise Exception('Assumptions can only be assigned to names.')
         p[0] = ast.Assign(targets=[ast.Name(id='_stack', ctx=ast.Store())], value=p[2])
@@ -121,7 +121,7 @@ class ScriptParser(object):
         p[0] = ast.UnaryOp(op=op, operand=p[2])
 
     def p_verify(self, p):
-        '''expr : VERIFY expr'''
+        '''statement : VERIFY expr SEMICOLON'''
         p[0] = ast.Assert(test=p[2], msg=None)
 
     def p_expr_binop(self, p):
