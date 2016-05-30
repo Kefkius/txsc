@@ -180,6 +180,20 @@ def use_small_int_opcodes(instructions):
         return [push]
     instructions.replace_template([types.Push()], convert_push, strict=False)
 
+@peephole
+def shorten_commutative_operations(instructions):
+    """Remove ops that change the order of commutative operations."""
+    optimizations = []
+    for op in [types.Add(), types.Mul(), types.BoolAnd(), types.BoolOr(),
+               types.NumEqual(), types.NumEqualVerify(), types.NumNotEqual(),
+               types.Min(), types.Max(),
+               types.And(), types.Or(), types.Xor(), types.Equal(), types.EqualVerify(),
+    ]:
+        template = [types.Swap(), op]
+        optimizations.append((template, lambda values: values[1:]))
+
+    for template, callback in optimizations:
+        instructions.replace_template(template, callback)
 
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""

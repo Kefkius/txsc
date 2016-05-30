@@ -124,10 +124,31 @@ class InlineTest(BaseOptimizationTest):
 
     def test_assume_to_pick_or_roll(self):
         script = LInstructions([types.Five(), types.Assumption('testItem', 0), types.Add()])
-        self._do_test('OP_5 OP_SWAP OP_ADD', script)
+        self._do_test('OP_5 OP_ADD', script)
 
         script = LInstructions([types.Five(), types.Five(), types.Assumption('testItem', 0), types.Add()])
         self._do_test('OP_5 OP_5 OP_2 OP_ROLL OP_ADD', script)
 
         script = LInstructions([types.Five(), types.Five(), types.Assumption('testItem', 0), types.Add(), types.Assumption('testItem', 0)])
         self._do_test('OP_5 OP_5 OP_2 OP_PICK OP_ADD OP_2 OP_ROLL', script)
+
+class UnusedAssumptionsTest(BaseOptimizationTest):
+    def setUp(self):
+        super(UnusedAssumptionsTest, self).setUp()
+        self.symbol_table = SymbolTable()
+
+    def _do_test(self, expected, script):
+        original = str(script)
+        self.optimizer.optimize(script, self.symbol_table)
+        expected = str(expected.split(' '))
+        self.assertEqual(expected, str(script), '%s != %s (original: %s)' % (expected, str(script), original))
+
+    def test_unused_top_assumption(self):
+        self.symbol_table.add_stack_assumptions(['a', 'b', 'c'])
+        script = LInstructions([types.Assumption('a', 2), types.Assumption('b', 1), types.Add()])
+        self._do_test('OP_DROP OP_ADD', script)
+
+    def test_unused_assumptions(self):
+        self.symbol_table.add_stack_assumptions(['a', 'b', 'c', 'd'])
+        script = LInstructions([types.Assumption('a', 3), types.Assumption('c', 1), types.Add()])
+        self._do_test('OP_2 OP_ROLL OP_2DROP OP_ADD', script)
