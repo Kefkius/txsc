@@ -4,7 +4,7 @@ from ply import yacc
 from txsc.ir.instructions import STRUCTURAL, SInstructions
 from txsc.language import Language
 from txsc.transformer import SourceVisitor
-from txsc.txscript import ScriptParser, ScriptTransformer
+from txsc.txscript import ScriptParser, ScriptTransformer, ParsingError
 from txsc.symbols import SymbolTable
 
 def get_lang():
@@ -30,7 +30,7 @@ class TxScriptSourceVisitor(SourceVisitor):
         # Convert AST to structural representation.
         try:
             node = ScriptTransformer(symbol_table).visit(node)
-        except Exception as e:
+        except ParsingError as e:
             lineno = e.args[1]
             msg = 'On line %d:\n\t' % lineno
             msg += source.split('\n')[lineno - 1]

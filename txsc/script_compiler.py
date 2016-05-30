@@ -9,6 +9,7 @@ from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.structural_visitor import StructuralVisitor
 from txsc.ir.structural_optimizer import StructuralOptimizer
 from txsc.ir.linear_optimizer import LinearOptimizer
+from txsc.txscript import ParsingError
 from txsc import config
 
 # Will not reload the entry points if they've already been loaded.
@@ -167,8 +168,8 @@ class ScriptCompiler(object):
 
         try:
             instructions = self.source_lang().process_source(*args)
-        except SyntaxError as e:
-            print('Error encountered during compilation of source:')
+        except ParsingError as e:
+            print('%s encountered during compilation of source:' % e.__class__.__name__)
             print(e)
             sys.exit(1)
 

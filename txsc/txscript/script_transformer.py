@@ -109,11 +109,20 @@ def get_op_func(name):
         if i.name == name:
             return i
 
+class ParsingError(Exception):
+    """Exception raised when parsing fails."""
+    pass
+
+class ParsingNameError(ParsingError):
+    """Exception raised when an invalid name is encountered."""
+    pass
+
 class ScriptTransformer(BaseTransformer):
     """Transforms input into a structural intermediate representation."""
     def __init__(self, symbol_table=None):
         super(ScriptTransformer, self).__init__()
         self.symbol_table = symbol_table
+        self.line_number = 0
 
     def get_op_name(self, node):
         name = node.__class__.__name__
@@ -124,6 +133,14 @@ class ScriptTransformer(BaseTransformer):
         elif name in binary_ops:
             return binary_ops[name]
 
+    def visit(self, node):
+        if hasattr(node, 'lineno'):
+            self.line_number = node.lineno
+        result = super(ScriptTransformer, self).visit(node)
+        if result:
+            result.lineno = self.line_number
+        return result
+
     def visit_Module(self, node):
         node.body = map(self.visit_module_body_statement, node.body)
         scr = types.Script(statements=filter(lambda i: i is not None, node.body))
@@ -133,7 +150,7 @@ class ScriptTransformer(BaseTransformer):
         """Wrapper for error raising."""
         try:
             return super(ScriptTransformer, self).visit(node)
-        except Exception as e:
+        except ParsingError as e:
             raise e.__class__(e.message, node.lineno, node.col_offset)
 
     def visit_Pass(self, node):
@@ -144,7 +161,7 @@ class ScriptTransformer(BaseTransformer):
         if not self.symbol_table:
             raise Exception('Cannot assign value(s). Transformer was started without a symbol table.')
         if len(node.targets) > 1:
-            raise Exception('Cannot assign value(s) to more than one symbol.')
+            raise ParsingError('Cannot assign value(s) to more than one symbol.')
 
         target = node.targets[0].id
         value = node.value
@@ -154,8 +171,6 @@ class ScriptTransformer(BaseTransformer):
         existing = self.symbol_table.lookup(target)
         if existing:
             node.mutable = existing.mutable
-            if not existing.mutable:
-                raise Exception('Cannot assign value to immutable symbol "%s".' % target)
 
         # '_stack' is an invalid variable name that signifies stack assumptions.
         if target == '_stack':
@@ -251,12 +266,12 @@ class ScriptTransformer(BaseTransformer):
         """Transform a function call into its corresponding OpCode."""
         op_func = get_op_func(node.func.id)
         if not op_func:
-            raise SyntaxError('No function "%s" exists.' % node.func.id)
+            raise ParsingNameError('No function "%s" exists.' % node.func.id)
         # Ensure args have been visited.
         node.args = map(self.visit, node.args)
         # Ensure the number of args is correct.
         if op_func.nargs != -1 and len(node.args) != op_func.nargs:
-            raise SyntaxError('%s() requires %d arguments (got %d)' % (op_func.name, op_func.nargs, len(node.args)))
+            raise ParsingError('%s() requires %d arguments (got %d)' % (op_func.name, op_func.nargs, len(node.args)))
 
         # Unary opcode.
         if op_func.nargs == 1:
@@ -276,7 +291,7 @@ class ScriptTransformer(BaseTransformer):
         if self.symbol_table and self.symbol_table.lookup(node.func.id):
             symbol = self.symbol_table.lookup(node.func.id)
             if symbol.type_ != SymbolType.Func:
-                raise SyntaxError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
+                raise ParsingError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
             return types.FunctionCall(node.func.id, map(self.visit, node.args))
 
         # Raw scripts are handled via a function call.
@@ -286,7 +301,7 @@ class ScriptTransformer(BaseTransformer):
         if get_op_func(node.func.id):
             return self.visit_op_function_call(node)
         # Function name must be known.
-        raise NameError('No function "%s" exists.' % node.func.id)
+        raise ParsingNameError('No function "%s" exists.' % node.func.id)
 
     # TODO Python 3 compatibility.
     def visit_FunctionDef(self, node):
