@@ -1,6 +1,10 @@
 """Symbol table implementation for languages that can use one."""
 import copy
 
+class ImmutableError(Exception):
+    """Exception raised when attempting to replace an immutable value."""
+    pass
+
 class SymbolType(object):
     """Symbol types."""
     ByteArray = 'byte_array'
@@ -91,7 +95,7 @@ class SymbolTable(object):
         if self.symbols.get(symbol.name):
             other = self.symbols[symbol.name]
             if not other.mutable:
-                raise Exception('Cannot assign value to immutable "%s"' % (other.name))
+                raise ImmutableError('Cannot assign value to immutable symbol "%s".' % (other.name))
             else:
                 symbol.mutable = True
         self.symbols[symbol.name] = symbol

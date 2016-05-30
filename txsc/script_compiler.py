@@ -6,7 +6,7 @@ import logging
 
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
-from txsc.ir.structural_visitor import StructuralVisitor
+from txsc.ir.structural_visitor import StructuralVisitor, IRError
 from txsc.ir.structural_optimizer import StructuralOptimizer
 from txsc.ir.linear_optimizer import LinearOptimizer
 from txsc.txscript import ParsingError
@@ -68,7 +68,10 @@ class ScriptCompiler(object):
         self.logger = logging.getLogger(__name__)
         self.outputs = OrderedDict()
         self.symbol_table = None
+        self.source_lines = []
         self.setup_languages()
+        # If true, sys.exit() will not be called when failing.
+        self.testing_mode = False
 
     def setup_languages(self):
         self.langs = config.get_languages()
@@ -159,6 +162,7 @@ class ScriptCompiler(object):
 
         if self.verbosity.echo_input:
             self.outputs['Input'] = source_lines
+        self.source_lines = list(source_lines)
 
         self.symbol_table = SymbolTable()
         # Add symbol_table to arguments if the source lang supports it.
@@ -169,6 +173,8 @@ class ScriptCompiler(object):
         try:
             instructions = self.source_lang().process_source(*args)
         except ParsingError as e:
+            if self.testing_mode:
+                raise e
             print('%s encountered during compilation of source:' % e.__class__.__name__)
             print(e)
             sys.exit(1)
@@ -179,14 +185,27 @@ class ScriptCompiler(object):
         """Process intermediate representation."""
         # Convert structural to linear representation.
         if instructions.ir_type == STRUCTURAL:
+            ast.fix_missing_locations(instructions.script)
             if self.verbosity.show_structural_ir:
                 self.outputs['Structural Intermediate Representation'] = instructions.dump()
-            # Optimize structural IR.
-            if self.optimization.optimize_structural:
-                StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural, self.options.strict_num)
-                if self.verbosity.show_structural_ir:
-                    self.outputs['Optimized Structural Representation'] = instructions.dump()
-            instructions = StructuralVisitor().transform(instructions, self.symbol_table, self.options.strict_num)
+            try:
+                # Optimize structural IR.
+                if self.optimization.optimize_structural:
+                    StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural, self.options.strict_num)
+                    if self.verbosity.show_structural_ir:
+                        self.outputs['Optimized Structural Representation'] = instructions.dump()
+                instructions = StructuralVisitor().transform(instructions, self.symbol_table, self.options.strict_num)
+            except IRError as e:
+                if self.testing_mode:
+                    raise e
+                lineno = e.args[1]
+                msg = 'On line %d:\n\t' % lineno
+                msg += self.source_lines[lineno - 1]
+                if e.args[0]:
+                    msg += '\n' + e.args[0]
+                print('%s encountered in intermediate representation:' % e.__class__.__name__)
+                print(msg)
+                sys.exit(1)
 
         if self.verbosity.show_linear_ir:
             self.outputs['Linear Intermediate Representation'] = str(instructions)

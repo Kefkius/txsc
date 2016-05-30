@@ -7,6 +7,7 @@ class BaseCompilerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.compiler = ScriptCompiler()
+        cls.compiler.testing_mode = True
 
     @classmethod
     def _options(cls):

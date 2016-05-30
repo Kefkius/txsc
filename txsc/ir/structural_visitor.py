@@ -1,7 +1,7 @@
 from functools import wraps
 import logging
 
-from txsc.symbols import SymbolType
+from txsc.symbols import SymbolType, ImmutableError
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, structural_nodes
 from txsc.ir.instructions import LInstructions, SInstructions
@@ -22,6 +22,18 @@ def returnlist(func):
         return result
     return wrapper
 
+class IRError(Exception):
+    """Exception raised when converting SIR instructions to the LIR."""
+    pass
+
+class IRStrictNumError(IRError):
+    """Exception raised when using a non-number value in an arithmetic operation."""
+    pass
+
+class IRTypeError(IRError):
+    """Exception raised when using incompatible or incorrect types."""
+    pass
+
 class StructuralVisitor(BaseTransformer):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None, strict_num=False):
@@ -33,6 +45,12 @@ class StructuralVisitor(BaseTransformer):
         self.script = node
         self.instructions = LInstructions(self.visit(node.script))
         return self.instructions
+
+    def visit(self, node):
+        try:
+            return super(StructuralVisitor, self).visit(node)
+        except IRError as e:
+            raise e.__class__(e.args[0], node.lineno)
 
     @returnlist
     def visit_list(self, node):
@@ -67,7 +85,10 @@ class StructuralVisitor(BaseTransformer):
                 other = self.symbol_table.lookup(value.name)
                 type_ = other.type_
                 value = other.value
-            self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
+            try:
+                self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
+            except ImmutableError as e:
+                raise IRError(e.message)
         return None
 
     @returnlist
@@ -76,7 +97,7 @@ class StructuralVisitor(BaseTransformer):
             raise Exception('Cannot process symbol: No symbol table was supplied.')
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
-            raise Exception('Symbol "%s" was not declared.' % node.name)
+            raise IRError('Symbol "%s" was not declared.' % node.name)
 
         value = symbol.value
         type_ = symbol.type_
@@ -85,7 +106,7 @@ class StructuralVisitor(BaseTransformer):
             # Fail if there are assumptions after a conditional and the conditional branches do not result in the
             # same number of stack items.
             if self.after_uneven_conditional:
-                raise Exception("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
+                raise IRError("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
             return types.Assumption(symbol.name, value)
         # Push the bytes of the byte array.
         elif type_ in [SymbolType.ByteArray, SymbolType.Integer]:
@@ -156,7 +177,7 @@ class StructuralVisitor(BaseTransformer):
                     msg = 'Input value is longer than 4 bytes: 0x%x' % operands[valid.index(False)]
                     if self.strict_num:
                         logger.error(msg)
-                        raise ValueError(msg)
+                        raise IRStrictNumError(msg)
                     else:
                         logger.warning(msg)
 
@@ -179,9 +200,9 @@ class StructuralVisitor(BaseTransformer):
             raise Exception('Cannot process function call: No symbol table was supplied.')
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
-            raise Exception('No function "%s" exists.' % node.name)
+            raise IRError('No function "%s" exists.' % node.name)
         elif symbol.type_ != SymbolType.Func:
-            raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
+            raise IRTypeError('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
         func = symbol.value
         self.symbol_table.begin_scope()

@@ -1,7 +1,7 @@
 import unittest
 from collections import namedtuple
 
-
+from txsc.ir.structural_visitor import IRError
 from txsc.tests import BaseCompilerTest
 
 
@@ -94,8 +94,7 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
         depending on whether the conditional test passes.
         """
         src = ['assume a;', 'if a == 5 {6;}', 'a;']
-        # TODO Use a named exception subclass.
-        self.assertRaises(Exception, self._compile, src)
+        self.assertRaises(IRError, self._compile, src)
 
 class CompileBtcScriptTest(BaseCompilerTest):
     @classmethod

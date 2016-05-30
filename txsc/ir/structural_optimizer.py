@@ -5,10 +5,11 @@ import logging
 
 import hexs
 
-from txsc.symbols import SymbolTable, SymbolType
+from txsc.symbols import SymbolTable, SymbolType, ImmutableError
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import SInstructions, format_structural_op
+from txsc.ir.structural_visitor import IRError, IRStrictNumError, IRTypeError
 import txsc.ir.structural_nodes as types
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,10 @@ class StructuralOptimizer(BaseTransformer):
         method = getattr(self, 'visit_%s' % node.__class__.__name__, None)
         if not method:
             return node
-        return method(node)
+        try:
+            return method(node)
+        except IRError as e:
+            raise e.__class__(e.args[0], node.lineno)
 
     def visit_Assignment(self, node):
         type_ = node.type_
@@ -133,7 +137,10 @@ class StructuralOptimizer(BaseTransformer):
                 type_ = other.type_
                 value = other.value
             value = self.visit(value)
-            self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
+            try:
+                self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
+            except ImmutableError as e:
+                raise IRError(e.message)
 
         return node
 
@@ -141,7 +148,7 @@ class StructuralOptimizer(BaseTransformer):
         """Attempt to simplify the value of a symbol."""
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
-            raise Exception('Symbol "%s" was not declared.' % node.name)
+            raise IRError('Symbol "%s" was not declared.' % node.name)
         value = symbol.value
 
         # Constant value.
@@ -196,9 +203,9 @@ class StructuralOptimizer(BaseTransformer):
     def visit_FunctionCall(self, node):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
-            raise Exception('Symbol "%s" was not declared.' % node.name)
+            raise IRError('Symbol "%s" was not declared.' % node.name)
         if symbol.type_ != SymbolType.Func:
-            raise Exception('Cannot call "%s" of type %s' % (node.name, symbol.type_))
+            raise IRTypeError('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
         func = symbol.value
         body = copy.deepcopy(func.body)
@@ -244,7 +251,7 @@ class ConstEvaluator(object):
                 msg = 'Input value is longer than 4 bytes: 0x%x' % args[valid.index(False)]
                 if self.strict_num:
                     logger.error(msg)
-                    raise ValueError(msg)
+                    raise IRStrictNumError(msg)
                 else:
                     logger.warning(msg)
             return method(self, *args)
