@@ -212,7 +212,7 @@ class ScriptCompiler(object):
 
         # Perform linear IR optimizations. Perform peephole optimizations if specified.
         # TODO: If the target language supports symbols, do not inline.
-        LinearOptimizer().optimize(instructions, peephole=self.optimization.optimize_linear, inline=True)
+        LinearOptimizer().optimize(instructions, self.symbol_table, peephole=self.optimization.optimize_linear, inline=True)
         if self.verbosity.show_linear_ir:
             self.outputs['Optimized Linear Representation'] = str(instructions)
 

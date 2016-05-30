@@ -1,5 +1,6 @@
 import unittest
 
+from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_optimizer import LinearOptimizer
 import txsc.ir.linear_nodes as types
@@ -10,7 +11,7 @@ class BaseOptimizationTest(unittest.TestCase):
 
     def _do_test(self, expected, script):
         original = str(script)
-        self.optimizer.optimize(script)
+        self.optimizer.optimize(script, SymbolTable())
         expected = str(expected.split(' '))
         self.assertEqual(expected, str(script), '%s != %s (original: %s)' % (expected, str(script), original))
 

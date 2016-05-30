@@ -210,10 +210,10 @@ class PeepholeOptimizer(object):
 
 class LinearOptimizer(object):
     """Performs optimizations on the linear IR."""
-    def optimize(self, instructions, peephole=True, inline=True):
+    def optimize(self, instructions, symbol_table, peephole=True, inline=True):
         self.peephole_optimizer = PeepholeOptimizer(peephole)
         if inline:
-            contextualizer = LinearContextualizer()
+            contextualizer = LinearContextualizer(symbol_table)
             inliner = LinearInliner()
             inliner.inline(instructions, contextualizer, self.peephole_optimizer)
 

@@ -66,6 +66,11 @@ class LInstructions(Instructions, list):
         """Create a copy of instructions from [start : end]."""
         return copy.deepcopy(self[start:end])
 
+    def insert_slice(self, start, values):
+        """Insert a list of instructions at start."""
+        while values:
+            self.insert(start, values.pop(-1))
+
     def replace_slice(self, start, end, values):
         """Replace instructions from [start : end] with values."""
         self[start:end] = values

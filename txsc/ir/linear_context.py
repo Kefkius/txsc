@@ -32,11 +32,10 @@ class ConditionalBranch(object):
 
 class LinearContextualizer(BaseTransformer):
     """Populates metadata attributes of linear IR instructions."""
-    def __init__(self):
+    def __init__(self, symbol_table):
+        self.symbol_table = symbol_table
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
-        # Assumed stack items that have been consumed.
-        self.consumed_assumptions = []
         # [ConditionalBranch(), ...]
         self.branches = []
 
@@ -74,6 +73,17 @@ class LinearContextualizer(BaseTransformer):
 
         return following
 
+    def get_unused_assumptions(self):
+        """Get the assumed stack items that are never used."""
+        unused = []
+        # Find unused stack assumptions.
+        if self.symbol_table.lookup('_stack_names'):
+            for name in self.symbol_table.lookup('_stack_names').value:
+                if not self.assumptions.get(name):
+                    unused.append(self.symbol_table.lookup(name))
+        return sorted(unused, key = lambda i: i.value, reverse = True)
+
+
     def nextop(self, op):
         """Get the operation that follows op."""
         try:
@@ -90,7 +100,6 @@ class LinearContextualizer(BaseTransformer):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
-        self.consumed_assumptions = []
         self.branches = []
         self.instructions = instructions
 
@@ -223,6 +232,7 @@ class LinearInliner(BaseTransformer):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
         self.contextualizer = contextualizer
+        self.remove_unused_assumptions(peephole_optimizer)
 
         # Loop until no inlining can be done.
         while 1:
@@ -243,6 +253,18 @@ class LinearInliner(BaseTransformer):
             if not inlined:
                 break
 
+    def remove_unused_assumptions(self, peephole_optimizer):
+        """Remove assumed stack items that are never used."""
+        self.contextualizer.contextualize(self.instructions)
+        offset = 0
+        for stack_item in self.contextualizer.get_unused_assumptions():
+            arg = self.op_for_int(stack_item.value)
+            ops = [arg, types.Roll(), types.Drop()]
+            idx = offset
+            offset += len(ops)
+
+            self.instructions.insert_slice(idx, ops)
+
     def visit_consecutive_assumptions(self, assumptions):
         """Handle a row of consecutive assumptions."""
         # If the first assumption's delta is 0 and the depths are sequential,
@@ -253,12 +275,6 @@ class LinearInliner(BaseTransformer):
             final_item_depth = next(iterator)
             values = [(a, b) for a, b in enumerate(iterator, final_item_depth + 1)]
             if all(a == b for (a, b) in values):
-                consumed = 0
-                # Account for consumed stack items.
-                for assumption in self.contextualizer.consumed_assumptions:
-                    if assumption.depth < final_item_depth:
-                        consumed += 1
-                final_item_depth -= consumed
                 if final_item_depth == 0:
                     return []
 
@@ -282,11 +298,11 @@ class LinearInliner(BaseTransformer):
                 return result
 
         # If there are no consecutive assumptions, use opcodes to bring this assumption to the top.
-        arg = self.op_for_int(self.total_delta(op.idx) + op.depth)
+        arg = self.total_delta(op.idx) + op.depth
+        # TODO: Fix delta calculation so that total can't be negative.
+        arg = self.op_for_int(max(0, arg))
 
         # Use OP_PICK if there are other occurrences after this one.
         opcode = types.Pick if self.contextualizer.following_occurrences(op.var_name, op.idx) > 0 else types.Roll
-        if opcode is types.Roll:
-            self.contextualizer.consumed_assumptions.append(op)
         return [arg, opcode()]
 

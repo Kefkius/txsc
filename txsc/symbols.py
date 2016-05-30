@@ -125,6 +125,7 @@ class SymbolTable(object):
         for height, name in items:
             depth = size - height - 1
             self.insert(Symbol(name=name, value=depth, type_=SymbolType.StackItem, mutable=False))
+        self.insert(Symbol(name='_stack_names', value=list(names), type_=SymbolType.Expr, mutable=False))
 
     def add_function_def(self, func_def):
         """Add a function definition."""

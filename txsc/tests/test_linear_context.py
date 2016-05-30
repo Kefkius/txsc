@@ -1,5 +1,6 @@
 import unittest
 
+from txsc.symbols import SymbolTable
 from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_context import LinearContextualizer
@@ -7,7 +8,7 @@ import txsc.ir.linear_nodes as types
 
 class BaseContextTest(unittest.TestCase):
     def setUp(self):
-        self.contextualizer = LinearContextualizer()
+        self.contextualizer = LinearContextualizer(SymbolTable())
 
     def _do_context(self, script):
         self.contextualizer.contextualize(script)
