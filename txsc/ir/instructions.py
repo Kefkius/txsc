@@ -8,6 +8,7 @@ from bitcoin.core.scripteval import _CastToBool
 from txsc.ir import linear_nodes
 from txsc.ir import structural_nodes
 from txsc.ir import formats
+from txsc.symbols import SymbolType
 
 # Constants for instructions type.
 LINEAR = 1
@@ -145,6 +146,20 @@ class SInstructions(Instructions):
         if not linear or not issubclass(linear, linear_nodes.OpCode):
             return
         return linear.arithmetic
+
+    @staticmethod
+    def get_symbol_type_for_node(op):
+        """Get the SymbolType that can represent op."""
+        if isinstance(op, structural_nodes.Int):
+            return SymbolType.Integer
+        elif isinstance(op, structural_nodes.Push):
+            return SymbolType.ByteArray
+        elif isinstance(op, structural_nodes.Symbol):
+            return SymbolType.Symbol
+        elif isinstance(op, structural_nodes.Function):
+            return SymbolType.Func
+        # If no other type qualifies, use expression.
+        return SymbolType.Expr
 
 
     def __init__(self, script=structural_nodes.Script()):

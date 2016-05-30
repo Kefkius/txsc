@@ -2,7 +2,7 @@ from functools import wraps
 import logging
 
 from txsc.symbols import SymbolType
-from txsc.transformer import SourceVisitor
+from txsc.transformer import BaseTransformer
 from txsc.ir import formats, structural_nodes
 from txsc.ir.instructions import LInstructions, SInstructions
 import txsc.ir.linear_nodes as types
@@ -22,7 +22,7 @@ def returnlist(func):
         return result
     return wrapper
 
-class StructuralVisitor(SourceVisitor):
+class StructuralVisitor(BaseTransformer):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None, strict_num=False):
         # Whether we've finished visiting a conditional that results in a different

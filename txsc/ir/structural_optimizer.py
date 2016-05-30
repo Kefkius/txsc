@@ -8,7 +8,7 @@ import hexs
 from txsc.symbols import SymbolTable, SymbolType
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
-from txsc.ir.instructions import format_structural_op
+from txsc.ir.instructions import SInstructions, format_structural_op
 import txsc.ir.structural_nodes as types
 
 logger = logging.getLogger(__name__)
@@ -145,14 +145,14 @@ class StructuralOptimizer(BaseTransformer):
         value = symbol.value
 
         # Constant value.
-        if not symbol.mutable and symbol.type_ in [SymbolType.ByteArray, SymbolType.Integer]:
+        if get_const(value):
             return value
         # Try to evaluate and/or optimize the expression.
         if symbol.type_ == SymbolType.Expr:
             expr = self.visit(value)
-            if isinstance(expr, (types.Int, types.Push)):
+            if get_const(expr):
                 symbol.value = expr
-                symbol.type_ = SymbolType.Integer if isinstance(expr, types.Int) else SymbolType.ByteArray
+                symbol.type_ = SInstructions.get_symbol_type_for_node(expr)
                 return expr
 
         return node
