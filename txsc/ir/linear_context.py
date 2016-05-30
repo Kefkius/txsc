@@ -35,6 +35,8 @@ class LinearContextualizer(BaseTransformer):
     def __init__(self):
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
+        # Assumed stack items that have been consumed.
+        self.consumed_assumptions = []
         # [ConditionalBranch(), ...]
         self.branches = []
 
@@ -88,6 +90,7 @@ class LinearContextualizer(BaseTransformer):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
+        self.consumed_assumptions = []
         self.branches = []
         self.instructions = instructions
 
@@ -247,8 +250,17 @@ class LinearInliner(BaseTransformer):
         if self.total_delta(assumptions[0].idx) == 0:
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
             iterator = (i.depth for i in reversed(assumptions))
-            if all(a == b for a, b in enumerate(iterator, next(iterator) + 1)):
-                return []
+            final_item_depth = next(iterator)
+            values = [(a, b) for a, b in enumerate(iterator, final_item_depth + 1)]
+            if all(a == b for (a, b) in values):
+                consumed = 0
+                # Account for consumed stack items.
+                for assumption in self.contextualizer.consumed_assumptions:
+                    if assumption.depth < final_item_depth:
+                        consumed += 1
+                final_item_depth -= consumed
+                if final_item_depth == 0:
+                    return []
 
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)
@@ -274,5 +286,7 @@ class LinearInliner(BaseTransformer):
 
         # Use OP_PICK if there are other occurrences after this one.
         opcode = types.Pick if self.contextualizer.following_occurrences(op.var_name, op.idx) > 0 else types.Roll
+        if opcode is types.Roll:
+            self.contextualizer.consumed_assumptions.append(op)
         return [arg, opcode()]
 
