@@ -20,7 +20,7 @@ class TxScriptSourceVisitor(SourceVisitor):
 
     def transform(self, source, symbol_table):
         if isinstance(source, list):
-            source = '\n'.join(source)
+            source = ''.join(source)
 
         node = self.parser.parse(source)
         if not isinstance(node, ast.Module):

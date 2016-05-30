@@ -16,7 +16,7 @@ class ScriptParser(object):
         self.parser = yacc.yacc(module=self, debug=self.debug)
 
     def parse(self, s):
-        return self.parser.parse(s, lexer=self.lexer)
+        return self.parser.parse(s, lexer=self.lexer, tracking=True)
 
     def p_error(self, p):
         raise SyntaxError('Syntax error: %s' % p)
@@ -25,12 +25,14 @@ class ScriptParser(object):
         '''module : statement
                   | module statement
         '''
+        p[1].lineno = p.lineno(1)
         if isinstance(p[1], ast.Module):
             p[0] = p[1]
         else:
             p[0] = ast.Module(body=[p[1]])
 
         if len(p) == 3:
+            p[2].lineno = p.lineno(2)
             p[0].body.append(p[2])
 
     def p_ifbody(self, p):

@@ -109,7 +109,10 @@ class ScriptCompiler(object):
         directives = {}
         directive_lines = filter(lambda line: line.startswith('@'), source_lines)
         for i in directive_lines:
+            # Replace directive with a newline.
+            idx = source_lines.index(i)
             source_lines.remove(i)
+            source_lines.insert(idx, '\n')
             try:
                 key, value = i[1:].split(' ')
             except ValueError:
