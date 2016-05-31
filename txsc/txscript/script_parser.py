@@ -80,11 +80,12 @@ class ScriptParser(object):
                 | args COMMA expr
         '''
         args = [p[1]]
-        if hasattr(p[1], 'elts'):
+        if getattr(p[1], 'is_arguments', False):
             args = p[1].elts
         if len(p) > 2:
             args.append(p[3])
         p[0] = ast.List(elts=args, ctx=ast.Store())
+        p[0].is_arguments = True
 
     def p_function_define(self, p):
         '''statement : FUNC NAME LPAREN args RPAREN LBRACE module RBRACE'''
