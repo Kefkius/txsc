@@ -1,4 +1,5 @@
 from collections import defaultdict
+import copy
 
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
@@ -75,14 +76,14 @@ class LinearContextualizer(BaseTransformer):
 
     def get_unused_assumptions(self):
         """Get the assumed stack items that are never used."""
-        unused = []
+        if not self.symbol_table.lookup('_stack_names'):
+            return ([], [])
+        all_items = copy.deepcopy(map(self.symbol_table.lookup, self.symbol_table.lookup('_stack_names').value))
+        # Sort by depth.
+        all_items = sorted(all_items, key = lambda i: i.value, reverse = True)
         # Find unused stack assumptions.
-        if self.symbol_table.lookup('_stack_names'):
-            for name in self.symbol_table.lookup('_stack_names').value:
-                if not self.assumptions.get(name):
-                    unused.append(self.symbol_table.lookup(name))
-        return sorted(unused, key = lambda i: i.value, reverse = True)
-
+        unused_items = filter(lambda i: i.name not in self.assumptions.keys(), all_items)
+        return (unused_items, all_items)
 
     def nextop(self, op):
         """Get the operation that follows op."""
@@ -257,7 +258,29 @@ class LinearInliner(BaseTransformer):
         """Remove assumed stack items that are never used."""
         self.contextualizer.contextualize(self.instructions)
         offset = 0
-        for stack_item in self.contextualizer.get_unused_assumptions():
+        unused_items, all_items = self.contextualizer.get_unused_assumptions()
+
+        # Check for consecutive drops of top stack items.
+        # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
+        if unused_items and unused_items[-1].value == 0:
+            iterator = reversed(unused_items)
+            consecutive_drops = [next(iterator)]
+            for i, item in enumerate(iterator, 1):
+                if i == item.value:
+                    consecutive_drops.append(item)
+                else:
+                    break
+
+            if len(consecutive_drops) > 1:
+                for symbol in consecutive_drops:
+                    self.instructions.insert_slice(0, [types.Drop()])
+                    unused_items.pop(-1)
+                    offset += 1
+                # Change the depths of non-consecutive stack items.
+                for stack_item in unused_items:
+                    stack_item.value -= offset
+
+        for stack_item in unused_items:
             arg = self.op_for_int(stack_item.value)
             ops = [arg, types.Roll(), types.Drop()]
             idx = offset

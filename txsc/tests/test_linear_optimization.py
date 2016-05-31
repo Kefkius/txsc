@@ -152,3 +152,18 @@ class UnusedAssumptionsTest(BaseOptimizationTest):
         self.symbol_table.add_stack_assumptions(['a', 'b', 'c', 'd'])
         script = LInstructions([types.Assumption('a', 3), types.Assumption('c', 1), types.Add()])
         self._do_test('OP_2 OP_ROLL OP_2DROP OP_ADD', script)
+
+    def test_consecutive_top_item_drops(self):
+        self.symbol_table.add_stack_assumptions(['a', 'b', 'c', 'd'])
+
+        script = LInstructions([types.Assumption('a', 3)])
+        self._do_test('OP_2DROP OP_DROP', script)
+
+        script = LInstructions([types.Assumption('b', 2)])
+        self._do_test('OP_2DROP OP_NIP', script)
+
+        script = LInstructions([types.Assumption('c', 1)])
+        self._do_test('OP_3 OP_ROLL OP_DROP OP_2 OP_ROLL OP_2DROP', script)
+
+        script = LInstructions([types.Assumption('d', 0)])
+        self._do_test('OP_3 OP_ROLL OP_DROP OP_2 OP_ROLL OP_DROP OP_NIP', script)
