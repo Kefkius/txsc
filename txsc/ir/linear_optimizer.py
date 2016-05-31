@@ -199,6 +199,11 @@ def shorten_commutative_operations(instructions):
     for template, callback in optimizations:
         instructions.replace_template(template, callback)
 
+@peephole
+def remove_null_conditionals(instructions):
+    """Replace empty conditionals with an op that consumes the test value."""
+    instructions.replace_template([types.If(), types.EndIf()], lambda values: [types.Drop()])
+
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
     MAX_PASSES = 5
