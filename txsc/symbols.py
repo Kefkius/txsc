@@ -30,6 +30,16 @@ class Symbol(object):
         self.value = value
         self.mutable = mutable
 
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        mutable = 'mutable' if self.mutable else 'immutable'
+        return '%s %s %s = %s' % (mutable, self.type_, self.name, self.value)
+
 class Scope(object):
     """A scope of symbols."""
     def __init__(self, parent):
@@ -55,6 +65,9 @@ class Scope(object):
     def clear(self):
         return self.symbols.clear()
 
+    def dump(self):
+        return {k: str(v) for k, v in self.symbols.items()}
+
 class GlobalScope(Scope):
     """The global scope."""
     def __init__(self):
@@ -64,6 +77,9 @@ class SymbolTable(object):
     """A symbol table."""
 
     def __init__(self):
+        self.clear()
+
+    def clear(self):
         self.symbols = GlobalScope()
         self.scopes = [self.symbols]
 
@@ -80,6 +96,13 @@ class SymbolTable(object):
     def is_global_scope(self):
         """Get whether the current scope is the global scope."""
         return isinstance(self.symbols, GlobalScope)
+
+    def get_global_scope(self):
+        """Get the global scope."""
+        global_scope = self.scopes[0]
+        if not isinstance(global_scope, GlobalScope):
+            raise Exception('No global scope exists.')
+        return global_scope
 
     def iter_symbols(self):
         symbols = self.symbols
@@ -116,6 +139,10 @@ class SymbolTable(object):
                 raise UndeclaredError('Symbol "%s" was not declared.' % symbol.name)
         self.symbols[symbol.name] = symbol
 
+    def insert_global(self, symbol):
+        """Insert a symbol into the global scope."""
+        self.get_global_scope()[symbol.name] = symbol
+
     def lookup(self, name, one_scope=False):
         symbols = self.symbols
         symbol = symbols.get(name)
@@ -127,9 +154,9 @@ class SymbolTable(object):
             symbol = symbols.get(name)
         return symbol
 
-    def clear(self):
-        self.symbols = GlobalScope()
-        self.scopes = [self.symbols]
+    def lookup_global(self, name):
+        """Lookup a symbol in the global scope."""
+        return self.get_global_scope().get(name)
 
     def add_symbol(self, name, value, type_, mutable=False, declaration=False):
         self.insert(Symbol(name=name, value=value, type_=type_, mutable=mutable), declaration=declaration)
