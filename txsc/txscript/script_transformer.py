@@ -1,5 +1,6 @@
 import ast
 from collections import namedtuple
+import inspect
 import sys
 
 import hexs
@@ -121,6 +122,7 @@ class ScriptTransformer(BaseTransformer):
     """Transforms input into a structural intermediate representation."""
     def __init__(self, symbol_table=None):
         super(ScriptTransformer, self).__init__()
+        self.builtins = BuiltinFunctions(self)
         self.symbol_table = symbol_table
         self.line_number = 0
 
@@ -211,11 +213,6 @@ class ScriptTransformer(BaseTransformer):
         """Transform array of bytes to bytes."""
         return self.visit(ast.Str(''.join(node.elts)))
 
-    def visit_Tuple(self, node):
-        """Tuple denotes an embedded "inner" script."""
-        node.elts = map(self.visit, node.elts)
-        return types.InnerScript(node.elts)
-
     def visit_Assert(self, node):
         node.test = self.visit(node.test)
         return types.VerifyOpCode(name='OP_VERIFY',
@@ -291,9 +288,9 @@ class ScriptTransformer(BaseTransformer):
                 raise ParsingError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
             return types.FunctionCall(node.func.id, map(self.visit, node.args))
 
-        # Raw scripts are handled via a function call.
-        if node.func.id == 'raw':
-            return self.visit(ast.Tuple(elts=node.args))
+        # Handle "built-in" functions.
+        if self.builtins.is_builtin(node.func.id):
+            return self.visit(self.builtins.call_builtin(node.func.id, node.args))
         # Handle function calls that correspond to opcodes.
         if get_op_func(node.func.id):
             return self.visit_op_function_call(node)
@@ -316,3 +313,32 @@ class ScriptTransformer(BaseTransformer):
         if hasattr(node, 'dump') and not isinstance(node, types.Script):
             return node.dump(annotate_fields)
         return super(ScriptTransformer, self).format_dump(node, annotate_fields, include_attributes)
+
+
+
+class BuiltinFunctions(object):
+    """Handler for "built-in" functions."""
+    def __init__(self, scr_transformer):
+        self.transformer = scr_transformer
+        self.builtins = {}
+
+        is_builtin = lambda method: inspect.ismethod(method) and method.__name__.startswith('builtin_')
+        for k, v in inspect.getmembers(self, is_builtin):
+            self.builtins[k[8:]] = v
+
+    def visit(self, node):
+        return self.transformer.visit(node)
+
+    def is_builtin(self, name):
+        """Get whether name is the name of a built-in function."""
+        return name in self.builtins.keys()
+
+    def call_builtin(self, name, args):
+        """Call a built-in function."""
+        if not self.is_builtin(name):
+            raise ValueError('Unknown function: "%s"' % name)
+        return self.builtins[name](*args)
+
+    def builtin_raw(self, *args):
+        """Embed a raw script within a script."""
+        return types.InnerScript(map(self.visit, args))
