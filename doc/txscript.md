@@ -23,7 +23,7 @@ Literal values in TxScript are either integers or hex strings. Hex strings are e
 
 ```
 # The RIPEMD-160 hash of my public key.
-myHash = '1111111111111111111111111111111111111111';
+let myHash = '1111111111111111111111111111111111111111';
 ```
 
 ### Assignments
@@ -34,9 +34,11 @@ To bind a mutable name to a value, use the keyword `mutable` before the name.
 Names can be bound to literal values or expressions. If bound to an expression, txsc will attempt to evaluate it during optimization.
 Names may not begin with an underscore or a number.
 
+The first time a name is declared, the keyword `let` must be used.
+
 ```
-myVar = 5 + 12;
-mutable myOtherVar = 9;
+let myVar = 5 + 12;
+let mutable myOtherVar = 9;
 myOtherVar = 2;
 ```
 
@@ -46,7 +48,7 @@ Conditional statements are denoted as follows: `if <expression> {body}`. An `els
 `if <expression> {body} else {elsebody}`.
 
 ```
-myVar = 5;
+let myVar = 5;
 if myVar == 5 {
     myVar * 2;
 } else {
@@ -63,7 +65,7 @@ of items between a stack assumption and the actual assumed stack item cannot be 
 There are built-in functions for opcodes. They are named using camelCase conventions.
 
 ```
-myVar = 2 + 5;
+let myVar = 2 + 5;
 verify min(myVar, 10) == myVar;
 ```
 
@@ -96,6 +98,7 @@ The following keywords have meaning in txscript scripts.
 | --------- | ------------- |
 | assume    | Declare assumed stack values by name. |
 | func      | Define a function.|
+| let       | Declare a new name. |
 | mutable   | Declare a mutable name. |
 | return    | Marks the script as invalid. |
 | verify    | Fail if the expression that follows is not true. |
@@ -126,7 +129,7 @@ used to add arbitrary data to a transaction.
 
 ```
 return;
-myArbitraryData = '1122';
+let myArbitraryData = '1122';
 myArbitraryData;
 ```
 
@@ -135,7 +138,7 @@ myArbitraryData;
 Verification statements cause the script to fail if their value is not true.
 
 ```
-myVar = 5 + 12;
+let myVar = 5 + 12;
 verify myVar == 17;
 ```
 
