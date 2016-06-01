@@ -1,5 +1,7 @@
 # txsc
 
+[![Join the chat at https://gitter.im/Kefkius/txsc](https://badges.gitter.im/Kefkius/txsc.svg)](https://gitter.im/Kefkius/txsc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 txsc (**tx** **s**cript **c**ompiler) is a Bitcoin transaction script compiler.
 
 ## Usage
