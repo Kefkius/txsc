@@ -166,7 +166,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         # Optimize order if commutative.
         self.commute_operands(node)
 
-        node.left, node.right = map(self.visit, [node.left, node.right])
+        node.left, node.right = self.map_visit([node.left, node.right])
 
         # Return the node if both operands aren't constant values.
         if not get_all_const(node.left, node.right):
@@ -178,7 +178,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return result or node
 
     def visit_VariableArgsOpCode(self, node):
-        node.operands = map(self.visit, node.operands)
+        node.operands = self.map_visit(node.operands)
         # Return the node if not all operands are constant values.
         if not get_all_const(*node.operands):
             return node
@@ -199,7 +199,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
 
         func = symbol.value
         body = copy.deepcopy(func.body)
-        node.args = map(self.visit, node.args)
+        node.args = self.map_visit(node.args)
 
         self.symbol_table.begin_scope()
         # Bind arguments to formal parameters.
@@ -207,7 +207,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
 
-        new_body = map(self.visit, body)
+        new_body = self.map_visit(body)
         self.symbol_table.end_scope()
 
         # If optimization succeeded, return the result.

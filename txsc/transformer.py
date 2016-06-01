@@ -15,6 +15,13 @@ class BaseTransformer(ast.NodeTransformer):
         if self.debug:
             print('[%s] > %s' % (self.__class__.__name__, s))
 
+    def map_visit(self, nodes):
+        """Return the results of visiting each node in nodes.
+
+        This is a convenience method equivalent to 'map(self.visit, nodes)'.
+        """
+        return map(self.visit, nodes)
+
     def generic_visit(self, node):
         self.debug_print('generic_visit %s' % node.__class__.__name__)
         return super(BaseTransformer, self).generic_visit(node)

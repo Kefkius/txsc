@@ -222,7 +222,7 @@ class ScriptTransformer(BaseTransformer):
         return types.OpCode(name='OP_RETURN')
 
     def visit_BoolOp(self, node):
-        node.values = map(self.visit, node.values)
+        node.values = self.map_visit(node.values)
 
         name = self.get_op_name(node.op)
         # Create nested boolean ops.
@@ -237,7 +237,7 @@ class ScriptTransformer(BaseTransformer):
                 operand=node.operand)
 
     def visit_BinOp(self, node):
-        node.left, node.right = map(self.visit, [node.left, node.right])
+        node.left, node.right = self.map_visit([node.left, node.right])
 
         return types.BinOpCode(name=self.get_op_name(node.op),
                 left=node.left, right=node.right)
@@ -262,7 +262,7 @@ class ScriptTransformer(BaseTransformer):
         if not op_func:
             raise ParsingNameError('No function "%s" exists.' % node.func.id)
         # Ensure args have been visited.
-        node.args = map(self.visit, node.args)
+        node.args = self.map_visit(node.args)
         # Ensure the number of args is correct.
         if op_func.nargs != -1 and len(node.args) != op_func.nargs:
             raise ParsingError('%s() requires %d arguments (got %d)' % (op_func.name, op_func.nargs, len(node.args)))
@@ -286,7 +286,7 @@ class ScriptTransformer(BaseTransformer):
             symbol = self.symbol_table.lookup(node.func.id)
             if symbol.type_ != SymbolType.Func:
                 raise ParsingError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
-            return types.FunctionCall(node.func.id, map(self.visit, node.args))
+            return types.FunctionCall(node.func.id, self.map_visit(node.args))
 
         # Handle "built-in" functions.
         if self.builtins.is_builtin(node.func.id):
@@ -303,7 +303,7 @@ class ScriptTransformer(BaseTransformer):
             raise Exception('Cannot define function. Transformer was started without a symbol table.')
 
         args = node.args.args.elts
-        body = map(self.visit, node.body)
+        body = self.map_visit(node.body)
 
         func_def = types.Function(node.name, args, body)
         self.symbol_table.add_function_def(func_def)
@@ -329,6 +329,9 @@ class BuiltinFunctions(object):
     def visit(self, node):
         return self.transformer.visit(node)
 
+    def map_visit(self, *args):
+        return self.transformer.map_visit(*args)
+
     def is_builtin(self, name):
         """Get whether name is the name of a built-in function."""
         return name in self.builtins.keys()
@@ -341,4 +344,4 @@ class BuiltinFunctions(object):
 
     def builtin_raw(self, *args):
         """Embed a raw script within a script."""
-        return types.InnerScript(map(self.visit, args))
+        return types.InnerScript(self.map_visit(args))

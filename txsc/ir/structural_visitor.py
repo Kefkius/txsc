@@ -254,7 +254,7 @@ class StructuralVisitor(BaseStructuralVisitor):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
 
-        return_value = map(self.visit, func.body)
+        return_value = self.map_visit(func.body)
         # Visiting returns a list.
         if len(return_value):
             values = list(return_value)
