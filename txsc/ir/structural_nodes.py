@@ -37,9 +37,13 @@ class Symbol(ScriptOp):
     def __str__(self):
         return self.name
 
+class Declaration(ScriptOp):
+    """Declaration of a symbol."""
+    _fields = ('name', 'value', 'type_', 'mutable')
+
 class Assignment(ScriptOp):
     """An assignment to a symbol."""
-    _fields = ('name', 'value', 'type_', 'mutable')
+    _fields = ('name', 'value', 'type_')
 
 class Int(ScriptOp):
     """An integer."""

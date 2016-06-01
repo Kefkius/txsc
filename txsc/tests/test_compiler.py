@@ -39,7 +39,7 @@ class CompileTxScriptTest(BaseCompilerTest):
 
     def test_mutable_value(self):
         for test in [
-            Test('2 5 ADD', 'mutable varA = 2; varA + 5; varA = 20;'),
+            Test('2 5 ADD', 'let mutable varA = 2; varA + 5; varA = 20;'),
         ]:
             self._test(test)
 
@@ -62,9 +62,9 @@ class CompileTxScriptFunctionTest(BaseCompilerTest):
 
     def test_function_scope(self):
         for test in [
-            Test('5 1ADD', ['b = 5;', 'func addFive(x) {x + b;}', 'addFive(1);']),
-            Test('5 1ADD', ['mutable b = 5;', 'func addFive(x) {x + b;}', 'addFive(1); b = 6;']),
-            Test('5 1ADD 10 6 ADD', ['mutable b = 5;', 'func addFive(x) {x + b;}', 'addFive(1); b = 6; addFive(10);']),
+            Test('5 1ADD', ['let b = 5;', 'func addFive(x) {x + b;}', 'addFive(1);']),
+            Test('5 1ADD', ['let mutable b = 5;', 'func addFive(x) {x + b;}', 'addFive(1); b = 6;']),
+            Test('5 1ADD 10 6 ADD', ['let mutable b = 5;', 'func addFive(x) {x + b;}', 'addFive(1); b = 6; addFive(10);']),
         ]:
             self._test(test)
 
@@ -74,7 +74,7 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
 
     def test_conditional(self):
         for test in [
-            Test('5 IF 6 ELSE 7 ENDIF', ['a = 5;' 'if a {6;} else {7;}']),
+            Test('5 IF 6 ELSE 7 ENDIF', ['let a = 5;' 'if a {6;} else {7;}']),
             Test('NOT IF 5 ENDIF', ['assume a;', 'if not a {5;}']),
             Test('SWAP IF SWAP ELSE ENDIF', ['assume a, b, c;' 'if b {a;} else {c;}']),
         ]:

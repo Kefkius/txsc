@@ -39,6 +39,9 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'AND',
         'OR',
         'NOT',
+
+        # Declarations.
+        'LET',
 ]
 
 reserved_words = {
@@ -53,6 +56,8 @@ reserved_words = {
     'and': 'AND',
     'or': 'OR',
     'not': 'NOT',
+
+    'let': 'LET',
 }
 
 t_ignore = ' \t'
@@ -94,6 +99,8 @@ t_RETURN = r'return'
 t_VERIFY = r'verify'
 t_AND = r'and'
 t_OR = r'or'
+
+t_LET = r'let'
 
 def t_NAME(t):
     r'[a-zA-Z][a-zA-Z0-9_]*'

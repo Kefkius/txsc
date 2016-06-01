@@ -1,7 +1,7 @@
 from functools import wraps
 import logging
 
-from txsc.symbols import SymbolType, ImmutableError
+from txsc.symbols import SymbolType, ImmutableError, MultipleDeclarationsError, UndeclaredError
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, structural_nodes
 from txsc.ir.instructions import LInstructions, SInstructions
@@ -71,24 +71,45 @@ class StructuralVisitor(BaseTransformer):
         return types.InnerScript(ops=ops)
 
     @returnlist
-    def visit_Assignment(self, node):
+    def visit_Declaration(self, node):
         if not self.symbol_table:
-            raise Exception('Cannot assign value: No symbol table was supplied.')
+            raise Exception('Cannot declare symbol: No symbol table was supplied.')
+
         type_ = node.type_
         value = node.value
         # '_stack' is an invalid variable name that signifies stack assumptions.
         if node.name == '_stack':
             self.symbol_table.add_stack_assumptions(value)
+            return None
         else:
             # Symbol value.
             if type_ == SymbolType.Symbol:
                 other = self.symbol_table.lookup(value.name)
                 type_ = other.type_
                 value = other.value
-            try:
-                self.symbol_table.add_symbol(node.name, value, type_, node.mutable)
-            except ImmutableError as e:
-                raise IRError(e.message)
+
+        try:
+            self.symbol_table.add_symbol(node.name, value, type_, node.mutable, declaration=True)
+        except MultipleDeclarationsError as e:
+            raise IRError(e.message)
+        return None
+
+    @returnlist
+    def visit_Assignment(self, node):
+        if not self.symbol_table:
+            raise Exception('Cannot assign value: No symbol table was supplied.')
+
+        type_ = node.type_
+        value = node.value
+        # Symbol value.
+        if type_ == SymbolType.Symbol:
+            other = self.symbol_table.lookup(value.name)
+            type_ = other.type_
+            value = other.value
+        try:
+            self.symbol_table.add_symbol(node.name, value, type_)
+        except (ImmutableError, UndeclaredError) as e:
+            raise IRError(e.message)
         return None
 
     @returnlist
@@ -209,7 +230,7 @@ class StructuralVisitor(BaseTransformer):
         # Bind arguments to formal parameters.
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr)
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
 
         return_value = map(self.visit, func.body)
         # Visiting returns a list.

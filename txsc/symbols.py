@@ -5,6 +5,14 @@ class ImmutableError(Exception):
     """Exception raised when attempting to replace an immutable value."""
     pass
 
+class MultipleDeclarationsError(Exception):
+    """Exception raised when there are multiple declarations of a symbol in one scope."""
+    pass
+
+class UndeclaredError(Exception):
+    """Exception raised when using an undeclared symbol."""
+    pass
+
 class SymbolType(object):
     """Symbol types."""
     ByteArray = 'byte_array'
@@ -90,19 +98,29 @@ class SymbolTable(object):
             raise Exception('Already at global scope.')
         self.symbols = self.symbols.parent
 
-    def insert(self, symbol):
-        # Check for assignment to immutables in the current scope.
+    def insert(self, symbol, declaration=False):
+        # Check for multiple declarations in the current scope.
         if self.symbols.get(symbol.name):
+            if declaration:
+                raise MultipleDeclarationsError('Symbol "%s" was already declared.' % symbol.name)
+
+            # Check for assignment to immutables in the current scope.
             other = self.symbols[symbol.name]
             if not other.mutable:
-                raise ImmutableError('Cannot assign value to immutable symbol "%s".' % (other.name))
+                raise ImmutableError('Cannot assign value to immutable symbol "%s".' % other.name)
             else:
                 symbol.mutable = True
+        # Make sure a declaration exists for this symbol.
+        elif not declaration:
+            if not self.lookup(symbol.name):
+                raise UndeclaredError('Symbol "%s" was not declared.' % symbol.name)
         self.symbols[symbol.name] = symbol
 
-    def lookup(self, name):
+    def lookup(self, name, one_scope=False):
         symbols = self.symbols
         symbol = symbols.get(name)
+        if one_scope:
+            return symbol
         # Search parent scopes until a symbol is found, or global scope is reached.
         while symbols.parent and not symbol:
             symbols = symbols.parent
@@ -113,8 +131,8 @@ class SymbolTable(object):
         self.symbols = GlobalScope()
         self.scopes = [self.symbols]
 
-    def add_symbol(self, name, value, type_, mutable=False):
-        self.insert(Symbol(name=name, value=value, type_=type_, mutable=mutable))
+    def add_symbol(self, name, value, type_, mutable=False, declaration=False):
+        self.insert(Symbol(name=name, value=value, type_=type_, mutable=mutable), declaration=declaration)
 
     def add_stack_assumptions(self, names):
         """Add assumed stack items."""
@@ -124,11 +142,11 @@ class SymbolTable(object):
 
         for height, name in items:
             depth = size - height - 1
-            self.insert(Symbol(name=name, value=depth, type_=SymbolType.StackItem, mutable=False))
-        self.insert(Symbol(name='_stack_names', value=list(names), type_=SymbolType.Expr, mutable=False))
+            self.insert(Symbol(name=name, value=depth, type_=SymbolType.StackItem, mutable=False), declaration=True)
+        self.insert(Symbol(name='_stack_names', value=list(names), type_=SymbolType.Expr, mutable=False), declaration=True)
 
     def add_function_def(self, func_def):
         """Add a function definition."""
         if not self.is_global_scope():
             raise Exception('Functions can only be defined in the global scope')
-        self.insert(Symbol(name=func_def.name, value=func_def, type_=SymbolType.Func, mutable=False))
+        self.insert(Symbol(name=func_def.name, value=func_def, type_=SymbolType.Func, mutable=False), declaration=True)

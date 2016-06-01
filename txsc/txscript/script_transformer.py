@@ -158,19 +158,12 @@ class ScriptTransformer(BaseTransformer):
 
     def visit_Assign(self, node):
         """Populate symbol table."""
-        if not self.symbol_table:
-            raise Exception('Cannot assign value(s). Transformer was started without a symbol table.')
         if len(node.targets) > 1:
             raise ParsingError('Cannot assign value(s) to more than one symbol.')
 
         target = node.targets[0].id
         value = node.value
         sym_type = SymbolType.Expr
-
-        # Check for assignment to immutables.
-        existing = self.symbol_table.lookup(target)
-        if existing:
-            node.mutable = existing.mutable
 
         # '_stack' is an invalid variable name that signifies stack assumptions.
         if target == '_stack':
@@ -186,7 +179,11 @@ class ScriptTransformer(BaseTransformer):
             if isinstance(value, types.Symbol):
                 sym_type = SymbolType.Symbol
 
-        return types.Assignment(name=target, value=value, type_=sym_type, mutable=node.mutable)
+        # Symbol declaration.
+        if getattr(node, 'declaration', False):
+            return types.Declaration(name=target, value=value, type_=sym_type, mutable=node.mutable)
+
+        return types.Assignment(name=target, value=value, type_=sym_type)
 
     def visit_Name(self, node):
         # Return the node if it's being assigned.
