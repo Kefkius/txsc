@@ -7,13 +7,13 @@
 assume signatureA, signatureB, secret;
 
 # True if the top stack item's hash is 0x527ccdd755dcccf03192383624e0a7d0263815ce2ecf1f69cb0423ab7e6f0f3e.
-secretKnown = sha256(secret) == '527ccdd755dcccf03192383624e0a7d0263815ce2ecf1f69cb0423ab7e6f0f3e';
+let secretKnown = sha256(secret) == '527ccdd755dcccf03192383624e0a7d0263815ce2ecf1f69cb0423ab7e6f0f3e';
 
-pubKeyA = '04d4bf4642f56fc7af0d2382e2cac34fa16ed3321633f91d06128f0e5c0d17479778cc1f2cc7e4a0c6f1e72d905532e8e127a031bb9794b3ef9b68b657f51cc691';
-pubKeyB = '04c9ce67ff2df2cd6be5f58345b4e311c5f10aab49d3cf3f73e8dcac1f9cd0de966e924be091e7bc854aef0d0baafa80fe5f2d6af56b1788e1e8ec8d241b41c40d';
+let pubKeyA = '04d4bf4642f56fc7af0d2382e2cac34fa16ed3321633f91d06128f0e5c0d17479778cc1f2cc7e4a0c6f1e72d905532e8e127a031bb9794b3ef9b68b657f51cc691';
+let pubKeyB = '04c9ce67ff2df2cd6be5f58345b4e311c5f10aab49d3cf3f73e8dcac1f9cd0de966e924be091e7bc854aef0d0baafa80fe5f2d6af56b1788e1e8ec8d241b41c40d';
 
-signedByA = checkSig(signatureA, pubKeyA);
-signedByB = checkSig(signatureB, pubKeyB);
+let signedByA = checkSig(signatureA, pubKeyA);
+let signedByB = checkSig(signatureB, pubKeyB);
 
 # Verify that the owner of pubKeyA signed the transaction, and that either:
 # - The spender knows the secret, or
