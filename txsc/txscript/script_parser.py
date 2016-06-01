@@ -87,12 +87,15 @@ class ScriptParser(object):
     def p_function_args(self, p):
         '''args : expr
                 | args COMMA expr
+                |
         '''
-        args = [p[1]]
-        if getattr(p[1], 'is_arguments', False):
-            args = p[1].elts
-        if len(p) > 2:
-            args.append(p[3])
+        args = []
+        if len(p) > 1:
+            args = [p[1]]
+            if getattr(p[1], 'is_arguments', False):
+                args = p[1].elts
+            if len(p) > 2:
+                args.append(p[3])
         p[0] = ast.List(elts=args, ctx=ast.Store())
         p[0].is_arguments = True
 
