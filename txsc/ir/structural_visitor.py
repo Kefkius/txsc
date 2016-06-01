@@ -34,7 +34,62 @@ class IRTypeError(IRError):
     """Exception raised when using incompatible or incorrect types."""
     pass
 
-class StructuralVisitor(BaseTransformer):
+class BaseStructuralVisitor(BaseTransformer):
+    """Base class for structural visitors."""
+    symbol_table = None
+
+    def require_symbol_table(self, purpose=None):
+        """Raise an exception if no symbol table is present."""
+        if not purpose:
+            purpose = 'process'
+        if not self.symbol_table:
+            raise Exception('Cannot %s: No symbol table was supplied to %s.' % (purpose, self.__class__.__name__))
+
+    def parse_Assignment(self, node):
+        """Parse an assignment statement into a more direct one."""
+        self.require_symbol_table('assign value')
+
+        type_ = node.type_
+        value = node.value
+        # Symbol value.
+        if type_ == SymbolType.Symbol:
+            other = self.symbol_table.lookup(value.name)
+            type_ = other.type_
+            value = other.value
+        return structural_nodes.Assignment(node.name, value, type_)
+
+    def add_Assignment(self, node):
+        """Add an assignment to the symbol table."""
+        self.require_symbol_table('assign value')
+
+        try:
+            self.symbol_table.add_symbol(node.name, node.value, node.type_)
+        except (ImmutableError, UndeclaredError) as e:
+            raise IRError(e.message)
+
+    def add_Declaration(self, node):
+        """Add a declaration to the symbol table."""
+        self.require_symbol_table('declare symbol')
+
+        type_ = node.type_
+        value = node.value
+        # '_stack' is an invalid variable name that signifies stack assumptions.
+        if node.name == '_stack':
+            self.symbol_table.add_stack_assumptions(value)
+            return
+        else:
+            # Symbol value.
+            if type_ == SymbolType.Symbol:
+                other = self.symbol_table.lookup(value.name)
+                type_ = other.type_
+                value = other.value
+
+        try:
+            self.symbol_table.add_symbol(node.name, value, type_, node.mutable, declaration=True)
+        except MultipleDeclarationsError as e:
+            raise IRError(e.message)
+
+class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None, strict_num=False):
         # Whether we've finished visiting a conditional that results in a different
@@ -72,50 +127,18 @@ class StructuralVisitor(BaseTransformer):
 
     @returnlist
     def visit_Declaration(self, node):
-        if not self.symbol_table:
-            raise Exception('Cannot declare symbol: No symbol table was supplied.')
-
-        type_ = node.type_
-        value = node.value
-        # '_stack' is an invalid variable name that signifies stack assumptions.
-        if node.name == '_stack':
-            self.symbol_table.add_stack_assumptions(value)
-            return None
-        else:
-            # Symbol value.
-            if type_ == SymbolType.Symbol:
-                other = self.symbol_table.lookup(value.name)
-                type_ = other.type_
-                value = other.value
-
-        try:
-            self.symbol_table.add_symbol(node.name, value, type_, node.mutable, declaration=True)
-        except MultipleDeclarationsError as e:
-            raise IRError(e.message)
-        return None
+        self.add_Declaration(node)
 
     @returnlist
     def visit_Assignment(self, node):
-        if not self.symbol_table:
-            raise Exception('Cannot assign value: No symbol table was supplied.')
-
-        type_ = node.type_
-        value = node.value
-        # Symbol value.
-        if type_ == SymbolType.Symbol:
-            other = self.symbol_table.lookup(value.name)
-            type_ = other.type_
-            value = other.value
-        try:
-            self.symbol_table.add_symbol(node.name, value, type_)
-        except (ImmutableError, UndeclaredError) as e:
-            raise IRError(e.message)
+        assignment = self.parse_Assignment(node)
+        self.add_Assignment(assignment)
         return None
 
     @returnlist
     def visit_Symbol(self, node):
-        if not self.symbol_table:
-            raise Exception('Cannot process symbol: No symbol table was supplied.')
+        self.require_symbol_table('process symbol')
+
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise IRError('Symbol "%s" was not declared.' % node.name)
@@ -217,8 +240,7 @@ class StructuralVisitor(BaseTransformer):
 
     @returnlist
     def visit_FunctionCall(self, node):
-        if not self.symbol_table:
-            raise Exception('Cannot process function call: No symbol table was supplied.')
+        self.require_symbol_table('process function call')
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise IRError('No function "%s" exists.' % node.name)

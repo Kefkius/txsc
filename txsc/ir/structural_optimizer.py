@@ -9,7 +9,7 @@ from txsc.symbols import SymbolTable, SymbolType, ImmutableError, MultipleDeclar
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import SInstructions, format_structural_op
-from txsc.ir.structural_visitor import IRError, IRStrictNumError, IRTypeError
+from txsc.ir.structural_visitor import BaseStructuralVisitor, IRError, IRStrictNumError, IRTypeError
 import txsc.ir.structural_nodes as types
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ logical_equivalents = {
     'OP_GREATERTHAN': 'OP_LESSTHAN',
 }
 
-class StructuralOptimizer(BaseTransformer):
+class StructuralOptimizer(BaseStructuralVisitor):
     """Performs optimizations on the structural IR."""
     def __init__(self):
         self.evaluator = ConstEvaluator()
@@ -125,39 +125,13 @@ class StructuralOptimizer(BaseTransformer):
             raise e.__class__(e.args[0], node.lineno)
 
     def visit_Declaration(self, node):
-        type_ = node.type_
-        value = node.value
-        # '_stack' is an invalid variable name that signifies stack assumptions.
-        if node.name == '_stack':
-            self.symbol_table.add_stack_assumptions(value)
-            return node
-        else:
-            # Symbol value.
-            if type_ == SymbolType.Symbol:
-                other = self.symbol_table.lookup(value.name)
-                type_ = other.type_
-                value = other.value
-
-        try:
-            self.symbol_table.add_symbol(node.name, value, type_, node.mutable, declaration=True)
-        except MultipleDeclarationsError as e:
-            raise IRError(e.message)
+        self.add_Declaration(node)
         return node
 
     def visit_Assignment(self, node):
-        type_ = node.type_
-        value = node.value
-        # Symbol value.
-        if type_ == SymbolType.Symbol:
-            other = self.symbol_table.lookup(value.name)
-            type_ = other.type_
-            value = other.value
-        value = self.visit(value)
-        try:
-            self.symbol_table.add_symbol(node.name, value, type_)
-        except (ImmutableError, UndeclaredError) as e:
-            raise IRError(e.message)
-
+        assignment = self.parse_Assignment(node)
+        assignment.value = self.visit(assignment.value)
+        self.add_Assignment(assignment)
         return node
 
     def visit_Symbol(self, node):
