@@ -3,7 +3,7 @@
 Uses python-bitcoinlib internally.
 """
 
-from bitcoin.core import b2x, x, script
+from bitcoin.core import b2x, lx, x, script
 
 from txsc.transformer import SourceVisitor, TargetVisitor
 import txsc.ir.linear_nodes as types
@@ -39,6 +39,7 @@ class BtcScriptSourceVisitor(SourceVisitor):
 
 class BtcScriptTargetVisitor(TargetVisitor):
     """Transforms the intermediate representation into raw scripts."""
+    little_endian = True
     def __init__(self, *args, **kwargs):
         super(BtcScriptTargetVisitor, self).__init__(*args, **kwargs)
         self.hex_strs = []
@@ -58,10 +59,15 @@ class BtcScriptTargetVisitor(TargetVisitor):
                 result = ''.join(result).replace('0x','')
             s.append(result)
         s = ''.join(s)
-        return self.visit(types.Push(data=x(s)))
+        data = x(s)
+        if self.little_endian:
+            data = lx(s)
+        return self.visit(types.Push(data=data))
 
     def visit_Push(self, node):
-        value = script.CScriptOp.encode_op_pushdata(node.data)
+        # Switch the endianness of the data.
+        data = node.data[::-1]
+        value = script.CScriptOp.encode_op_pushdata(data)
         return b2x(value)
 
     def generic_visit_OpCode(self, node):

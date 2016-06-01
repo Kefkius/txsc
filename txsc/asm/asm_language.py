@@ -58,6 +58,7 @@ class ASMTargetVisitor(BtcScriptTargetVisitor):
         # If we're transforming an InnerScript, we use BtcScriptTargetVisitor
         # to get the actual values of opcodes.
         self.visiting_innerscript = False
+        self.little_endian = False
 
     def process_instruction(self, instruction):
         result = self.visit(instruction)

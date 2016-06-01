@@ -34,6 +34,7 @@ class CompileTxScriptTest(BaseCompilerTest):
         for test in [
             Test('0x03 0x525393 SWAP 7 ADD', 'assume a; raw(2 + 3); a + 7;'),
             Test('0x06 0x525393555494 SWAP 7 ADD', 'assume a; raw(2 + 3, 5 - 4); a + 7;'),
+            Test('0x04 0x03070809', "raw('070809');"),
         ]:
             self._test(test)
 

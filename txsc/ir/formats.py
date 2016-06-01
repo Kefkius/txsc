@@ -18,7 +18,7 @@ def int_to_bytearray(value):
         value = int(CScriptOp.encode_op_n(value))
     except ValueError:
         pass
-    return _bignum.bn2vch(value)
+    return _bignum.bn2vch(value)[::-1]
 
 def int_to_hex(value):
     """Encode an integer as a hex string.
@@ -31,8 +31,7 @@ def hex_to_bytearray(value):
     """Encode a hex string as a byte array."""
     value = hexs.format_hex(value)
     bn = int(value, 16)
-    return _bignum.bn2vch(bn)
-
+    return _bignum.bn2vch(bn)[::-1]
 
 def bytearray_to_int(data, decode_small_int=True):
     """Decode a byte array into an integer.
@@ -40,7 +39,7 @@ def bytearray_to_int(data, decode_small_int=True):
     If decode_small_int is True, a small integer will
     be returned if data is a small int opcode.
     """
-    num = _bignum.vch2bn(data)
+    num = _bignum.vch2bn(data[::-1])
     # Decode num if it's a small integer.
     if decode_small_int:
         try:
