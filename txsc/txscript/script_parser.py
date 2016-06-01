@@ -84,6 +84,11 @@ class ScriptParser(object):
         ], value=value)
         p[0].declaration = False
 
+    def p_deletion(self, p):
+        '''statement : DEL NAME SEMICOLON'''
+        p[0] = ast.Name(id=p[2], ctx=ast.Del())
+        p[0].declaration = False
+
     def p_function_args(self, p):
         '''args : expr
                 | args COMMA expr

@@ -188,6 +188,9 @@ class ScriptTransformer(BaseTransformer):
         return types.Assignment(name=target, value=value, type_=sym_type)
 
     def visit_Name(self, node):
+        # Return a deletion if it's being deleted.
+        if isinstance(node.ctx, ast.Del):
+            return types.Deletion(name=node.id)
         # Return the node if it's being assigned.
         if isinstance(node.ctx, ast.Store):
             return node

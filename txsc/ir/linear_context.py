@@ -37,6 +37,8 @@ class LinearContextualizer(BaseTransformer):
         self.symbol_table = symbol_table
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
+        # [assumption_name, ...]
+        self.deletions = []
         # [ConditionalBranch(), ...]
         self.branches = []
 
@@ -74,16 +76,16 @@ class LinearContextualizer(BaseTransformer):
 
         return following
 
-    def get_unused_assumptions(self):
-        """Get the assumed stack items that are never used."""
+    def get_deleted_assumptions(self):
+        """Get the assumed stack items that are deleted."""
         if not self.symbol_table.lookup('_stack_names'):
             return ([], [])
         all_items = copy.deepcopy(map(self.symbol_table.lookup, self.symbol_table.lookup('_stack_names').value))
         # Sort by depth.
         all_items = sorted(all_items, key = lambda i: i.value, reverse = True)
-        # Find unused stack assumptions.
-        unused_items = filter(lambda i: i.name not in self.assumptions.keys(), all_items)
-        return (unused_items, all_items)
+        # Find deleted stack assumptions.
+        deleted_items = filter(lambda i: i.name in self.deletions, all_items)
+        return (deleted_items, all_items)
 
     def nextop(self, op):
         """Get the operation that follows op."""
@@ -101,6 +103,7 @@ class LinearContextualizer(BaseTransformer):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
+        self.deletions = []
         self.branches = []
         self.instructions = instructions
 
@@ -116,6 +119,10 @@ class LinearContextualizer(BaseTransformer):
 
     def visit_Assumption(self, op):
         self.assumptions[op.var_name].append(op.idx)
+
+    def visit_Deletion(self, op):
+        if op.var_name not in self.deletions:
+            self.deletions.append(op.var_name)
 
     def visit_If(self, op):
         self.branches.append(ConditionalBranch(is_truebranch = True, start = op.idx + 1))
@@ -233,7 +240,7 @@ class LinearInliner(BaseTransformer):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
         self.contextualizer = contextualizer
-        self.remove_unused_assumptions(peephole_optimizer)
+        self.remove_deleted_assumptions()
 
         # Loop until no inlining can be done.
         while 1:
@@ -254,16 +261,16 @@ class LinearInliner(BaseTransformer):
             if not inlined:
                 break
 
-    def remove_unused_assumptions(self, peephole_optimizer):
-        """Remove assumed stack items that are never used."""
+    def remove_deleted_assumptions(self):
+        """Remove assumed stack items that are deleted."""
         self.contextualizer.contextualize(self.instructions)
         offset = 0
-        unused_items, all_items = self.contextualizer.get_unused_assumptions()
+        deleted_items, all_items = self.contextualizer.get_deleted_assumptions()
 
         # Check for consecutive drops of top stack items.
         # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
-        if unused_items and unused_items[-1].value == 0:
-            iterator = reversed(unused_items)
+        if deleted_items and deleted_items[-1].value == 0:
+            iterator = reversed(deleted_items)
             consecutive_drops = [next(iterator)]
             for i, item in enumerate(iterator, 1):
                 if i == item.value:
@@ -274,13 +281,13 @@ class LinearInliner(BaseTransformer):
             if len(consecutive_drops) > 1:
                 for symbol in consecutive_drops:
                     self.instructions.insert_slice(0, [types.Drop()])
-                    unused_items.pop(-1)
+                    deleted_items.pop(-1)
                     offset += 1
                 # Change the depths of non-consecutive stack items.
-                for stack_item in unused_items:
+                for stack_item in deleted_items:
                     stack_item.value -= offset
 
-        for stack_item in unused_items:
+        for stack_item in deleted_items:
             arg = self.op_for_int(stack_item.value)
             ops = [arg, types.Roll(), types.Drop()]
             idx = offset
@@ -328,4 +335,7 @@ class LinearInliner(BaseTransformer):
         # Use OP_PICK if there are other occurrences after this one.
         opcode = types.Pick if self.contextualizer.following_occurrences(op.var_name, op.idx) > 0 else types.Roll
         return [arg, opcode()]
+
+    def visit_Deletion(self, op):
+        return []
 

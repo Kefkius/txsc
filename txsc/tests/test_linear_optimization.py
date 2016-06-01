@@ -143,27 +143,40 @@ class UnusedAssumptionsTest(BaseOptimizationTest):
         expected = str(expected.split(' '))
         self.assertEqual(expected, str(script), '%s != %s (original: %s)' % (expected, str(script), original))
 
-    def test_unused_top_assumption(self):
+    def test_delete_top_assumption(self):
         self.symbol_table.add_stack_assumptions(['a', 'b', 'c'])
-        script = [types.Assumption('a', 2), types.Assumption('b', 1), types.Add()]
+        script = [types.Assumption('a', 2), types.Assumption('b', 1), types.Add(), types.Deletion('c', 0)]
+        self._do_test('OP_DROP OP_ADD', script)
+        script = [types.Deletion('c', 0), types.Assumption('a', 2), types.Assumption('b', 1), types.Add()]
         self._do_test('OP_DROP OP_ADD', script)
 
-    def test_unused_assumptions(self):
+    def test_delete_assumptions(self):
         self.symbol_table.add_stack_assumptions(['a', 'b', 'c', 'd'])
-        script = [types.Assumption('a', 3), types.Assumption('c', 1), types.Add()]
+        script = [types.Assumption('a', 3), types.Assumption('c', 1), types.Add(), types.Deletion('b', 2), types.Deletion('d', 0)]
+        self._do_test('OP_2 OP_ROLL OP_2DROP OP_ADD', script)
+
+    def test_duplicate_deletions(self):
+        self.symbol_table.add_stack_assumptions(['a', 'b', 'c', 'd'])
+        script = [types.Deletion('b', 2), types.Assumption('a', 3), types.Assumption('c', 1), types.Add(), types.Deletion('b', 2), types.Deletion('d', 0)]
         self._do_test('OP_2 OP_ROLL OP_2DROP OP_ADD', script)
 
     def test_consecutive_top_item_drops(self):
         self.symbol_table.add_stack_assumptions(['a', 'b', 'c', 'd'])
+        deletions = {
+            'a': types.Deletion('a', 3),
+            'b': types.Deletion('b', 2),
+            'c': types.Deletion('c', 1),
+            'd': types.Deletion('d', 0),
+        }
 
-        script = [types.Assumption('a', 3)]
+        script = [types.Assumption('a', 3), deletions['b'], deletions['c'], deletions['d']]
         self._do_test('OP_2DROP OP_DROP', script)
 
-        script = [types.Assumption('b', 2)]
+        script = [types.Assumption('b', 2), deletions['a'], deletions['c'], deletions['d']]
         self._do_test('OP_2DROP OP_NIP', script)
 
-        script = [types.Assumption('c', 1)]
+        script = [types.Assumption('c', 1), deletions['a'], deletions['b'], deletions['d']]
         self._do_test('OP_3 OP_ROLL OP_DROP OP_2 OP_ROLL OP_2DROP', script)
 
-        script = [types.Assumption('d', 0)]
+        script = [types.Assumption('d', 0), deletions['a'], deletions['b'], deletions['c']]
         self._do_test('OP_3 OP_ROLL OP_DROP OP_2 OP_ROLL OP_DROP OP_NIP', script)

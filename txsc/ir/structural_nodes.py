@@ -45,6 +45,10 @@ class Assignment(ScriptOp):
     """An assignment to a symbol."""
     _fields = ('name', 'value', 'type_')
 
+class Deletion(ScriptOp):
+    """Deletion of a symbol."""
+    _fields = ('name',)
+
 class Int(ScriptOp):
     """An integer."""
     _fields = ('value',)

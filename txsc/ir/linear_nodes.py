@@ -55,6 +55,13 @@ class Assumption(Node):
     def __str__(self):
         return 'assume(%s)'%self.var_name
 
+class Deletion(Assumption):
+    """Deletion of a stack value."""
+    name = 'delete'
+
+    def __str__(self):
+        return 'delete(%s)'%self.var_name
+
 class Push(Node):
     name = 'push'
     comparators = Node.comparators + ('data',)
