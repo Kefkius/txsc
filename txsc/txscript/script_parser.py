@@ -30,6 +30,7 @@ class ScriptParser(object):
             p[0] = p[1]
         else:
             p[0] = ast.Module(body=[p[1]])
+            p[0].lineno = p.lineno(1)
 
         if len(p) == 3:
             p[2].lineno = p.lineno(2)
@@ -51,9 +52,11 @@ class ScriptParser(object):
         '''
         test = p[2]
         iftrue = p[4]
+        iftrue.lineno = p.lineno(4)
         iffalse = []
         if len(p) > 6:
             iffalse = p[8]
+            iffalse.lineno = p.lineno(8)
 
         p[0] = ast.If(test=test, body=iftrue, orelse=iffalse)
 

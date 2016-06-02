@@ -124,7 +124,6 @@ class ScriptTransformer(BaseTransformer):
         super(ScriptTransformer, self).__init__()
         self.builtins = BuiltinFunctions(self)
         self.symbol_table = symbol_table
-        self.line_number = 0
 
     def get_op_name(self, node):
         name = node.__class__.__name__
@@ -136,11 +135,9 @@ class ScriptTransformer(BaseTransformer):
             return binary_ops[name]
 
     def visit(self, node):
-        if hasattr(node, 'lineno'):
-            self.line_number = node.lineno
         result = super(ScriptTransformer, self).visit(node)
         if result:
-            result.lineno = self.line_number
+            result.lineno = node.lineno
         return result
 
     def visit_Module(self, node):
@@ -151,7 +148,7 @@ class ScriptTransformer(BaseTransformer):
     def visit_module_body_statement(self, node):
         """Wrapper for error raising."""
         try:
-            return super(ScriptTransformer, self).visit(node)
+            return self.visit(node)
         except ParsingError as e:
             raise e.__class__(e.message, node.lineno, node.col_offset)
 
@@ -214,7 +211,9 @@ class ScriptTransformer(BaseTransformer):
 
     def visit_List(self, node):
         """Transform array of bytes to bytes."""
-        return self.visit(ast.Str(''.join(node.elts)))
+        n = ast.Str(''.join(node.elts))
+        n.lineno = node.lineno
+        return self.visit(n)
 
     def visit_Assert(self, node):
         node.test = self.visit(node.test)
@@ -293,7 +292,7 @@ class ScriptTransformer(BaseTransformer):
 
         # Handle "built-in" functions.
         if self.builtins.is_builtin(node.func.id):
-            return self.visit(self.builtins.call_builtin(node.func.id, node.args))
+            return self.visit(self.builtins.call_builtin(node))
         # Handle function calls that correspond to opcodes.
         if get_op_func(node.func.id):
             return self.visit_op_function_call(node)
@@ -339,8 +338,13 @@ class BuiltinFunctions(object):
         """Get whether name is the name of a built-in function."""
         return name in self.builtins.keys()
 
-    def call_builtin(self, name, args):
+    def call_builtin(self, node):
         """Call a built-in function."""
+        result = self._call_builtin(node.func.id, node.args)
+        result.lineno = node.lineno
+        return result
+
+    def _call_builtin(self, name, args):
         if not self.is_builtin(name):
             raise ValueError('Unknown function: "%s"' % name)
         return self.builtins[name](*args)
