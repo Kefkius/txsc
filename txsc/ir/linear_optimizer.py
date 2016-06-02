@@ -202,6 +202,9 @@ def shorten_commutative_operations(instructions):
 @peephole
 def remove_null_conditionals(instructions):
     """Replace empty conditionals with an op that consumes the test value."""
+    # OP_ELSE OP_ENDIF -> OP_ENDIF
+    instructions.replace_template([types.Else(), types.EndIf()], lambda values: [types.EndIf()])
+    # OP_IF OP_ENDIF -> OP_DROP
     instructions.replace_template([types.If(), types.EndIf()], lambda values: [types.Drop()])
 
 class PeepholeOptimizer(object):

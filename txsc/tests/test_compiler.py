@@ -77,7 +77,7 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
         for test in [
             Test('5 IF 6 ELSE 7 ENDIF', ['let a = 5;' 'if a {6;} else {7;}']),
             Test('NOT IF 5 ENDIF', ['assume a;', 'if not a {5;}']),
-            Test('SWAP IF SWAP ELSE ENDIF', ['assume a, b, c;' 'if b {a;} else {c;}']),
+            Test('SWAP IF SWAP ENDIF', ['assume a, b, c;' 'if b {a;} else {c;}']),
         ]:
             self._test(test)
 
@@ -85,6 +85,7 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
         for test in [
             Test('IF 5 ENDIF', ['assume a;', 'if a {5;} else {}'],),
             Test('IF ELSE 5 ENDIF', ['assume a;', 'if a {} else {5;}'],),
+            Test('DROP', ['assume a;', 'if a {} else {}'],),
         ]:
             self._test(test)
 
