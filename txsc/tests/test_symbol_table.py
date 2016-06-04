@@ -63,3 +63,11 @@ class ScopesTest(BaseSymbolsTest):
         self.symbol_table.end_scope()
         self.assertEqual(expected, self.symbol_table.lookup('scope_0_symbol'))
         self.assertEqual(expected, self.symbol_table.lookup('scope_0_symbol', one_scope=True))
+
+    def test_delete_symbol(self):
+        self.symbol_table.delete('scope_0_symbol')
+        self.assertIsNone(self.symbol_table.lookup('scope_0_symbol'))
+
+    def test_delete_global_symbol(self):
+        self.symbol_table.delete_global('scope_0_symbol')
+        self.assertIsNone(self.symbol_table.lookup_global('scope_0_symbol'))

@@ -55,6 +55,9 @@ class Scope(object):
     def __setitem__(self, key, value):
         self.symbols[key] = value
 
+    def __delitem__(self, key):
+        del self.symbols[key]
+
     def __iter__(self):
         for v in self.symbols.values():
             yield v
@@ -157,6 +160,32 @@ class SymbolTable(object):
     def lookup_global(self, name):
         """Lookup a symbol in the global scope."""
         return self.get_global_scope().get(name)
+
+    def delete(self, name, one_scope=False, all_scopes=True):
+        """Delete a symbol.
+
+        If all_scopes is True, the symbol will be deleted from
+        the current scope and all parent scopes.
+        """
+        symbols = self.symbols
+        symbol = symbols.get(name)
+        if symbol:
+            del symbols[name]
+        if one_scope:
+            return
+        # Search parent scopes and delete symbols in them.
+        while symbols.parent:
+            symbols = symbols.parent
+            symbol = symbols.get(name)
+            if symbol:
+                del symbols[name]
+                if not all_scopes:
+                    break
+
+    def delete_global(self, name):
+        """Delete a symbol in the global scope."""
+        if self.get_global_scope().get(name):
+            del self.get_global_scope()[name]
 
     def add_symbol(self, name, value, type_, mutable=False, declaration=False):
         self.insert(Symbol(name=name, value=value, type_=type_, mutable=mutable), declaration=declaration)
