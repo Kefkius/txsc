@@ -89,6 +89,28 @@ class BaseStructuralVisitor(BaseTransformer):
         except MultipleDeclarationsError as e:
             raise IRError(e.message)
 
+    def add_FunctionCall(self, node):
+        """Bind arguments to node's formal parameters."""
+        self.require_symbol_table('process function call')
+
+        symbol = self.symbol_table.lookup(node.name)
+        if not symbol:
+            raise IRError('No function "%s" exists.' % node.name)
+        elif symbol.type_ != SymbolType.Func:
+            raise IRTypeError('Cannot call "%s" of type %s' % (node.name, symbol.type_))
+
+        func = symbol.value
+        if len(func.args) != len(node.args):
+            raise IRError('Function "%s" requires %d argument(s) (got %d)' % (func.name, len(func.args), len(node.args)))
+
+        self.symbol_table.begin_scope()
+        # Bind arguments to formal parameters.
+        for param, arg in zip(func.args, node.args):
+            # TODO use a specific symbol type instead of expression.
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
+
+        return func
+
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None, strict_num=False):
@@ -252,19 +274,7 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_FunctionCall(self, node):
-        self.require_symbol_table('process function call')
-        symbol = self.symbol_table.lookup(node.name)
-        if not symbol:
-            raise IRError('No function "%s" exists.' % node.name)
-        elif symbol.type_ != SymbolType.Func:
-            raise IRTypeError('Cannot call "%s" of type %s' % (node.name, symbol.type_))
-
-        func = symbol.value
-        self.symbol_table.begin_scope()
-        # Bind arguments to formal parameters.
-        for param, arg in zip(func.args, node.args):
-            # TODO use a specific symbol type instead of expression.
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
+        func = self.add_FunctionCall(node)
 
         return_value = self.map_visit(func.body)
         # Visiting returns a list.

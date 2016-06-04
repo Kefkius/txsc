@@ -191,21 +191,9 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return node
 
     def visit_FunctionCall(self, node):
-        symbol = self.symbol_table.lookup(node.name)
-        if not symbol:
-            raise IRError('Symbol "%s" was not declared.' % node.name)
-        if symbol.type_ != SymbolType.Func:
-            raise IRTypeError('Cannot call "%s" of type %s' % (node.name, symbol.type_))
-
-        func = symbol.value
-        body = copy.deepcopy(func.body)
         node.args = self.map_visit(node.args)
-
-        self.symbol_table.begin_scope()
-        # Bind arguments to formal parameters.
-        for param, arg in zip(func.args, node.args):
-            # TODO use a specific symbol type instead of expression.
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
+        func = self.add_FunctionCall(node)
+        body = copy.deepcopy(func.body)
 
         new_body = self.map_visit(body)
         self.symbol_table.end_scope()
