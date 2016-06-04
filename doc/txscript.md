@@ -142,3 +142,31 @@ let myVar = 5 + 12;
 verify myVar == 17;
 ```
 
+## Operators
+
+TxScript supports all of the common operators.
+
+| Operator  | Meaning |
+| --------  | ------- |
+| `*`         | Multiplication |
+| `/`         | Division |
+| `+`         | Addition |
+| `-`         | Subtraction (or negation when unary) |
+| `%`         | Modulus |
+| `==`        | Equality |
+| `!=`        | Inequality |
+| `<`         | Less than |
+| `>`         | Greater than |
+| `<=`        | Less than or equal to |
+| `>=`        | Greater than or equal to |
+| `<<`        | Bitwise left shift |
+| `>>`        | Bitwise right shift |
+
+| Logical Operator  | Meaning |
+| ----------------  | ------- |
+| `and`               | Logical AND |
+| `or`                | Logical OR |
+| `not`               | Logical NOT |
+
+The bitwise operators `AND`, `OR`, `XOR`, and `NOT` are implemented as
+`&`, `|`, `^`, and `~` respectively.
