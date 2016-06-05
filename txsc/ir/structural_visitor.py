@@ -240,6 +240,14 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_UnaryOpCode(self, node):
+        if SInstructions.is_arithmetic_op(node) and isinstance(node.operand, (structural_nodes.Int, structural_nodes.Push)):
+            if not formats.is_strict_num(int(node.operand)):
+                msg = 'Input value is longer than 4 bytes: 0x%x' % node.operand
+                if self.strict_num:
+                    logger.error(msg)
+                    raise IRStrictNumError(msg)
+                else:
+                    logger.warning(msg)
         return_value = self.visit(node.operand)
         op = types.opcode_by_name(node.name)()
         return return_value + [op]
@@ -249,7 +257,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         # Check for values longer than 4 bytes.
         if SInstructions.is_arithmetic_op(node):
             operands = [node.left, node.right]
-            if all(isinstance(i, structural_nodes.Push) for i in operands):
+            if all(isinstance(i, (structural_nodes.Int, structural_nodes.Push)) for i in operands):
                 valid = [formats.is_strict_num(int(i)) for i in operands]
                 if False in valid:
                     msg = 'Input value is longer than 4 bytes: 0x%x' % operands[valid.index(False)]

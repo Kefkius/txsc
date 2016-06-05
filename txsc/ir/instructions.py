@@ -145,11 +145,9 @@ class SInstructions(Instructions):
     @staticmethod
     def is_arithmetic_op(op):
         """Return whether op represents an arithmetic operation."""
-        if not isinstance(op, structural_nodes.BinOpCode):
-            return False
         linear = linear_nodes.opcode_by_name(op.name)
         if not linear or not issubclass(linear, linear_nodes.OpCode):
-            return
+            return False
         return linear.arithmetic
 
     @staticmethod
