@@ -160,7 +160,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         if not get_const(node.operand):
             return node
 
-        return self.evaluator.eval_op(node.name, node.operand) or node
+        return self.evaluator.eval_op(node, node.name, node.operand) or node
 
     def visit_BinOpCode(self, node):
         # Optimize order if commutative.
@@ -172,7 +172,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         if not get_all_const(node.left, node.right):
             return node
 
-        result = self.evaluator.eval_op(node.name, node.left, node.right)
+        result = self.evaluator.eval_op(node, node.name, node.left, node.right)
         if result:
             logger.debug('Optimizing %s to %s' % (format_structural_op(node), format_structural_op(result)))
         return result or node
@@ -183,7 +183,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         if not get_all_const(*node.operands):
             return node
 
-        result = self.evaluator.eval_op(node.name, *node.operands)
+        result = self.evaluator.eval_op(node, node.name, *node.operands)
         return result or node
 
     def visit_VerifyOpCode(self, node):
@@ -226,7 +226,7 @@ class ConstEvaluator(object):
             args = map(int, args)
             valid = [formats.is_strict_num(i) for i in args]
             if False in valid:
-                msg = 'Input value is longer than 4 bytes: 0x%x' % args[valid.index(False)]
+                msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (method.__name__, args[valid.index(False)])
                 if self.strict_num:
                     logger.error(msg)
                     raise IRStrictNumError(msg)
@@ -235,7 +235,7 @@ class ConstEvaluator(object):
             return method(self, *args)
         return wrapper
 
-    def eval_op(self, op_name, *args):
+    def eval_op(self, node, op_name, *args):
         """Evaluate an opcode."""
         if not self.enabled:
             return
@@ -249,6 +249,15 @@ class ConstEvaluator(object):
             result = types.Int.coerce(result)
         elif isinstance(result, str):
             result = types.Push.coerce(result)
+
+        if not formats.is_strict_num(int(result)):
+            args_str = str(map(str, args))[1:-1] # Remove brackets
+            msg = 'Result of %s is longer than 4 bytes: 0x%x' % (format_structural_op(node), result)
+            if self.strict_num:
+                logger.error(msg)
+                raise IRStrictNumError(msg)
+            else:
+                logger.warning(msg)
         return result
 
     @strict_num
