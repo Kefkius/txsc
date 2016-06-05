@@ -28,10 +28,11 @@ def int_to_hex(value):
     return int_to_bytearray(value).encode('hex')
 
 def hex_to_bytearray(value):
-    """Encode a hex string as a byte array."""
-    value = hexs.format_hex(value)
-    bn = int(value, 16)
-    return _bignum.bn2vch(bn)[::-1]
+    """Encode a hex string as a byte array.
+
+    This does not account for Bitcoin's encoding of negative numbers.
+    """
+    return hexs.format_hex(value).decode('hex')
 
 def bytearray_to_int(data, decode_small_int=True):
     """Decode a byte array into an integer.
