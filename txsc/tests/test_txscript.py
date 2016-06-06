@@ -60,3 +60,16 @@ class CompoundStatementTest(BaseScriptTransformerTest):
 
     def test_comment(self):
         self._test_transform('1 + 2;\n#Comment line.\n3 + 4;', "[BinOpCode('OP_ADD', Int(1), Int(2)), BinOpCode('OP_ADD', Int(3), Int(4))]")
+
+class TypeTest(BaseScriptTransformerTest):
+    def test_literal_bytes(self):
+        self._test_transform("'04';", "[Push(0x04)]")
+        for s in ["'004'", "'0004'"]:
+            self._test_transform(s + ';', "[Push(0x0004)]")
+
+    def test_literal_int(self):
+        self._test_transform("4;", "[Int(4)]")
+
+    def test_literal_hex_int(self):
+        for s in ["0x4", "0x04", "0x004", "0x0004"]:
+            self._test_transform(s + ';', "[Int(4)]")
