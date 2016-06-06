@@ -56,7 +56,9 @@ class BaseStructuralVisitor(BaseTransformer):
             other = self.symbol_table.lookup(value.name)
             type_ = other.type_
             value = other.value
-        return structural_nodes.Assignment(node.name, value, type_)
+        result = structural_nodes.Assignment(node.name, value, type_)
+        result.lineno = node.lineno
+        return result
 
     def add_Assignment(self, node):
         """Add an assignment to the symbol table."""
@@ -127,7 +129,10 @@ class StructuralVisitor(BaseStructuralVisitor):
         try:
             return super(StructuralVisitor, self).visit(node)
         except IRError as e:
-            raise e.__class__(e.args[0], node.lineno)
+            lineno = node.lineno
+            if len(e.args) > 1:
+                lineno = e.args[1]
+            raise e.__class__(e.args[0], lineno)
 
     @returnlist
     def visit_list(self, node):
@@ -154,6 +159,16 @@ class StructuralVisitor(BaseStructuralVisitor):
     @returnlist
     def visit_Assignment(self, node):
         assignment = self.parse_Assignment(node)
+
+        if isinstance(assignment.value, (structural_nodes.Int, structural_nodes.Push)):
+            if not formats.is_strict_num(int(assignment.value)):
+                msg = 'Assignment value to %s is longer than 4 bytes: 0x%x' % (assignment.name, assignment.value)
+                if self.strict_num:
+                    logger.error(msg)
+                    raise IRStrictNumError(msg)
+                else:
+                    logger.warning(msg)
+
         self.add_Assignment(assignment)
         return None
 
