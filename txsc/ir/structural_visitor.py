@@ -64,6 +64,21 @@ class BaseStructuralVisitor(BaseTransformer):
         """Add an assignment to the symbol table."""
         self.require_symbol_table('assign value')
 
+        # Prevent infinite recursion by substituting.
+        # If the value being assigned is an operation and any argument to
+        # the operation is the symbol being assigned to,
+        # substitute the symbol's current value in the argument's place.
+        if isinstance(node.value, structural_nodes.OpCode):
+            if any(isinstance(i, structural_nodes.Symbol) and i.name == node.name for i in node.value.get_args()):
+                old_value = self.symbol_table.lookup(node.name).value
+                new_args = node.value.get_args()
+
+                for idx, arg in enumerate(new_args):
+                    if isinstance(arg, structural_nodes.Symbol) and arg.name == node.name:
+                        new_args[idx] = old_value
+
+                node.value.set_args(new_args)
+
         try:
             self.symbol_table.add_symbol(node.name, node.value, node.type_)
         except (ImmutableError, UndeclaredError) as e:

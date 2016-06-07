@@ -100,19 +100,47 @@ class Push(ScriptOp):
 class OpCode(ScriptOp):
     """An opcode."""
     _fields = ('name',)
+    _op_args = (())
+
+    def get_args(self):
+        """Get the arguments to this opcode."""
+        return [getattr(self, attr) for attr in self._op_args]
+
+    def set_args(self, args):
+        """Set the arguments to this opcode."""
+        for attr, value in zip(self._op_args, args):
+            setattr(self, attr, value)
 
 class VerifyOpCode(OpCode):
     """An opcode that consumes a value and fails if it is not truthy."""
     _fields = OpCode._fields + ('test',)
+    _op_args = ('test',)
 
 class UnaryOpCode(OpCode):
     """An opcode that performs a unary operation."""
     _fields = OpCode._fields + ('operand',)
+    _op_args = ('operand',)
 
 class BinOpCode(OpCode):
     """An opcode that performs a binary operation."""
     _fields = OpCode._fields + ('left', 'right',)
+    _op_args = ('left', 'right',)
 
 class VariableArgsOpCode(OpCode):
     """An opcode that takes a variable number of arguments."""
     _fields = OpCode._fields + ('operands',)
+    _op_args = ('operands',)
+
+    def get_args(self):
+        """Get the arguments to this opcode.
+
+        Overloaded because the number of operands is unknown.
+        """
+        return [getattr(self, attr) for attr in self.operands]
+
+    def set_args(self, args):
+        """Set the arguments to this opcode.
+
+        Overloaded because the number of operands is unknown.
+        """
+        setattr(self, 'operands', list(args))
