@@ -15,6 +15,11 @@ from txsc import config
 # Will not reload the entry points if they've already been loaded.
 config.load_entry_points()
 
+def set_log_level(level):
+    """Set the minimum logging level."""
+    log_level = getattr(logging, level, logging.WARNING)
+    logging.getLogger('txsc').setLevel(log_level)
+
 
 class DirectiveError(Exception):
     """Exception raised when a directive-related error is encountered."""
@@ -49,18 +54,6 @@ class Verbosity(object):
         self.show_structural_ir = value > 1 # Show the structural intermediate representation.
         self.echo_input = value > 2 # Echo the source that was input.
 
-        # Logging verbosity level.
-        log_level = logging.ERROR
-        if value > 2:
-            log_level = logging.DEBUG
-        elif value > 1:
-            log_level = logging.INFO
-        elif value > 0:
-            log_level = logging.WARNING
-        self.log_level = log_level
-
-        logging.getLogger('txsc').setLevel(self.log_level)
-
 
 class ScriptCompiler(object):
     """Script compiler."""
@@ -83,6 +76,7 @@ class ScriptCompiler(object):
         # Default values for options.
         defaults = {
             'optimization': OptimizationLevel.max_optimization,
+            'log_level': 'WARNING',
             'verbosity': 0,
             'source_lang': 'txscript',
             'target_lang': 'btc',
@@ -97,6 +91,7 @@ class ScriptCompiler(object):
 
         self.optimization = OptimizationLevel(self.options.optimization)
         self.verbosity = Verbosity(self.options.verbosity)
+        set_log_level(self.options.log_level)
 
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]

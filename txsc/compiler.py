@@ -48,6 +48,20 @@ class OAction(argparse.Action):
             values=values.count('O')+1
         setattr(args, self.dest, values)
 
+class LogAction(argparse.Action):
+    def __call__(self, parser, args, values, option_string=None):
+        if values==None:
+            values='warning'
+        elif values in ['off', 'none']:
+            values='fatal'
+        elif values=='warn':
+            values='warning'
+
+        if not isinstance(values, str):
+            values='warning'
+        values = values.upper()
+        setattr(args, self.dest, values)
+
 def main():
     logger = logging.getLogger('txsc')
     ch = logging.StreamHandler()
@@ -74,6 +88,7 @@ def main():
 
     argparser.add_argument('--strict-num', dest='strict_num', action='store_true', default=False, help='Fail if values larger than 4 bytes are treated as integers.')
 
+    argparser.add_argument('--log', nargs='?', action=LogAction, dest='log_level', default='WARNING', help='Minimum logging level.')
     argparser.add_argument('-v', '--verbose', nargs='?', action=VAction, dest='verbosity', default=0, help='Verbosity level (Max: %d).' % Verbosity.max_verbosity)
 
     args = argparser.parse_args()
