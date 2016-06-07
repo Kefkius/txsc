@@ -113,6 +113,9 @@ class ScriptParser(object):
                      | MODEQUALS
                      | LSHIFTEQUALS
                      | RSHIFTEQUALS
+                     | AMPERSANDEQUALS
+                     | CARETEQUALS
+                     | PIPEEQUALS
         '''
         op = p[1]
         base_op = op[:-1]

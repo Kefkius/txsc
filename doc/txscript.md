@@ -180,3 +180,6 @@ TxScript supports all of the common operators.
 
 The bitwise operators `AND`, `OR`, `XOR`, and `NOT` are implemented as
 `&`, `|`, `^`, and `~` respectively.
+
+All of the above operators (excluding logical operators) are also available in
+augmented assignment form (e.g. `a += 5`).
