@@ -30,6 +30,14 @@ class CompileTxScriptTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_augmented_assignment(self):
+        for test in [
+            Test('2 5 ADD', ['let mutable a = 2;', 'a += 5;', 'a;']),
+            Test('2 5 ADD 3 SUB', ['let mutable a = 2;', 'a += 5;', 'a -= 3;', 'a;']),
+            Test('2 5 ADD 3 SUB 6 LSHIFT', ['let mutable a = 2;', 'a += 5;', 'a -= 3;', 'a <<= 6;', 'a;']),
+        ]:
+            self._test(test)
+
     def test_inner_script(self):
         for test in [
             Test('0x03 0x525393 SWAP 7 ADD', 'assume a; raw(2 + 3); a + 7;'),

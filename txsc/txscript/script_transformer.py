@@ -184,6 +184,17 @@ class ScriptTransformer(BaseTransformer):
 
         return types.Assignment(name=target, value=value, type_=sym_type)
 
+    def visit_AugAssign(self, node):
+        """Convenience operators."""
+        left = ast.Name(id=node.target.id, ctx=ast.Load())
+        left.lineno = node.lineno
+        value = ast.BinOp(left=left, op=node.op, right=node.value)
+        value.lineno = node.lineno
+        assign = ast.Assign(targets=[node.target], value=value)
+        assign.lineno = node.lineno
+        assign.declaration = False
+        return self.visit(assign)
+
     def visit_Name(self, node):
         # Return a deletion if it's being deleted.
         if isinstance(node.ctx, ast.Del):

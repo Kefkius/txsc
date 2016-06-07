@@ -18,6 +18,33 @@ class ScriptParser(object):
     def parse(self, s):
         return self.parser.parse(s, lexer=self.lexer, tracking=True)
 
+    def get_bin_op(self, s):
+        """Get the BinOp class for s."""
+        op = None
+        if s == '+':
+            op = ast.Add()
+        elif s == '-':
+            op = ast.Sub()
+        elif s == '*':
+            op = ast.Mult()
+        elif s == '/':
+            op = ast.Div()
+        elif s == '%':
+            op = ast.Mod()
+        elif s == '<<':
+            op = ast.LShift()
+        elif s == '>>':
+            op = ast.RShift()
+
+        elif s == '&':
+            op = ast.BitAnd()
+        elif s == '^':
+            op = ast.BitXor()
+        elif s == '|':
+            op = ast.BitOr()
+
+        return op
+
     def p_error(self, p):
         raise SyntaxError('Syntax error: %s' % p)
 
@@ -78,13 +105,35 @@ class ScriptParser(object):
         p[0].mutable = mutable
         p[0].declaration = True
 
+    def p_aug_assignment_op(self, p):
+        '''augassign : PLUSEQUALS
+                     | MINUSEQUALS
+                     | TIMESEQUALS
+                     | DIVIDEEQUALS
+                     | MODEQUALS
+                     | LSHIFTEQUALS
+                     | RSHIFTEQUALS
+        '''
+        op = p[1]
+        base_op = op[:-1]
+        bin_op = self.get_bin_op(base_op)
+        p[0] = bin_op
+
     def p_statement_assign(self, p):
-        '''statement : NAME EQUALS expr SEMICOLON'''
+        '''statement : NAME EQUALS expr SEMICOLON
+                     | NAME augassign expr SEMICOLON
+        '''
         name = p[1]
         value = p[3]
-        p[0] = ast.Assign(targets=[
-            ast.Name(id=name, ctx=ast.Store()),
-        ], value=value)
+        target = ast.Name(id=name, ctx=ast.Store())
+        if p[2] == '=':
+            p[0] = ast.Assign(targets=[
+                target,
+            ], value=value)
+        else:
+            p[0] = ast.AugAssign(target=target,
+                op=p[2],
+                value=value)
         p[0].declaration = False
 
     def p_deletion(self, p):
@@ -166,38 +215,11 @@ class ScriptParser(object):
                 | expr MOD expr
                 | expr LSHIFT expr
                 | expr RSHIFT expr
-        '''
-        op = None
-        if p[2] == '+':
-            op = ast.Add()
-        elif p[2] == '-':
-            op = ast.Sub()
-        elif p[2] == '*':
-            op = ast.Mult()
-        elif p[2] == '/':
-            op = ast.Div()
-        elif p[2] == '%':
-            op = ast.Mod()
-        elif p[2] == '<<':
-            op = ast.LShift()
-        elif p[2] == '>>':
-            op = ast.RShift()
-
-        p[0] = ast.BinOp(left=p[1], op=op, right=p[3])
-
-    def p_expr_bitwise_op(self, p):
-        '''expr : expr AMPERSAND expr
+                | expr AMPERSAND expr
                 | expr CARET expr
                 | expr PIPE expr
         '''
-        op = None
-        if p[2] == '&':
-            op = ast.BitAnd()
-        elif p[2] == '^':
-            op = ast.BitXor()
-        elif p[2] == '|':
-            op = ast.BitOr()
-
+        op = self.get_bin_op(p[2])
         p[0] = ast.BinOp(left=p[1], op=op, right=p[3])
 
     def p_expr_compare(self, p):

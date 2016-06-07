@@ -25,6 +25,12 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
         # Bitwise operators.
         'AMPERSAND', 'CARET', 'PIPE', 'TILDE',
 
+        # Augmented assignment.
+        'PLUSEQUALS', 'MINUSEQUALS',
+        'TIMESEQUALS', 'DIVIDEEQUALS',
+        'MODEQUALS',
+        'LSHIFTEQUALS', 'RSHIFTEQUALS',
+
         # Comparison operators.
         'EQUALITY', 'INEQUALITY',
         'LESSTHAN', 'GREATERTHAN',
@@ -76,6 +82,14 @@ t_AMPERSAND = r'\&'
 t_CARET = r'\^'
 t_PIPE = r'\|'
 t_TILDE = r'\~'
+
+t_PLUSEQUALS = r'\+\='
+t_MINUSEQUALS = r'\-\='
+t_TIMESEQUALS = r'\*\='
+t_DIVIDEEQUALS = r'\/\='
+t_MODEQUALS = r'\%\='
+t_LSHIFTEQUALS = r'\<\<\='
+t_RSHIFTEQUALS = r'\>\>\='
 
 t_EQUALITY = r'\=\='
 t_INEQUALITY = r'\!\='
