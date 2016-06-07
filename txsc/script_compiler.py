@@ -8,7 +8,7 @@ from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.structural_visitor import StructuralVisitor, IRError
 from txsc.ir.structural_optimizer import StructuralOptimizer
-from txsc.ir.linear_optimizer import LinearOptimizer
+from txsc.ir import linear_optimizer
 from txsc.txscript import ParsingError
 from txsc import config
 
@@ -104,6 +104,8 @@ class ScriptCompiler(object):
 
         # Opcode set.
         config.set_opcode_set(self.options.opcode_set)
+        # Linear optimizer.
+        config.set_linear_optimizer(self.options.opcode_set)
 
         self.output_file = self.options.output_file
 
@@ -212,7 +214,8 @@ class ScriptCompiler(object):
 
         # Perform linear IR optimizations. Perform peephole optimizations if specified.
         # TODO: If the target language supports symbols, do not inline.
-        LinearOptimizer().optimize(instructions, self.symbol_table, peephole=self.optimization.optimize_linear, inline=True)
+        optimizer = linear_optimizer.get_linear_optimizer_cls()
+        optimizer().optimize(instructions, self.symbol_table, peephole=self.optimization.optimize_linear, inline=True)
         if self.verbosity.show_linear_ir:
             self.outputs['Optimized Linear Representation'] = str(instructions)
 

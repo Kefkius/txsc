@@ -8,6 +8,15 @@ import txsc.ir.linear_nodes as types
 
 peephole_optimizers = []
 
+def get_linear_optimizer_cls():
+    """Get the linear optimizer class."""
+    return _linear_optimizer_cls
+
+def set_linear_optimizer_cls(cls):
+    """Set the linear optimizer class."""
+    global _linear_optimizer_cls
+    _linear_optimizer_cls = cls
+
 def peephole(func):
     """Decorator for peephole optimizers."""
     peephole_optimizers.append(func)
@@ -236,6 +245,7 @@ class PeepholeOptimizer(object):
 
 class LinearOptimizer(object):
     """Performs optimizations on the linear IR."""
+    name = 'default'
     def optimize(self, instructions, symbol_table, peephole=True, inline=True):
         self.peephole_optimizer = PeepholeOptimizer(peephole)
         if inline:
@@ -244,3 +254,5 @@ class LinearOptimizer(object):
             inliner.inline(instructions, contextualizer, self.peephole_optimizer)
 
         self.peephole_optimizer.optimize(instructions)
+
+_linear_optimizer_cls = LinearOptimizer

@@ -25,7 +25,7 @@ from txsc.asm import ASMLanguage
 from txsc.btcscript import BtcScriptLanguage
 
 # Default opcodes.
-from txsc.ir import linear_nodes
+from txsc.ir import linear_nodes, linear_optimizer
 
 # Default builtin functions.
 from txsc.txscript import script_transformer
@@ -40,6 +40,7 @@ def has_loaded():
 # Configurable collections.
 languages = [ASMLanguage, BtcScriptLanguage, TxScriptLanguage]
 opcode_sets = {'default': linear_nodes.get_opcodes()}
+linear_optimizers = {'default': linear_optimizer.LinearOptimizer}
 
 
 def load_languages():
@@ -101,6 +102,31 @@ def set_opcode_set(name):
     script_transformer.set_op_functions(op_funcs)
 
 
+def load_linear_optimizers():
+    """Load linear optimizers from entry points."""
+    global linear_optimizers
+    for entry_point in iter_entry_points(group='txsc.linear_optimizers'):
+        cls_maker = entry_point.load()
+        cls = cls_maker()
+        if not issubclass(cls, linear_optimizer.LinearOptimizer):
+            continue
+        # The name "default" is taken.
+        if cls.name == 'default':
+            continue
+        linear_optimizers[name] = cls
+
+def get_linear_optimizers():
+    """Return supported linear optimizers."""
+    return dict(linear_optimizers)
+
+def set_linear_optimizer(name):
+    """Set the desired linear optimizer.
+
+    This is a wrapper arround txsc.linear_optimizer.set_linear_optimizer_cls().
+    """
+    cls = linear_optimizers.get(name, linear_optimizer.LinearOptimizer)
+    linear_optimizer.set_linear_optimizer_cls(cls)
+
 def load_entry_points():
     """Load all entry points."""
     global _loaded
@@ -108,5 +134,6 @@ def load_entry_points():
         return
     load_languages()
     load_opcode_sets()
+    load_linear_optimizers()
 
     _loaded = True
