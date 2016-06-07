@@ -30,6 +30,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR',
         'TIMESEQUALS', 'DIVIDEEQUALS',
         'MODEQUALS',
         'LSHIFTEQUALS', 'RSHIFTEQUALS',
+        'INCREMENT', 'DECREMENT',
 
         # Comparison operators.
         'EQUALITY', 'INEQUALITY',
@@ -90,6 +91,8 @@ t_DIVIDEEQUALS = r'\/\='
 t_MODEQUALS = r'\%\='
 t_LSHIFTEQUALS = r'\<\<\='
 t_RSHIFTEQUALS = r'\>\>\='
+t_INCREMENT = r'\+\+'
+t_DECREMENT = r'\-\-'
 
 t_EQUALITY = r'\=\='
 t_INEQUALITY = r'\!\='

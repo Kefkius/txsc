@@ -35,6 +35,8 @@ class CompileTxScriptTest(BaseCompilerTest):
             Test('2 5 ADD', ['let mutable a = 2;', 'a += 5;', 'a;']),
             Test('2 5 ADD 3 SUB', ['let mutable a = 2;', 'a += 5;', 'a -= 3;', 'a;']),
             Test('2 5 ADD 3 SUB 6 LSHIFT', ['let mutable a = 2;', 'a += 5;', 'a -= 3;', 'a <<= 6;', 'a;']),
+            # Unary augmented assignment.
+            Test('2 5 ADD 1SUB', ['let mutable a = 2;', 'a += 5;', 'a--;', 'a;']),
         ]:
             self._test(test)
 

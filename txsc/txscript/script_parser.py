@@ -119,6 +119,27 @@ class ScriptParser(object):
         bin_op = self.get_bin_op(base_op)
         p[0] = bin_op
 
+    def p_unary_aug_assignment_op(self, p):
+        '''unaryaugassign : INCREMENT
+                          | DECREMENT
+        '''
+        op = p[1]
+        bin_op = ast.BinOp()
+        bin_op.right = ast.Num(1)
+        if op == '++':
+            bin_op.op = ast.Add()
+        elif op == '--':
+            bin_op.op = ast.Sub()
+        p[0] = bin_op
+
+    def p_statement_unary_aug_assign(self, p):
+        '''statement : NAME unaryaugassign SEMICOLON'''
+        bin_op = p[2]
+        bin_op.left = ast.Name(id=p[1], ctx=ast.Load())
+        p[0] = ast.AugAssign(target=ast.Name(id=p[1], ctx=ast.Store()),
+            op=bin_op.op,
+            value=bin_op.right)
+
     def p_statement_assign(self, p):
         '''statement : NAME EQUALS expr SEMICOLON
                      | NAME augassign expr SEMICOLON
