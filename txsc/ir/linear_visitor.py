@@ -21,5 +21,6 @@ class BaseLinearVisitor(BaseTransformer):
         value = formats.int_to_bytearray(value)
         return types.Push(data=value)
 
-    def __init__(self, options=LIROptions()):
+    def __init__(self, symbol_table, options=LIROptions()):
+        self.symbol_table = symbol_table
         self.options = options

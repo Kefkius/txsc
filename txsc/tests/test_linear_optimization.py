@@ -7,12 +7,12 @@ import txsc.ir.linear_nodes as types
 
 class BaseOptimizationTest(unittest.TestCase):
     def setUp(self):
-        self.optimizer = LinearOptimizer()
+        self.optimizer = LinearOptimizer
 
     def _do_test(self, expected, ops_list):
         script = LInstructions(ops_list)
         original = str(script)
-        self.optimizer.optimize(script, SymbolTable())
+        self.optimizer(SymbolTable()).optimize(script)
         expected = str(expected.split(' '))
         self.assertEqual(expected, str(script), '%s != %s (original: %s)' % (expected, str(script), original))
 
@@ -139,7 +139,7 @@ class UnusedAssumptionsTest(BaseOptimizationTest):
     def _do_test(self, expected, ops_list):
         script = LInstructions(ops_list)
         original = str(script)
-        self.optimizer.optimize(script, self.symbol_table)
+        self.optimizer(self.symbol_table).optimize(script)
         expected = str(expected.split(' '))
         self.assertEqual(expected, str(script), '%s != %s (original: %s)' % (expected, str(script), original))
 

@@ -35,8 +35,7 @@ class ConditionalBranch(object):
 class LinearContextualizer(BaseLinearVisitor):
     """Populates metadata attributes of linear IR instructions."""
     def __init__(self, symbol_table, options=LIROptions()):
-        super(LinearContextualizer, self).__init__(options)
-        self.symbol_table = symbol_table
+        super(LinearContextualizer, self).__init__(symbol_table, options)
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
         # [assumption_name, ...]
