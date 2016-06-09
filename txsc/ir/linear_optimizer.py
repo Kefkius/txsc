@@ -4,6 +4,7 @@ import itertools
 from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_context import LinearContextualizer, LinearInliner
+from txsc.ir.linear_visitor import BaseLinearVisitor
 import txsc.ir.linear_nodes as types
 
 peephole_optimizers = []
@@ -243,13 +244,13 @@ class PeepholeOptimizer(object):
             if state == new:
                 break
 
-class LinearOptimizer(object):
+class LinearOptimizer(BaseLinearVisitor):
     """Performs optimizations on the linear IR."""
     name = 'default'
-    def optimize(self, instructions, symbol_table, peephole=True, inline=True):
-        self.peephole_optimizer = PeepholeOptimizer(peephole)
-        if inline:
-            contextualizer = LinearContextualizer(symbol_table)
+    def optimize(self, instructions, symbol_table):
+        self.peephole_optimizer = PeepholeOptimizer(self.options.peephole_optimizations)
+        if self.options.inline_assumptions:
+            contextualizer = LinearContextualizer(symbol_table, self.options)
             inliner = LinearInliner()
             inliner.inline(instructions, contextualizer, self.peephole_optimizer)
 

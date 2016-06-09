@@ -4,6 +4,7 @@ import copy
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
+from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor
 import txsc.ir.linear_nodes as types
 
 class ConditionalBranch(object):
@@ -31,9 +32,10 @@ class ConditionalBranch(object):
             return True
         return False
 
-class LinearContextualizer(BaseTransformer):
+class LinearContextualizer(BaseLinearVisitor):
     """Populates metadata attributes of linear IR instructions."""
-    def __init__(self, symbol_table):
+    def __init__(self, symbol_table, options=LIROptions()):
+        super(LinearContextualizer, self).__init__(options)
         self.symbol_table = symbol_table
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
@@ -179,16 +181,8 @@ class LinearContextualizer(BaseTransformer):
         """Attempt to determine opcode argument."""
         return self.visit_Pick(op)
 
-class LinearInliner(BaseTransformer):
+class LinearInliner(BaseLinearVisitor):
     """Replaces variables with stack operations."""
-    @classmethod
-    def op_for_int(self, value):
-        """Get a small int or push operation for value."""
-        cls = types.opcode_by_name('OP_%d'%value)
-        if cls:
-            return cls()
-        value = formats.int_to_bytearray(value)
-        return types.Push(data=value)
 
     def total_delta(self, idx):
         """Get the total delta of script operations before idx."""

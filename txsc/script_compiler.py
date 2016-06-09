@@ -6,6 +6,7 @@ import logging
 
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
+from txsc.ir.linear_visitor import LIROptions
 from txsc.ir.structural_visitor import SIROptions, StructuralVisitor, IRError
 from txsc.ir.structural_optimizer import StructuralOptimizer
 from txsc.ir import linear_optimizer
@@ -97,6 +98,10 @@ class ScriptCompiler(object):
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]
         self.target_lang = self.output_languages[self.options.target_lang]
+
+        # LIR options.
+        self.lir_options = LIROptions(inline_assumptions=True,
+                        peephole_optimizations=self.optimization.optimize_linear)
 
         # SIR options.
         self.sir_options = SIROptions(evaluate_expressions=self.optimization.evaluate_structural,
@@ -216,7 +221,7 @@ class ScriptCompiler(object):
         # Perform linear IR optimizations. Perform peephole optimizations if specified.
         # TODO: If the target language supports symbols, do not inline.
         optimizer = linear_optimizer.get_linear_optimizer_cls()
-        optimizer().optimize(instructions, self.symbol_table, peephole=self.optimization.optimize_linear, inline=True)
+        optimizer(self.lir_options).optimize(instructions, self.symbol_table)
         if self.verbosity.show_linear_ir:
             self.outputs['Optimized Linear Representation'] = str(instructions)
 
