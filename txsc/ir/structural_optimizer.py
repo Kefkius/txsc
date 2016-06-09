@@ -12,7 +12,6 @@ from txsc.ir.instructions import SInstructions, format_structural_op
 from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, IRError, IRStrictNumError, IRTypeError
 import txsc.ir.structural_nodes as types
 
-logger = logging.getLogger(__name__)
 
 def get_const(op):
     """Get whether op represents a constant value."""
@@ -45,7 +44,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
     """Performs optimizations on the structural IR."""
     def __init__(self, options=SIROptions()):
         super(StructuralOptimizer, self).__init__(options)
-        self.evaluator = ConstEvaluator()
+        self.evaluator = ConstEvaluator(self.logger)
 
     def optimize(self, instructions, symbol_table):
         self.evaluator.enabled = self.options.evaluate_expressions
@@ -98,7 +97,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
             if is_assumption(node.left.left):
                 node.left.left, node.left.right = node.left.right, node.left.left
 
-            logger.debug('Commuting operations for %s and %s' % (format_structural_op(node.left), format_structural_op(node.right)))
+            self.logger.debug('Commuting operations for %s and %s' % (format_structural_op(node.left), format_structural_op(node.right)))
             right = node.right
             node.right = node.left.right
             node.left.right = right
@@ -107,14 +106,14 @@ class StructuralOptimizer(BaseStructuralVisitor):
             return
 
         if self.is_commutative(node):
-            logger.debug('Commuting operands for %s' % format_structural_op(node))
+            self.logger.debug('Commuting operands for %s' % format_structural_op(node))
             node.left, node.right = node.right, node.left
         elif self.has_logical_equivalent(node):
             logmsg = 'Replacing %s with logical equivalent ' % format_structural_op(node)
             node.name = logical_equivalents[node.name]
             node.left, node.right = node.right, node.left
             logmsg += format_structural_op(node)
-            logger.debug(logmsg)
+            self.logger.debug(logmsg)
 
     def visit(self, node):
         method = getattr(self, 'visit_%s' % node.__class__.__name__, None)
@@ -175,7 +174,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
 
         result = self.evaluator.eval_op(node, node.name, node.left, node.right)
         if result:
-            logger.debug('Optimizing %s to %s' % (format_structural_op(node), format_structural_op(result)))
+            self.logger.debug('Optimizing %s to %s' % (format_structural_op(node), format_structural_op(result)))
         return result or node
 
     def visit_VariableArgsOpCode(self, node):
@@ -216,7 +215,8 @@ def params(cls):
 
 class ConstEvaluator(object):
     """Evaluates expressions containing only constant values."""
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.enabled = True
         self.strict_num = False
 
@@ -229,10 +229,10 @@ class ConstEvaluator(object):
             if False in valid:
                 msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (method.__name__, args[valid.index(False)])
                 if self.strict_num:
-                    logger.error(msg)
+                    self.logger.error(msg)
                     raise IRStrictNumError(msg)
                 else:
-                    logger.warning(msg)
+                    self.logger.warning(msg)
             return method(self, *args)
         return wrapper
 
@@ -256,10 +256,10 @@ class ConstEvaluator(object):
             args_str = str(map(str, args))[1:-1] # Remove brackets
             msg = 'Result of %s is longer than 4 bytes: 0x%x' % (format_structural_op(node), result)
             if self.strict_num:
-                logger.error(msg)
+                self.logger.error(msg)
                 raise IRStrictNumError(msg)
             else:
-                logger.warning(msg)
+                self.logger.warning(msg)
         return result
 
     @strict_num

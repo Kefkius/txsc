@@ -1,8 +1,5 @@
 import ast
-import binascii
-
-from bitcoin.core import _bignum
-from bitcoin.core.script import CScriptOp
+import logging
 
 import txsc.ir.linear_nodes as types
 from txsc.ir.instructions import LINEAR, get_instructions_class
@@ -10,6 +7,9 @@ from txsc.ir.instructions import LINEAR, get_instructions_class
 class BaseTransformer(ast.NodeTransformer):
     """Base class for transformers."""
     debug = False
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__module__)
+
     def debug_print(self, s):
         """Print something if self.debug is True."""
         if self.debug:

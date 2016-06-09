@@ -7,7 +7,6 @@ from txsc.ir import formats, structural_nodes
 from txsc.ir.instructions import LInstructions, SInstructions
 import txsc.ir.linear_nodes as types
 
-logger = logging.getLogger(__name__)
 
 def returnlist(func):
     """Decorator that ensures a function returns a list."""
@@ -50,6 +49,7 @@ class BaseStructuralVisitor(BaseTransformer):
     """Base class for structural visitors."""
     symbol_table = None
     def __init__(self, options=SIROptions()):
+        super(BaseStructuralVisitor, self).__init__()
         self.options = options
 
     def require_symbol_table(self, purpose=None):
@@ -173,10 +173,10 @@ class StructuralVisitor(BaseStructuralVisitor):
             if SInstructions.is_push_operation(stmt):
                 msg = 'Implicit push of %s %s' % (stmt.__class__.__name__, SInstructions.format_op(stmt))
                 if not self.options.implicit_pushes:
-                    logger.error(msg)
+                    self.logger.error(msg)
                     raise IRImplicitPushError(msg, stmt.lineno)
                 else:
-                    logger.warning(msg)
+                    self.logger.warning(msg)
             return_value.extend(self.visit(stmt))
         return return_value
 
@@ -199,10 +199,10 @@ class StructuralVisitor(BaseStructuralVisitor):
             if not formats.is_strict_num(int(assignment.value)):
                 msg = 'Assignment value to %s is longer than 4 bytes: 0x%x' % (assignment.name, assignment.value)
                 if self.options.strict_num:
-                    logger.error(msg)
+                    self.logger.error(msg)
                     raise IRStrictNumError(msg)
                 else:
-                    logger.warning(msg)
+                    self.logger.warning(msg)
 
         self.add_Assignment(assignment)
         return None
@@ -294,10 +294,10 @@ class StructuralVisitor(BaseStructuralVisitor):
             if not formats.is_strict_num(int(node.operand)):
                 msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, node.operand)
                 if self.options.strict_num:
-                    logger.error(msg)
+                    self.logger.error(msg)
                     raise IRStrictNumError(msg)
                 else:
-                    logger.warning(msg)
+                    self.logger.warning(msg)
         return_value = self.visit(node.operand)
         op = types.opcode_by_name(node.name)()
         return return_value + [op]
@@ -312,10 +312,10 @@ class StructuralVisitor(BaseStructuralVisitor):
                 if False in valid:
                     msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, operands[valid.index(False)])
                     if self.options.strict_num:
-                        logger.error(msg)
+                        self.logger.error(msg)
                         raise IRStrictNumError(msg)
                     else:
-                        logger.warning(msg)
+                        self.logger.warning(msg)
 
         return_value = self.visit(node.left)
         return_value.extend(self.visit(node.right))
