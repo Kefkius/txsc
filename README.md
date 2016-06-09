@@ -79,7 +79,7 @@ their size.
 It works by parsing code and generating a structural intermediate representation,
 then transforming that into the linear intermediate representation that other languages can use.
 
-See the file `txscript` in the `doc` directory for more information about TxScript.
+See the [TxScript documentation](./doc/txscript.md) for detailed information regarding TxScript.
 
 ## Examples
 
