@@ -222,11 +222,11 @@ Size = _unary_opcode('Size', 1, 'OP_SIZE')
 
 # Bitwise logic.
 
-Invert = _unary_opcode('Invert', 0, 'OP_INVERT', arithmetic=True)
-And = _binary_opcode('And', -1, 'OP_AND', arithmetic=True)
-Or = _binary_opcode('Or', -1, 'OP_OR', arithmetic=True)
-Xor = _binary_opcode('Xor', -1, 'OP_XOR', arithmetic=True)
-Equal = _binary_opcode('Equal', -1, 'OP_EQUAL')
+Invert = _unary_opcode('Invert', 0, 'OP_INVERT', arithmetic=True, opstr='~{}')
+And = _binary_opcode('And', -1, 'OP_AND', arithmetic=True, opstr='{} & {}')
+Or = _binary_opcode('Or', -1, 'OP_OR', arithmetic=True, opstr='{} | {}')
+Xor = _binary_opcode('Xor', -1, 'OP_XOR', arithmetic=True, opstr='{} ^ {}')
+Equal = _binary_opcode('Equal', -1, 'OP_EQUAL', opstr='{} = {}')
 EqualVerify = _binary_opcode('EqualVerify', -2, 'OP_EQUALVERIFY', verifier=True)
 
 # Arithmetic.
