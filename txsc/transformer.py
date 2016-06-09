@@ -6,14 +6,8 @@ from txsc.ir.instructions import LINEAR, get_instructions_class
 
 class BaseTransformer(ast.NodeTransformer):
     """Base class for transformers."""
-    debug = False
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__module__)
-
-    def debug_print(self, s):
-        """Print something if self.debug is True."""
-        if self.debug:
-            print('[%s] > %s' % (self.__class__.__name__, s))
 
     def map_visit(self, nodes):
         """Return the results of visiting each node in nodes.
@@ -23,7 +17,6 @@ class BaseTransformer(ast.NodeTransformer):
         return map(self.visit, nodes)
 
     def generic_visit(self, node):
-        self.debug_print('generic_visit %s' % node.__class__.__name__)
         return super(BaseTransformer, self).generic_visit(node)
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
