@@ -250,6 +250,7 @@ class ConstEvaluator(object):
             result = types.Int.coerce(result)
         elif isinstance(result, str):
             result = types.Push.coerce(result)
+        result.lineno = node.lineno
 
         if not formats.is_strict_num(int(result)):
             args_str = str(map(str, args))[1:-1] # Remove brackets
@@ -348,6 +349,22 @@ class ConstEvaluator(object):
     @strict_num
     def OP_BOOLOR(self, left, right):
         return left != 0 or right != 0
+
+    @strict_num
+    def OP_INVERT(self, value):
+        return ~value
+
+    @strict_num
+    def OP_AND(self, left, right):
+        return left & right
+
+    @strict_num
+    def OP_OR(self, left, right):
+        return left | right
+
+    @strict_num
+    def OP_XOR(self, left, right):
+        return left ^ right
 
 
     @params(str)
