@@ -9,6 +9,36 @@ class BaseTransformer(ast.NodeTransformer):
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__module__)
 
+    def _prepend_lineno(self, msg, lineno):
+        """Prepend line number to msg."""
+        if lineno is not None:
+            msg = 'Line %d: %s' % (lineno, msg)
+        return msg
+
+    def debug(self, msg, lineno=None):
+        msg = self._prepend_lineno(msg, lineno)
+        self.logger.debug(msg)
+
+    def info(self, msg, lineno=None):
+        msg = self._prepend_lineno(msg, lineno)
+        self.logger.info(msg)
+
+    def warning(self, msg, lineno=None):
+        msg = self._prepend_lineno(msg, lineno)
+        self.logger.warning(msg)
+
+    def error(self, msg, lineno=None):
+        msg = self._prepend_lineno(msg, lineno)
+        self.logger.error(msg)
+
+    def critical(self, msg, lineno=None):
+        msg = self._prepend_lineno(msg, lineno)
+        self.logger.critical(msg)
+
+    def fatal(self, msg, lineno=None):
+        msg = self._prepend_lineno(msg, lineno)
+        self.logger.fatal(msg)
+
     def map_visit(self, nodes):
         """Return the results of visiting each node in nodes.
 

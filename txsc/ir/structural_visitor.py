@@ -173,10 +173,10 @@ class StructuralVisitor(BaseStructuralVisitor):
             if SInstructions.is_push_operation(stmt):
                 msg = 'Implicit push of %s %s' % (stmt.__class__.__name__, SInstructions.format_op(stmt))
                 if not self.options.implicit_pushes:
-                    self.logger.error(msg)
+                    self.error(msg, stmt.lineno)
                     raise IRImplicitPushError(msg, stmt.lineno)
                 else:
-                    self.logger.warning(msg)
+                    self.warning(msg, stmt.lineno)
             return_value.extend(self.visit(stmt))
         return return_value
 
@@ -199,10 +199,10 @@ class StructuralVisitor(BaseStructuralVisitor):
             if not formats.is_strict_num(int(assignment.value)):
                 msg = 'Assignment value to %s is longer than 4 bytes: 0x%x' % (assignment.name, assignment.value)
                 if self.options.strict_num:
-                    self.logger.error(msg)
+                    self.error(msg, assignment.lineno)
                     raise IRStrictNumError(msg)
                 else:
-                    self.logger.warning(msg)
+                    self.warning(msg, assignment.lineno)
 
         self.add_Assignment(assignment)
         return None
@@ -294,10 +294,10 @@ class StructuralVisitor(BaseStructuralVisitor):
             if not formats.is_strict_num(int(node.operand)):
                 msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, node.operand)
                 if self.options.strict_num:
-                    self.logger.error(msg)
+                    self.error(msg, node.lineno)
                     raise IRStrictNumError(msg)
                 else:
-                    self.logger.warning(msg)
+                    self.warning(msg, node.lineno)
         return_value = self.visit(node.operand)
         op = types.opcode_by_name(node.name)()
         return return_value + [op]
@@ -312,10 +312,10 @@ class StructuralVisitor(BaseStructuralVisitor):
                 if False in valid:
                     msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, operands[valid.index(False)])
                     if self.options.strict_num:
-                        self.logger.error(msg)
+                        self.error(msg, node.lineno)
                         raise IRStrictNumError(msg)
                     else:
-                        self.logger.warning(msg)
+                        self.warning(msg, node.lineno)
 
         return_value = self.visit(node.left)
         return_value.extend(self.visit(node.right))
