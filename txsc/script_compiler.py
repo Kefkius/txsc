@@ -6,7 +6,7 @@ import logging
 
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
-from txsc.ir.structural_visitor import StructuralVisitor, IRError
+from txsc.ir.structural_visitor import SIROptions, StructuralVisitor, IRError
 from txsc.ir.structural_optimizer import StructuralOptimizer
 from txsc.ir import linear_optimizer
 from txsc.txscript import ParsingError
@@ -96,6 +96,10 @@ class ScriptCompiler(object):
         # Compilation source and target.
         self.source_lang = self.input_languages[self.options.source_lang]
         self.target_lang = self.output_languages[self.options.target_lang]
+
+        # SIR options.
+        self.sir_options = SIROptions(evaluate_expressions=self.optimization.evaluate_structural,
+                        strict_num=self.options.strict_num)
 
         # Opcode set.
         config.set_opcode_set(self.options.opcode_set)
@@ -188,10 +192,10 @@ class ScriptCompiler(object):
             try:
                 # Optimize structural IR.
                 if self.optimization.optimize_structural:
-                    StructuralOptimizer().optimize(instructions, self.symbol_table, self.optimization.evaluate_structural, self.options.strict_num)
+                    StructuralOptimizer(self.sir_options).optimize(instructions, self.symbol_table)
                     if self.verbosity.show_structural_ir:
                         self.outputs['Optimized Structural Representation'] = instructions.dump()
-                instructions = StructuralVisitor().transform(instructions, self.symbol_table, self.options.strict_num)
+                instructions = StructuralVisitor(self.sir_options).transform(instructions, self.symbol_table)
             except IRError as e:
                 if self.testing_mode:
                     raise e

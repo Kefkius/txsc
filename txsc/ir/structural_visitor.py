@@ -34,9 +34,18 @@ class IRTypeError(IRError):
     """Exception raised when using incompatible or incorrect types."""
     pass
 
+class SIROptions(object):
+    """Options for the structural intermediate representation."""
+    def __init__(self, evaluate_expressions=True,
+                 strict_num=False):
+        self.evaluate_expressions = evaluate_expressions
+        self.strict_num = strict_num
+
 class BaseStructuralVisitor(BaseTransformer):
     """Base class for structural visitors."""
     symbol_table = None
+    def __init__(self, options=SIROptions()):
+        self.options = options
 
     def require_symbol_table(self, purpose=None):
         """Raise an exception if no symbol table is present."""
@@ -130,12 +139,11 @@ class BaseStructuralVisitor(BaseTransformer):
 
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
-    def transform(self, node, symbol_table=None, strict_num=False):
+    def transform(self, node, symbol_table=None):
         # Whether we've finished visiting a conditional that results in a different
         # number of stack items depending on whether or not it is true.
         self.after_uneven_conditional = False
         self.symbol_table = symbol_table
-        self.strict_num = strict_num
         self.script = node
         self.instructions = LInstructions(self.visit(node.script))
         return self.instructions
@@ -178,7 +186,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         if isinstance(assignment.value, (structural_nodes.Int, structural_nodes.Push)):
             if not formats.is_strict_num(int(assignment.value)):
                 msg = 'Assignment value to %s is longer than 4 bytes: 0x%x' % (assignment.name, assignment.value)
-                if self.strict_num:
+                if self.options.strict_num:
                     logger.error(msg)
                     raise IRStrictNumError(msg)
                 else:
@@ -273,7 +281,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         if SInstructions.is_arithmetic_op(node) and isinstance(node.operand, (structural_nodes.Int, structural_nodes.Push)):
             if not formats.is_strict_num(int(node.operand)):
                 msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, node.operand)
-                if self.strict_num:
+                if self.options.strict_num:
                     logger.error(msg)
                     raise IRStrictNumError(msg)
                 else:
@@ -291,7 +299,7 @@ class StructuralVisitor(BaseStructuralVisitor):
                 valid = [formats.is_strict_num(int(i)) for i in operands]
                 if False in valid:
                     msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, operands[valid.index(False)])
-                    if self.strict_num:
+                    if self.options.strict_num:
                         logger.error(msg)
                         raise IRStrictNumError(msg)
                     else:

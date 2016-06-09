@@ -9,7 +9,7 @@ from txsc.symbols import SymbolTable, SymbolType, ImmutableError, MultipleDeclar
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import SInstructions, format_structural_op
-from txsc.ir.structural_visitor import BaseStructuralVisitor, IRError, IRStrictNumError, IRTypeError
+from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, IRError, IRStrictNumError, IRTypeError
 import txsc.ir.structural_nodes as types
 
 logger = logging.getLogger(__name__)
@@ -43,12 +43,13 @@ logical_equivalents = {
 
 class StructuralOptimizer(BaseStructuralVisitor):
     """Performs optimizations on the structural IR."""
-    def __init__(self):
+    def __init__(self, options=SIROptions()):
+        super(StructuralOptimizer, self).__init__(options)
         self.evaluator = ConstEvaluator()
 
-    def optimize(self, instructions, symbol_table, evaluate_expressions=True, strict_num=False):
-        self.evaluator.enabled = evaluate_expressions
-        self.evaluator.strict_num = strict_num
+    def optimize(self, instructions, symbol_table):
+        self.evaluator.enabled = self.options.evaluate_expressions
+        self.evaluator.strict_num = self.options.strict_num
         self.script = instructions
         script = instructions.script
         self.symbol_table = SymbolTable.clone(symbol_table)
