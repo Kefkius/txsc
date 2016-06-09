@@ -182,6 +182,9 @@ class LinearContextualizer(BaseLinearVisitor):
 
 class LinearInliner(BaseLinearVisitor):
     """Replaces variables with stack operations."""
+    def __init__(self, symbol_table, options=LIROptions()):
+        super(LinearInliner, self).__init__(symbol_table, options)
+        self.contextualizer = LinearContextualizer(symbol_table, options)
 
     def total_delta(self, idx):
         """Get the total delta of script operations before idx."""
@@ -216,7 +219,7 @@ class LinearInliner(BaseLinearVisitor):
         # TODO: Fix delta calculation so that total can't be negative.
         return max(0, total)
 
-    def inline(self, instructions, contextualizer, peephole_optimizer):
+    def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
 
         Inlining is performed by iterating through each instruction and
@@ -232,7 +235,6 @@ class LinearInliner(BaseLinearVisitor):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
-        self.contextualizer = contextualizer
         self.remove_deleted_assumptions()
 
         # Loop until no inlining can be done.

@@ -250,9 +250,8 @@ class LinearOptimizer(BaseLinearVisitor):
     def optimize(self, instructions):
         self.peephole_optimizer = PeepholeOptimizer(self.options.peephole_optimizations)
         if self.options.inline_assumptions:
-            contextualizer = LinearContextualizer(self.symbol_table, self.options)
             inliner = LinearInliner(self.symbol_table, self.options)
-            inliner.inline(instructions, contextualizer, self.peephole_optimizer)
+            inliner.inline(instructions, self.peephole_optimizer)
 
         self.peephole_optimizer.optimize(instructions)
 
