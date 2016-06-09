@@ -49,6 +49,10 @@ class OAction(argparse.Action):
         setattr(args, self.dest, values)
 
 class LogAction(argparse.Action):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = ['debug', 'info', 'warning', 'error', 'none']
+        super(LogAction, self).__init__(*args, **kwargs)
+
     def __call__(self, parser, args, values, option_string=None):
         if values==None:
             values='warning'
@@ -62,7 +66,35 @@ class LogAction(argparse.Action):
         values = values.upper()
         setattr(args, self.dest, values)
 
+source_choices = []
+target_choices = []
+opcode_set_choices = []
+
+def create_arg_parser():
+    argparser = argparse.ArgumentParser(description='Transaction script compiler.')
+    argparser.add_argument('source', metavar='SOURCE', nargs='?', type=str, help='Source to compile.')
+    argparser.add_argument('--list-langs', dest='list_langs', action='store_true', default=False, help='List available languages and exit.')
+    argparser.add_argument('--list-opcode-sets', dest='list_opcode_sets', action='store_true', default=False, help='List available opcode sets and exit.')
+    argparser.add_argument('-o', '--output', dest='output_file', metavar='OUTPUT_FILE', type=str, help='Output to a file.')
+    argparser.add_argument('-O', '--optimize', nargs='?', action=OAction, dest='optimization', metavar='OPTIMIZATION_LEVEL', default=2, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
+
+    argparser.add_argument('-s', '--source', metavar='SOURCE_LANGUAGE', dest='source_lang', choices=source_choices, default='txscript', help='Source language (Choices: %(choices)s).')
+    argparser.add_argument('-t', '--target', metavar='TARGET_LANGUAGE', dest='target_lang', choices=target_choices, default='btc', help='Target language (Choices: %(choices)s).')
+    argparser.add_argument('--opcode-set', metavar='OPCODE_SET', dest='opcode_set', choices=opcode_set_choices,
+                           default='default', help='Opcode set (Choices: %(choices)s).')
+
+    argparser.add_argument('--log', nargs='?', action=LogAction, dest='log_level', default='WARNING', help='Minimum logging level (Default: %(default)s).')
+    argparser.add_argument('-v', '--verbose', nargs='?', action=VAction, dest='verbosity', default=0, help='Verbosity level (Max: %d).' % Verbosity.max_verbosity)
+
+    group = argparser.add_argument_group('compilation flags', 'These optional flags place restrictions on script contents.')
+    group.add_argument('--no-implicit-pushes', dest='no_implicit_pushes', action='store_true', default=False, help='Fail if values are implicitly pushed to the stack.')
+    group.add_argument('--strict-num', dest='strict_num', action='store_true', default=False, help='Fail if values larger than 4 bytes are treated as integers.')
+
+
+    return argparser
+
 def main():
+    global source_choices, target_choices, opcode_set_choices
     logger = logging.getLogger('txsc')
     ch = logging.StreamHandler()
     ch.setFormatter(logging.Formatter('%(levelname)s [%(name)s] %(message)s'))
@@ -74,24 +106,7 @@ def main():
     target_choices = sorted(compiler.output_languages.keys())
     opcode_set_choices = sorted(config.get_opcode_sets().keys())
 
-    argparser = argparse.ArgumentParser(description='Transaction script compiler.')
-    argparser.add_argument('source', metavar='SOURCE', nargs='?', type=str, help='Source to compile.')
-    argparser.add_argument('--list-langs', dest='list_langs', action='store_true', default=False, help='List available languages and exit.')
-    argparser.add_argument('--list-opcode-sets', dest='list_opcode_sets', action='store_true', default=False, help='List available opcode sets and exit.')
-    argparser.add_argument('-o', '--output', dest='output_file', metavar='OUTPUT_FILE', type=str, help='Output to a file.')
-    argparser.add_argument('-O', '--optimize', nargs='?', action=OAction, dest='optimization', metavar='OPTIMIZATION_LEVEL', default=2, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
-
-    argparser.add_argument('-s', '--source', metavar='SOURCE_LANGUAGE', dest='source_lang', choices=source_choices, default='txscript', help='Source language.')
-    argparser.add_argument('-t', '--target', metavar='TARGET_LANGUAGE', dest='target_lang', choices=target_choices, default='btc', help='Target language.')
-    argparser.add_argument('--opcode-set', metavar='OPCODE_SET', dest='opcode_set', choices=opcode_set_choices,
-                           default='default', help='Opcode set (Use --list-opcode-sets to view options).')
-
-    argparser.add_argument('--implicit-pushes', dest='implicit_pushes', action='store_true', default=True, help='Allow implicit pushes of values to the stack.')
-    argparser.add_argument('--strict-num', dest='strict_num', action='store_true', default=False, help='Fail if values larger than 4 bytes are treated as integers.')
-
-    argparser.add_argument('--log', nargs='?', action=LogAction, dest='log_level', default='WARNING', help='Minimum logging level.')
-    argparser.add_argument('-v', '--verbose', nargs='?', action=VAction, dest='verbosity', default=0, help='Verbosity level (Max: %d).' % Verbosity.max_verbosity)
-
+    argparser = create_arg_parser()
     args = argparser.parse_args()
 
     def list_languages():
