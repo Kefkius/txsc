@@ -26,6 +26,10 @@ class IRError(Exception):
     """Exception raised when converting SIR instructions to the LIR."""
     pass
 
+class IRImplicitPushError(IRError):
+    """Exception raised when an implicit push is encountered."""
+    pass
+
 class IRStrictNumError(IRError):
     """Exception raised when using a non-number value in an arithmetic operation."""
     pass
@@ -36,9 +40,10 @@ class IRTypeError(IRError):
 
 class SIROptions(object):
     """Options for the structural intermediate representation."""
-    def __init__(self, evaluate_expressions=True,
+    def __init__(self, evaluate_expressions=True, implicit_pushes=True,
                  strict_num=False):
         self.evaluate_expressions = evaluate_expressions
+        self.implicit_pushes = implicit_pushes
         self.strict_num = strict_num
 
 class BaseStructuralVisitor(BaseTransformer):
@@ -165,6 +170,13 @@ class StructuralVisitor(BaseStructuralVisitor):
     def visit_Script(self, node):
         return_value = []
         for stmt in node.statements:
+            if SInstructions.is_push_operation(stmt):
+                msg = 'Implicit push of %s %s' % (stmt.__class__.__name__, SInstructions.format_op(stmt))
+                if not self.options.implicit_pushes:
+                    logger.error(msg)
+                    raise IRImplicitPushError(msg, stmt.lineno)
+                else:
+                    logger.warning(msg)
             return_value.extend(self.visit(stmt))
         return return_value
 

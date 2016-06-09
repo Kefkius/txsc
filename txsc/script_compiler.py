@@ -82,6 +82,7 @@ class ScriptCompiler(object):
             'target_lang': 'btc',
             'opcode_set': 'default',
             'output_file': '',
+            'implicit_pushes': True,
             'strict_num': False,
         }
         for k, v in defaults.items():
@@ -99,6 +100,7 @@ class ScriptCompiler(object):
 
         # SIR options.
         self.sir_options = SIROptions(evaluate_expressions=self.optimization.evaluate_structural,
+                        implicit_pushes=self.options.implicit_pushes,
                         strict_num=self.options.strict_num)
 
         # Opcode set.

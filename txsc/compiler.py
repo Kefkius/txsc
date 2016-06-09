@@ -86,6 +86,7 @@ def main():
     argparser.add_argument('--opcode-set', metavar='OPCODE_SET', dest='opcode_set', choices=opcode_set_choices,
                            default='default', help='Opcode set (Use --list-opcode-sets to view options).')
 
+    argparser.add_argument('--implicit-pushes', dest='implicit_pushes', action='store_true', default=True, help='Allow implicit pushes of values to the stack.')
     argparser.add_argument('--strict-num', dest='strict_num', action='store_true', default=False, help='Fail if values larger than 4 bytes are treated as integers.')
 
     argparser.add_argument('--log', nargs='?', action=LogAction, dest='log_level', default='WARNING', help='Minimum logging level.')

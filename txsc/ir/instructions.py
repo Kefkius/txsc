@@ -29,6 +29,8 @@ def format_structural_op(op):
         if isinstance(op, (structural_nodes.Int, structural_nodes.Push)) and abs(int(op)) > 16:
             s = hex(int(op))
         return s
+    if not hasattr(op, 'name'):
+        return
     linear = linear_nodes.opcode_by_name(op.name)
     if not linear or not linear.opstr:
         return
@@ -153,6 +155,15 @@ class SInstructions(Instructions):
         if not linear or not issubclass(linear, linear_nodes.OpCode):
             return False
         return linear.arithmetic
+
+    @staticmethod
+    def is_push_operation(op):
+        """Return whether op pushes a value to the stack if used as a statement."""
+        non_push_classes = (structural_nodes.Script, structural_nodes.If, structural_nodes.Function,
+                structural_nodes.Declaration, structural_nodes.Assignment, structural_nodes.Deletion)
+        if isinstance(op, non_push_classes):
+            return False
+        return True
 
     @staticmethod
     def get_symbol_type_for_node(op):
