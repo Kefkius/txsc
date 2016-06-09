@@ -25,7 +25,10 @@ class CustomOpcodeTest(unittest.TestCase):
 
     def test_op(self):
         op = sir.OpCode(name='OP_FOO')
-        s = sir.Script(statements=[op, sir.Push('01')])
+        op.lineno = 0
+        push = sir.Push('01')
+        push.lineno = 0
+        s = sir.Script(statements=[op, push])
 
         ops = self._linearize(s)
         self.assertEqual("['OP_FOO', 'OP_1']", str(ops))

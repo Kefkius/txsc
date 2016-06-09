@@ -2,11 +2,12 @@ import unittest
 from collections import namedtuple
 
 from txsc.ir.instructions import LInstructions, SInstructions
+from txsc.symbols import SymbolType
 from txsc.ir import linear_nodes as lir
 from txsc.ir import structural_nodes as sir
 
 
-Test = namedtuple('UnaryTest', ('name', 'expected'))
+Test = namedtuple('Test', ('name', 'expected'))
 class StructuralFormatTest(unittest.TestCase):
 
     def test_unary_op(self):
@@ -43,3 +44,55 @@ class StructuralFormatTest(unittest.TestCase):
         ]:
             op = sir.BinOpCode(name = test.name, left = sir.Push('05'), right = sir.Push('06'))
             self.assertEqual(test.expected, SInstructions.format_op(op))
+
+    def test_script(self):
+        for node, expected in [
+            (sir.Script(statements=[sir.Int(5)]), '5;'),
+            (sir.Script(statements=[sir.Int(5), sir.Int(6)]), '5; 6;'),
+        ]:
+            self.assertEqual(expected, SInstructions.format_op(node))
+
+    def test_innerscript(self):
+        for node, expected in [
+            (sir.InnerScript(statements=[sir.Int(5)]), '5;'),
+            (sir.InnerScript(statements=[sir.Int(5), sir.Int(6)]), '5; 6;'),
+        ]:
+            self.assertEqual(expected, SInstructions.format_op(node))
+
+    def test_assignments_and_deletions(self):
+        for node, expected in [
+            (sir.Declaration(name='foo', value=sir.Int(5), type_=SymbolType.Integer, mutable=True), 'let mutable foo = 5'),
+            (sir.Declaration(name='foo', value=sir.Int(5), type_=SymbolType.Integer, mutable=False), 'let foo = 5'),
+            (sir.Assignment(name='foo', value=sir.Int(5), type_=SymbolType.Integer), 'foo = 5'),
+            (sir.Assignment(name='foo', value=sir.Push('05'), type_=SymbolType.Integer), 'foo = 05'),
+            (sir.Deletion(name='foo'), 'del foo'),
+        ]:
+            self.assertEqual(expected, SInstructions.format_op(node))
+
+    def test_function(self):
+        for node, expected in [
+            (sir.Function(name='foo', args=[sir.Symbol('a')],
+                    body=[sir.BinOpCode(name='OP_ADD', left=sir.Symbol('a'), right=sir.Int(2))]), 'func foo(a) {a + 2;}'),
+            (sir.Function(name='foo', args=[sir.Symbol('a')],
+                    body=[sir.BinOpCode(name='OP_ADD', left=sir.Symbol('a'), right=sir.Int(2)), sir.Int(5)]), 'func foo(a) {a + 2; 5;}'),
+            (sir.Function(name='foo', args=[sir.Symbol('a'), sir.Symbol('b')],
+                    body=[sir.BinOpCode(name='OP_ADD', left=sir.Symbol('a'), right=sir.Symbol('b')), sir.Int(5)]), 'func foo(a, b) {a + b; 5;}'),
+        ]:
+            self.assertEqual(expected, SInstructions.format_op(node))
+
+    def test_function_call(self):
+        for node, expected in [
+            (sir.FunctionCall(name='foo', args=[]), 'foo()'),
+            (sir.FunctionCall(name='foo', args=[sir.Int(5)]), 'foo(5)'),
+            (sir.FunctionCall(name='foo', args=[sir.Int(5), sir.Int(6)]), 'foo(5, 6)'),
+            (sir.FunctionCall(name='foo', args=[sir.Int(5), sir.Push('06')]), 'foo(5, 06)'),
+        ]:
+            self.assertEqual(expected, SInstructions.format_op(node))
+
+    def test_conditional(self):
+        for node, expected in [
+            (sir.If(test=sir.Int(1), truebranch=[sir.Int(5)], falsebranch=[]), 'if 1 {5;}'),
+            (sir.If(test=sir.Int(1), truebranch=[sir.Int(5)], falsebranch=[sir.Int(6)]), 'if 1 {5;} else {6;}'),
+            (sir.If(test=sir.Int(1), truebranch=[sir.Int(5)], falsebranch=[sir.Int(6), sir.Int(7)]), 'if 1 {5;} else {6; 7;}'),
+        ]:
+            self.assertEqual(expected, SInstructions.format_op(node))

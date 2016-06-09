@@ -23,12 +23,47 @@ def get_instructions_class(instructions_type):
 
 def format_structural_op(op):
     """Format an op for human-readability."""
-    if isinstance(op, (structural_nodes.Int, structural_nodes.Push, structural_nodes.Symbol)):
+    def format_statements(statements):
+        return '; '.join(map(format_structural_op, statements)) + ';'
+    def format_args(arguments):
+        args = map(format_structural_op, arguments)
+        args_str = ''
+        for i, arg in enumerate(args):
+            args_str += arg
+            if i < len(args) - 1:
+                args_str += ', '
+        return args_str
+
+    if isinstance(op, structural_nodes.Script):
+        return format_statements(op.statements)
+    elif isinstance(op, (structural_nodes.Int, structural_nodes.Push, structural_nodes.Symbol)):
         s = str(op)
         # Hex-encode numeric values.
         if isinstance(op, (structural_nodes.Int, structural_nodes.Push)) and abs(int(op)) > 16:
             s = hex(int(op))
         return s
+    elif isinstance(op, structural_nodes.Declaration):
+        return 'let %s%s = %s' % ('mutable ' if op.mutable else '', op.name, format_structural_op(op.value))
+    elif isinstance(op, structural_nodes.Assignment):
+        return '%s = %s' % (op.name, format_structural_op(op.value))
+    elif isinstance(op, structural_nodes.Deletion):
+        return 'del %s' % op.name
+    elif isinstance(op, structural_nodes.Function):
+        args_str = format_args(op.args)
+        body_str = format_statements(op.body)
+        return 'func %s(%s) {%s}' % (op.name, args_str, body_str)
+    elif isinstance(op, structural_nodes.FunctionCall):
+        args_str = format_args(op.args)
+        return '%s(%s)' % (op.name, args_str)
+    elif isinstance(op, structural_nodes.If):
+        test = format_structural_op(op.test)
+        true_branch = format_statements(op.truebranch)
+        s = 'if %s {%s}' % (test, true_branch)
+        if op.falsebranch:
+            s += ' else {%s}' % format_statements(op.falsebranch)
+        return s
+    elif isinstance(op, structural_nodes.InnerScript):
+        return format_statements(op.statements)
     if not hasattr(op, 'name'):
         return
     linear = linear_nodes.opcode_by_name(op.name)
