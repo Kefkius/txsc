@@ -1,5 +1,7 @@
 from collections import OrderedDict
 import ast
+import json
+import os
 import sys
 from pkg_resources import iter_entry_points
 import logging
@@ -18,6 +20,7 @@ config.load_entry_points()
 
 def set_log_level(level):
     """Set the minimum logging level."""
+    level = level.upper()
     log_level = getattr(logging, level, logging.WARNING)
     logging.getLogger('txsc').setLevel(log_level)
 
@@ -58,6 +61,34 @@ class Verbosity(object):
 
 class ScriptCompiler(object):
     """Script compiler."""
+    @staticmethod
+    def load_file(path):
+        try:
+            with open(path, 'r') as f:
+                config_options = json.loads(f.read())
+                if isinstance(config_options, dict):
+                    return config_options
+        except Exception:
+            pass
+        return None
+
+
+    @staticmethod
+    def load_config_file():
+        """Find a configuration file (if it exists) and load its options."""
+        filename = 'txsc.conf'
+        paths = [os.getcwd()]
+        if os.environ.get('HOME'):
+            paths.append(os.path.join(os.environ['HOME'], '.config', 'txsc'))
+
+        for directory in paths:
+            path = os.path.join(directory, filename)
+            config_options = ScriptCompiler.load_file(path)
+            if config_options is not None:
+                return config_options
+
+        return {}
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.outputs = OrderedDict()
@@ -82,12 +113,22 @@ class ScriptCompiler(object):
             'source_lang': 'txscript',
             'target_lang': 'btc',
             'opcode_set': 'default',
+            'config_file': '',
             'output_file': '',
             'no_implicit_pushes': False,
             'strict_num': False,
         }
         for k, v in defaults.items():
             if not hasattr(self.options, k):
+                setattr(self.options, k, v)
+
+        # Load options from config file (if one exists).
+        if self.options.config_file:
+            config_options = self.load_file(self.options.config_file)
+        else:
+            config_options = self.load_config_file()
+        if config_options:
+            for k, v in config_options.items():
                 setattr(self.options, k, v)
 
 

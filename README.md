@@ -45,6 +45,23 @@ asm:
   2 5 ADD 7 EQUALVERIFY
 ```
 
+## Configuration Files
+
+If a file called `txsc.conf` exists in the directory that `txsc` is being run in, it will be loaded by the compiler. A configuration
+file may also exist at `$HOME/.config/txsc/txsc.conf`. If the command-line option `--config` is supplied, it will be used instead of
+these paths. The configuration file is in JSON format. Options in the configuration file are overriden by command-line options.
+
+Here is a sample of what a configuration file may look like:
+
+```
+{
+    "log_level": "error",
+    "target_lang": "asm"
+}
+```
+
+The above configuration file specifies that only errors should be logged, and that `asm` is the target language to compile source to.
+
 ## Languages
 
 ### ASM

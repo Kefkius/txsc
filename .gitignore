@@ -2,4 +2,5 @@
 *.swp
 parser.out
 parsetab.py
+txsc.conf
 txsc.egg-info/

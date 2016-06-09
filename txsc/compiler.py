@@ -75,6 +75,7 @@ def create_arg_parser():
     argparser.add_argument('source', metavar='SOURCE', nargs='?', type=str, help='Source to compile.')
     argparser.add_argument('--list-langs', dest='list_langs', action='store_true', default=False, help='List available languages and exit.')
     argparser.add_argument('--list-opcode-sets', dest='list_opcode_sets', action='store_true', default=False, help='List available opcode sets and exit.')
+    argparser.add_argument('-c', '--config', dest='config_file', metavar='CONFIG_FILE', type=str, help='Configuration file.')
     argparser.add_argument('-o', '--output', dest='output_file', metavar='OUTPUT_FILE', type=str, help='Output to a file.')
     argparser.add_argument('-O', '--optimize', nargs='?', action=OAction, dest='optimization', metavar='OPTIMIZATION_LEVEL', default=2, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
 
