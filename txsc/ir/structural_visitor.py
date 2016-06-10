@@ -346,5 +346,13 @@ class StructuralVisitor(BaseStructuralVisitor):
         return return_value
 
     @returnlist
+    def visit_Return(self, node):
+        return self.visit(node.value)
+
+    @returnlist
     def visit_Function(self, node):
-        return None
+        for stmt in node.body:
+            if SInstructions.is_push_operation(stmt):
+                msg = 'Functions cannot push values to the stack'
+                self.error(msg, stmt.lineno)
+                raise IRImplicitPushError(msg, stmt.lineno)

@@ -87,8 +87,8 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
 
     def test_function_calls(self):
         for expected, src in [
-            ('5', 'func addVars(a, b) {a + b;} addVars(2, 3);'),
-            ('12', 'func addVars(a, b) {a + b;} addVars(addVars(2, 3), 7);'),
+            ('5', 'func addVars(a, b) {return a + b;} addVars(2, 3);'),
+            ('12', 'func addVars(a, b) {return a + b;} addVars(addVars(2, 3), 7);'),
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)

@@ -22,6 +22,10 @@ class Function(ScriptOp):
     """A function."""
     _fields = ('name', 'args', 'body')
 
+class Return(ScriptOp):
+    """A return statement."""
+    _fields = ('value',)
+
 class FunctionCall(ScriptOp):
     """A call to a function."""
     _fields = ('name', 'args')

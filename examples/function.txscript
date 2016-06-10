@@ -8,7 +8,7 @@
 
 # This function adds its argument and a global variable called A.
 func addA(x) {
-    x + A;
+    return x + A;
 }
 
 # Note that A can be defined after the function that uses it.

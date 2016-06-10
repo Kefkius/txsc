@@ -98,9 +98,11 @@ Functions can be defined in a script. This is done using the keyword `func`:
 
 ```
 func addFive(x) {
-    x + 5;
+    return x + 5;
 }
 ```
+
+Functions may not push values to the stack. They can only return values.
 
 ## Keywords
 

@@ -196,8 +196,8 @@ class ScriptParser(object):
         p[0].declaration = True
 
     def p_return(self, p):
-        '''expr : RETURN'''
-        p[0] = ast.Return(p[1])
+        '''statement : RETURN expr SEMICOLON'''
+        p[0] = ast.Return(p[2])
 
     def p_function_call(self, p):
         '''expr : NAME LPAREN args RPAREN'''

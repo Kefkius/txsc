@@ -195,7 +195,8 @@ class SInstructions(Instructions):
     def is_push_operation(op):
         """Return whether op pushes a value to the stack if used as a statement."""
         non_push_classes = (structural_nodes.Script, structural_nodes.If, structural_nodes.Function,
-                structural_nodes.Declaration, structural_nodes.Assignment, structural_nodes.Deletion)
+                structural_nodes.Declaration, structural_nodes.Assignment, structural_nodes.Deletion,
+                structural_nodes.Return,)
         if isinstance(op, non_push_classes):
             return False
         return True

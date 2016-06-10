@@ -190,6 +190,10 @@ class StructuralOptimizer(BaseStructuralVisitor):
         node.test = self.visit(node.test)
         return node
 
+    def visit_Return(self, node):
+        node.value = self.visit(node.value)
+        return node.value
+
     def visit_FunctionCall(self, node):
         node.args = self.map_visit(node.args)
         func = self.add_FunctionCall(node)

@@ -307,6 +307,9 @@ class ScriptTransformer(BaseTransformer):
         # Function name must be known.
         raise ParsingNameError('No function "%s" exists.' % node.func.id)
 
+    def visit_Return(self, node):
+        return types.Return(self.visit(node.value))
+
     # TODO Python 3 compatibility.
     def visit_FunctionDef(self, node):
         if not self.symbol_table:
