@@ -63,9 +63,9 @@ class CompoundStatementTest(BaseScriptTransformerTest):
 
 class TypeTest(BaseScriptTransformerTest):
     def test_literal_bytes(self):
-        self._test_transform("'04';", "[Push(0x04)]")
+        self._test_transform("'04';", "[Bytes(0x04)]")
         for s in ["'004'", "'0004'"]:
-            self._test_transform(s + ';', "[Push(0x0004)]")
+            self._test_transform(s + ';', "[Bytes(0x0004)]")
 
     def test_literal_int(self):
         self._test_transform("4;", "[Int(4)]")

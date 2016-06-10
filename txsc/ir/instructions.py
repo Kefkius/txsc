@@ -36,10 +36,10 @@ def format_structural_op(op):
 
     if isinstance(op, structural_nodes.Script):
         return format_statements(op.statements)
-    elif isinstance(op, (structural_nodes.Int, structural_nodes.Push, structural_nodes.Symbol)):
+    elif isinstance(op, (structural_nodes.Int, structural_nodes.Bytes, structural_nodes.Symbol)):
         s = str(op)
         # Hex-encode numeric values.
-        if isinstance(op, (structural_nodes.Int, structural_nodes.Push)) and abs(int(op)) > 16:
+        if isinstance(op, (structural_nodes.Int, structural_nodes.Bytes)) and abs(int(op)) > 16:
             s = hex(int(op))
         return s
     elif isinstance(op, structural_nodes.Declaration):
@@ -233,7 +233,7 @@ class SInstructions(Instructions):
         """Get the SymbolType that can represent op."""
         if isinstance(op, structural_nodes.Int):
             return SymbolType.Integer
-        elif isinstance(op, structural_nodes.Push):
+        elif isinstance(op, structural_nodes.Bytes):
             return SymbolType.ByteArray
         elif isinstance(op, structural_nodes.Symbol):
             return SymbolType.Symbol

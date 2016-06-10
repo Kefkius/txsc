@@ -72,7 +72,7 @@ class BaseStructuralVisitor(BaseTransformer):
 
         if SInstructions.is_arithmetic_op(node):
             for arg in args:
-                if isinstance(arg, structural_nodes.Push):
+                if isinstance(arg, structural_nodes.Bytes):
                     msg = 'Byte array %s used in arithmetic operation' % (arg)
                     self.warning(msg, node.lineno)
         elif SInstructions.is_byte_string_op(node):
@@ -187,7 +187,7 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_list(self, node):
-        return self.visit(structural_nodes.Push(''.join(node)))
+        return self.visit(structural_nodes.Bytes(''.join(node)))
 
     @returnlist
     def visit_Script(self, node):
@@ -218,7 +218,7 @@ class StructuralVisitor(BaseStructuralVisitor):
     def visit_Assignment(self, node):
         assignment = self.parse_Assignment(node)
 
-        if isinstance(assignment.value, (structural_nodes.Int, structural_nodes.Push)):
+        if isinstance(assignment.value, (structural_nodes.Int, structural_nodes.Bytes)):
             if not formats.is_strict_num(int(assignment.value)):
                 msg = 'Assignment value to %s is longer than 4 bytes: 0x%x' % (assignment.name, assignment.value)
                 if self.options.strict_num:
@@ -286,6 +286,10 @@ class StructuralVisitor(BaseStructuralVisitor):
         return ops
 
     @returnlist
+    def visit_Push(self, node):
+        return self.visit(node.expr)
+
+    @returnlist
     def visit_Int(self, node):
         smallint = types.small_int_opcode(int(node))
         if smallint:
@@ -294,7 +298,7 @@ class StructuralVisitor(BaseStructuralVisitor):
             return types.Push(formats.int_to_bytearray(node.value))
 
     @returnlist
-    def visit_Push(self, node):
+    def visit_Bytes(self, node):
         try:
             return types.small_int_opcode(int(node.data, 16))()
         except (TypeError, ValueError):
@@ -313,7 +317,7 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_UnaryOpCode(self, node):
-        if SInstructions.is_arithmetic_op(node) and isinstance(node.operand, (structural_nodes.Int, structural_nodes.Push)):
+        if SInstructions.is_arithmetic_op(node) and isinstance(node.operand, (structural_nodes.Int, structural_nodes.Bytes)):
             if not formats.is_strict_num(int(node.operand)):
                 msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, node.operand)
                 if self.options.strict_num:
@@ -330,7 +334,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         # Check for values longer than 4 bytes.
         if SInstructions.is_arithmetic_op(node):
             operands = [node.left, node.right]
-            if all(isinstance(i, (structural_nodes.Int, structural_nodes.Push)) for i in operands):
+            if all(isinstance(i, (structural_nodes.Int, structural_nodes.Bytes)) for i in operands):
                 valid = [formats.is_strict_num(int(i)) for i in operands]
                 if False in valid:
                     msg = 'Input value to %s is longer than 4 bytes: 0x%x' % (node.name, operands[valid.index(False)])

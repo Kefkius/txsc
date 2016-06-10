@@ -15,7 +15,7 @@ import txsc.ir.structural_nodes as types
 
 def get_const(op):
     """Get whether op represents a constant value."""
-    return isinstance(op, (types.Int, types.Push))
+    return isinstance(op, (types.Int, types.Bytes))
 
 def get_all_const(*ops):
     """Get whether ops all represent constant values."""
@@ -254,11 +254,12 @@ class ConstEvaluator(object):
             return
         self.node = node
         result = method(*args)
-        # Convert result to a Push instance.
+        # Convert result to an Int instance.
         if isinstance(result, int):
             result = types.Int.coerce(result)
+        # Convert result to a Bytes instance.
         elif isinstance(result, str):
-            result = types.Push.coerce(result)
+            result = types.Bytes.coerce(result)
         result.lineno = node.lineno
 
         if not formats.is_strict_num(int(result)):

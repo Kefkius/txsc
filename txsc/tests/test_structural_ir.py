@@ -16,7 +16,7 @@ class TypeCheckingTest(unittest.TestCase):
     def test_basic_types(self):
         for test in [
             TypeTest(sir.Int(5), SymbolType.Integer),
-            TypeTest(sir.Push('05'), SymbolType.ByteArray),
+            TypeTest(sir.Bytes('05'), SymbolType.ByteArray),
             TypeTest(sir.Symbol('foo'), SymbolType.Symbol),
         ]:
             self._test(test)
@@ -25,7 +25,7 @@ class TypeCheckingTest(unittest.TestCase):
         """Test that arithmetic operations result in integers."""
         for test in [
             TypeTest(sir.BinOpCode(name = 'OP_ADD', left = sir.Int(5), right = sir.Int(6)), SymbolType.Integer),
-            TypeTest(sir.BinOpCode(name = 'OP_ADD', left = sir.Push('05'), right = sir.Push('06')), SymbolType.Integer),
+            TypeTest(sir.BinOpCode(name = 'OP_ADD', left = sir.Bytes('05'), right = sir.Bytes('06')), SymbolType.Integer),
         ]:
             self._test(test)
 
@@ -33,7 +33,7 @@ class TypeCheckingTest(unittest.TestCase):
         for test in [
             TypeTest(sir.UnaryOpCode(name = 'OP_SHA1', operand = sir.Int(5)), SymbolType.ByteArray),
             TypeTest(sir.UnaryOpCode(name = 'OP_SHA1', operand = sir.Symbol('foo')), SymbolType.Expr),
-            TypeTest(sir.VariableArgsOpCode(name='OP_CHECKMULTISIG', operands=[sir.Int(1), sir.Push('111111'), sir.Push('222222'), sir.Int(2)]),
+            TypeTest(sir.VariableArgsOpCode(name='OP_CHECKMULTISIG', operands=[sir.Int(1), sir.Bytes('111111'), sir.Bytes('222222'), sir.Int(2)]),
                     SymbolType.ByteArray),
         ]:
             self._test(test)
@@ -49,7 +49,7 @@ class StructuralFormatTest(unittest.TestCase):
             ('OP_NEGATE', '-05'),
             ('OP_ABS', '|05|'),
         ]:
-            op = sir.UnaryOpCode(name = name, operand = sir.Push('05'))
+            op = sir.UnaryOpCode(name = name, operand = sir.Bytes('05'))
             self.assertEqual(expected, SInstructions.format_op(op))
 
     def test_binary_op(self):
@@ -72,7 +72,7 @@ class StructuralFormatTest(unittest.TestCase):
             ('OP_LESSTHANOREQUAL', '05 <= 06'),
             ('OP_GREATERTHANOREQUAL', '05 >= 06'),
         ]:
-            op = sir.BinOpCode(name = name, left = sir.Push('05'), right = sir.Push('06'))
+            op = sir.BinOpCode(name = name, left = sir.Bytes('05'), right = sir.Bytes('06'))
             self.assertEqual(expected, SInstructions.format_op(op))
 
     def test_script(self):
@@ -94,7 +94,7 @@ class StructuralFormatTest(unittest.TestCase):
             (sir.Declaration(name='foo', value=sir.Int(5), type_=SymbolType.Integer, mutable=True), 'let mutable foo = 5'),
             (sir.Declaration(name='foo', value=sir.Int(5), type_=SymbolType.Integer, mutable=False), 'let foo = 5'),
             (sir.Assignment(name='foo', value=sir.Int(5), type_=SymbolType.Integer), 'foo = 5'),
-            (sir.Assignment(name='foo', value=sir.Push('05'), type_=SymbolType.Integer), 'foo = 05'),
+            (sir.Assignment(name='foo', value=sir.Bytes('05'), type_=SymbolType.Integer), 'foo = 05'),
             (sir.Deletion(name='foo'), 'del foo'),
         ]:
             self.assertEqual(expected, SInstructions.format_op(node))
@@ -115,7 +115,7 @@ class StructuralFormatTest(unittest.TestCase):
             (sir.FunctionCall(name='foo', args=[]), 'foo()'),
             (sir.FunctionCall(name='foo', args=[sir.Int(5)]), 'foo(5)'),
             (sir.FunctionCall(name='foo', args=[sir.Int(5), sir.Int(6)]), 'foo(5, 6)'),
-            (sir.FunctionCall(name='foo', args=[sir.Int(5), sir.Push('06')]), 'foo(5, 06)'),
+            (sir.FunctionCall(name='foo', args=[sir.Int(5), sir.Bytes('06')]), 'foo(5, 06)'),
         ]:
             self.assertEqual(expected, SInstructions.format_op(node))
 

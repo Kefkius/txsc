@@ -62,7 +62,7 @@ class Int(ScriptOp):
             return cls(other)
         elif isinstance(other, Int):
             return cls(other.value)
-        elif isinstance(other, Push):
+        elif isinstance(other, Bytes):
             return cls(formats.hex_to_int(other.data))
         else:
             raise ValueError('Cannot coerce %s to Int' % other)
@@ -73,8 +73,8 @@ class Int(ScriptOp):
     def __str__(self):
         return str(self.value)
 
-class Push(ScriptOp):
-    """A data push operation.
+class Bytes(ScriptOp):
+    """A byte array.
 
     Data is hex-encoded.
     """
@@ -85,12 +85,12 @@ class Push(ScriptOp):
             return cls(other)
         elif isinstance(other, int):
             return cls(str(other))
-        elif isinstance(other, Push):
+        elif isinstance(other, Bytes):
             return cls(other.data)
         elif isinstance(other, Int):
             return cls(formats.int_to_hex(other.value))
         else:
-            raise ValueError('Cannot coerce %s to Push' % other)
+            raise ValueError('Cannot coerce %s to Bytes' % other)
 
     def __int__(self):
         return int(Int.coerce(self))
@@ -99,7 +99,7 @@ class Push(ScriptOp):
         return self.data
 
     def dump(self, annotate_fields=False):
-        return 'Push(%s0x%s)' % ('data=' if annotate_fields else '', self.data)
+        return 'Bytes(%s0x%s)' % ('data=' if annotate_fields else '', self.data)
 
 class OpCode(ScriptOp):
     """An opcode."""

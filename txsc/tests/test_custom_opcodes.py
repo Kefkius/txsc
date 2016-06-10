@@ -26,7 +26,7 @@ class CustomOpcodeTest(unittest.TestCase):
     def test_op(self):
         op = sir.OpCode(name='OP_FOO')
         op.lineno = 0
-        push = sir.Push('01')
+        push = sir.Bytes('01')
         push.lineno = 0
         s = sir.Script(statements=[op, push])
 
