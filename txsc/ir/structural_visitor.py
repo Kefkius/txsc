@@ -59,6 +59,22 @@ class BaseStructuralVisitor(BaseTransformer):
         if not self.symbol_table:
             raise Exception('Cannot %s: No symbol table was supplied to %s.' % (purpose, self.__class__.__name__))
 
+    def check_types(self, node):
+        """Check the operand types of node."""
+        if not isinstance(node, structural_nodes.OpCode):
+            return
+        args = node.get_args()
+        if SInstructions.is_arithmetic_op(node):
+            for arg in args:
+                if isinstance(arg, structural_nodes.Push):
+                    msg = 'Byte array %s used in arithmetic operation' % (arg)
+                    self.warning(msg, node.lineno)
+        elif SInstructions.is_byte_string_op(node):
+            for arg in args:
+                if isinstance(arg, structural_nodes.Int):
+                    msg = 'Integer %s used in byte string operation' % (arg)
+                    self.warning(msg, node.lineno)
+
     def parse_Assignment(self, node):
         """Parse an assignment statement into a more direct one."""
         self.require_symbol_table('assign value')

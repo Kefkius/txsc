@@ -67,8 +67,10 @@ def format_structural_op(op):
     if not hasattr(op, 'name'):
         return
     linear = linear_nodes.opcode_by_name(op.name)
-    if not linear or not linear.opstr:
+    if not linear:
         return
+    if not linear.opstr:
+        return op.name
 
     if linear.is_unary():
         return linear.opstr.format(format_structural_op(op.operand))
@@ -192,6 +194,14 @@ class SInstructions(Instructions):
         return linear.arithmetic
 
     @staticmethod
+    def is_byte_string_op(op):
+        """Return whether op operates on a string of bytes."""
+        linear = linear_nodes.opcode_by_name(op.name)
+        if not linear or not issubclass(linear, linear_nodes.OpCode):
+            return False
+        return linear.byte_manipulator
+
+    @staticmethod
     def is_push_operation(op):
         """Return whether op pushes a value to the stack if used as a statement."""
         non_push_classes = (structural_nodes.Script, structural_nodes.If, structural_nodes.Function,
@@ -209,6 +219,9 @@ class SInstructions(Instructions):
         # Arithmetic operations result in Integers.
         if SInstructions.is_arithmetic_op(op):
             return SymbolType.Integer
+        # Byte manipulation operations result in ByteArrays.
+        elif SInstructions.is_byte_string_op(op):
+            return SymbolType.ByteArray
         args = op.get_args()
         # If any operand is a symbol, then the type is Expression.
         if any(isinstance(i, structural_nodes.Symbol) for i in args):

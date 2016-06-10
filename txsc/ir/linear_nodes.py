@@ -79,12 +79,14 @@ class OpCode(Node):
 
     Attributes:
         - arithmetic (bool): Whether this opcode performs an arithmetic operation.
+        - byte_manipulator (bool): Whether this opcode operates on the bytes of its operand(s).
         - opstr (str): A string that format() can be called on to visually represent the opcode.
         - verifier (bool): Whether this opcode performs verification.
         - args (list): The relative indices of nodes that this opcode affects.
 
     """
     arithmetic = False
+    byte_manipulator = False
     opstr = None
     verifier = False
     args = None
@@ -214,11 +216,11 @@ TwoSwap = _opcode('TwoSwap', 0, 'OP_2SWAP', args=[1, 2, 3, 4])
 
 # Splice.
 
-Cat = _binary_opcode('Cat', -1, 'OP_CAT')
-Substr = _ternary_opcode('Substr', -2, 'OP_SUBSTR')
-Left = _binary_opcode('Left', -1, 'OP_LEFT')
-Right = _binary_opcode('Right', -1, 'OP_RIGHT')
-Size = _unary_opcode('Size', 1, 'OP_SIZE')
+Cat = _binary_opcode('Cat', -1, 'OP_CAT', byte_manipulator=True)
+Substr = _ternary_opcode('Substr', -2, 'OP_SUBSTR', byte_manipulator=True)
+Left = _binary_opcode('Left', -1, 'OP_LEFT', byte_manipulator=True)
+Right = _binary_opcode('Right', -1, 'OP_RIGHT', byte_manipulator=True)
+Size = _unary_opcode('Size', 1, 'OP_SIZE', byte_manipulator=True)
 
 # Bitwise logic.
 

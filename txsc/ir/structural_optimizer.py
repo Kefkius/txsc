@@ -155,6 +155,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return node
 
     def visit_UnaryOpCode(self, node):
+        self.check_types(node)
         node.operand = self.visit(node.operand)
         # Return the node if its operand isn't a constant value.
         if not get_const(node.operand):
@@ -163,6 +164,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return self.evaluator.eval_op(node, node.name, node.operand) or node
 
     def visit_BinOpCode(self, node):
+        self.check_types(node)
         # Optimize order if commutative.
         self.commute_operands(node)
 
@@ -178,6 +180,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return result or node
 
     def visit_VariableArgsOpCode(self, node):
+        self.check_types(node)
         node.operands = self.map_visit(node.operands)
         # Return the node if not all operands are constant values.
         if not get_all_const(*node.operands):
