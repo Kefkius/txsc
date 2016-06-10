@@ -202,6 +202,20 @@ class SInstructions(Instructions):
         return True
 
     @staticmethod
+    def get_operation_type(op):
+        """Perform type inference on op."""
+        if not isinstance(op, structural_nodes.OpCode):
+            raise TypeError('Argument must be an operation')
+        # Arithmetic operations result in Integers.
+        if SInstructions.is_arithmetic_op(op):
+            return SymbolType.Integer
+        args = op.get_args()
+        # If any operand is a symbol, then the type is Expression.
+        if any(isinstance(i, structural_nodes.Symbol) for i in args):
+            return SymbolType.Expr
+        return SymbolType.ByteArray
+
+    @staticmethod
     def get_symbol_type_for_node(op):
         """Get the SymbolType that can represent op."""
         if isinstance(op, structural_nodes.Int):
@@ -212,6 +226,8 @@ class SInstructions(Instructions):
             return SymbolType.Symbol
         elif isinstance(op, structural_nodes.Function):
             return SymbolType.Func
+        elif isinstance(op, structural_nodes.OpCode):
+            return SInstructions.get_operation_type(op)
         # If no other type qualifies, use expression.
         return SymbolType.Expr
 

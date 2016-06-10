@@ -140,7 +140,7 @@ class VariableArgsOpCode(OpCode):
 
         Overloaded because the number of operands is unknown.
         """
-        return [getattr(self, attr) for attr in self.operands]
+        return list(self.operands)
 
     def set_args(self, args):
         """Set the arguments to this opcode.
