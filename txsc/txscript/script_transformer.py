@@ -231,9 +231,6 @@ class ScriptTransformer(BaseTransformer):
         return types.VerifyOpCode(name='OP_VERIFY',
                 test=node.test)
 
-    def visit_Return(self, node):
-        return types.OpCode(name='OP_RETURN')
-
     def visit_BoolOp(self, node):
         node.values = self.map_visit(node.values)
 
@@ -363,3 +360,6 @@ class BuiltinFunctions(object):
     def builtin_raw(self, *args):
         """Embed a raw script within a script."""
         return types.InnerScript(self.map_visit(args))
+
+    def builtin_markInvalid(self):
+        return types.OpCode(name='OP_RETURN')

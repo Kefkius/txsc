@@ -80,6 +80,18 @@ Inner scripts are created with the built-in function `raw()`. Every argument pas
 raw(2 + 5, 3 + 6);
 ```
 
+### Invalidating Scripts
+
+The `markInvalid()` built-in function marks the script as invalid.
+This makes a given transaction output provably unspendable. It is often
+used to add arbitrary data to a transaction.
+
+```
+markInvalid();
+let myArbitraryData = '1122';
+myArbitraryData;
+```
+
 ### Defining Functions
 
 Functions can be defined in a script. This is done using the keyword `func`:
@@ -101,7 +113,6 @@ The following keywords have meaning in txscript scripts.
 | func      | Define a function.|
 | let       | Declare a new name. |
 | mutable   | Declare a mutable name. |
-| return    | Marks the script as invalid. |
 | verify    | Fail if the expression that follows is not true. |
 | and       | Logical AND operator. |
 | or        | Logical OR operator. |
@@ -130,17 +141,6 @@ Deletions are the complement of assumptions. A deletion signifies the removal of
 ```
 assume a, b;
 del a;
-```
-
-### Return
-
-The `return` keyword marks the script as invalid. This makes a given transaction output provably unspendable. It is often
-used to add arbitrary data to a transaction.
-
-```
-return;
-let myArbitraryData = '1122';
-myArbitraryData;
 ```
 
 ### Verify
