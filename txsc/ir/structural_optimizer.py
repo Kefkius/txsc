@@ -375,6 +375,9 @@ class ConstEvaluator(object):
     def OP_XOR(self, left, right):
         return left ^ right
 
+    @params(str)
+    def OP_CAT(self, left, right):
+        return left + right
 
     @params(str)
     def OP_SIZE(self, s):

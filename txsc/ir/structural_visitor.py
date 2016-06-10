@@ -64,6 +64,12 @@ class BaseStructuralVisitor(BaseTransformer):
         if not isinstance(node, structural_nodes.OpCode):
             return
         args = node.get_args()
+        if any(isinstance(arg, structural_nodes.Symbol) for arg in args):
+            self.require_symbol_table('process operands')
+        for i, arg in enumerate(args):
+            if isinstance(arg, structural_nodes.Symbol):
+                args[i] = self.symbol_table.lookup(arg.name).value
+
         if SInstructions.is_arithmetic_op(node):
             for arg in args:
                 if isinstance(arg, structural_nodes.Push):
@@ -73,7 +79,8 @@ class BaseStructuralVisitor(BaseTransformer):
             for arg in args:
                 if isinstance(arg, structural_nodes.Int):
                     msg = 'Integer %s used in byte string operation' % (arg)
-                    self.warning(msg, node.lineno)
+                    self.error(msg, node.lineno)
+                    raise IRTypeError(msg, node.lineno)
 
     def parse_Assignment(self, node):
         """Parse an assignment statement into a more direct one."""
