@@ -209,7 +209,6 @@ The following keywords have meaning in txscript scripts.
 |========================================================
 |Keyword |Meaning
 |assume |Declare assumed stack values by name.
-|del |Remove an assumed stack value by name.
 |func |Define a function.
 |let |Declare a new name.
 |mutable |Declare a mutable name.
@@ -240,18 +239,6 @@ assume sig, pubkey;
 You can then use the words `sig` and `pubkey` in your script to refer to
 these expected stack items. Assumption statements are internally treated
 as assignments.
-
-[[deletions]]
-Deletions
-~~~~~~~~~
-
-Deletions are the complement of assumptions. A deletion signifies the
-removal of an assumed stack value.
-
-------------
-assume a, b;
-del a;
-------------
 
 [[verify]]
 Verify
