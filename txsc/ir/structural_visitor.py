@@ -59,6 +59,25 @@ class BaseStructuralVisitor(BaseTransformer):
         if not self.symbol_table:
             raise Exception('Cannot %s: No symbol table was supplied to %s.' % (purpose, self.__class__.__name__))
 
+    def cast_return_type(self, node, as_type):
+        """Return node implicitly casted as as_type.
+
+        This does not perform casting of types that have equal
+        specificity (e.g. integers are not implicitly casted to byte arrays).
+        """
+        value_type = SInstructions.get_symbol_type_for_node(node)
+        line_number = node.lineno
+        return_value = None
+        if value_type == as_type:
+            return_value = node
+        if as_type == SymbolType.Expr:
+            return_value = node
+
+        if return_value:
+            return_value.lineno = line_number
+            return return_value
+        raise IRTypeError('Function returned type %s (expected %s)' % (value_type, as_type))
+
     def check_types(self, node):
         """Check the operand types of node."""
         if not isinstance(node, structural_nodes.OpCode):
@@ -359,22 +378,7 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_FunctionCall(self, node):
-        func = self.add_FunctionCall(node)
-
-        return_value = self.map_visit(func.body)
-        # Visiting returns a list.
-        if len(return_value):
-            values = list(return_value)
-            return_value = []
-            for v in values:
-                return_value.extend(v)
-        self.symbol_table.end_scope()
-
-        return return_value
-
-    @returnlist
-    def visit_Return(self, node):
-        return self.visit(node.value)
+        raise IRError("Function call could not be evaluated")
 
     @returnlist
     def visit_Function(self, node):

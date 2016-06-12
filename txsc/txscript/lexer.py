@@ -5,7 +5,7 @@ hexdigit = r'[0-9a-fA-F]'
 implicit_hex = hexdigit + r'+'
 explicit_hex = r'(0x)' + implicit_hex
 
-tokens = ['NAME', 'NUMBER', 'HEXSTR',
+tokens = ['NAME', 'NUMBER', 'HEXSTR', 'TYPENAME',
         'EQUALS',
         'LBRACE', 'RBRACE',
         'LPAREN', 'RPAREN',
@@ -71,6 +71,11 @@ reserved_words = {
     'del': 'DEL',
 }
 
+type_names = [
+    'bytes', 'int', 'expr',
+]
+
+
 t_ignore = ' \t'
 
 t_PLUS = r'\+'
@@ -126,6 +131,10 @@ t_OR = r'or'
 
 t_LET = r'let'
 t_DEL = r'del'
+
+@TOKEN(r'(' + r')|('.join(type_names) + r')')
+def t_TYPENAME(t):
+    return t
 
 def t_NAME(t):
     r'[a-zA-Z][a-zA-Z0-9_]*'

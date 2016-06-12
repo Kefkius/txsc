@@ -120,6 +120,16 @@ class ParsingNameError(ParsingError):
 
 class ScriptTransformer(BaseTransformer):
     """Transforms input into a structural intermediate representation."""
+    @staticmethod
+    def get_symbol_type(type_name):
+        """Get the corresponding SymbolType constant for type_name."""
+        type_names = {
+            'int': SymbolType.Integer,
+            'bytes': SymbolType.ByteArray,
+            'expr': SymbolType.Expr,
+        }
+        return type_names.get(type_name)
+
     def __init__(self, symbol_table=None):
         super(ScriptTransformer, self).__init__()
         self.builtins = BuiltinFunctions(self)
@@ -318,7 +328,8 @@ class ScriptTransformer(BaseTransformer):
         args = node.args.args.elts
         body = self.map_visit(node.body)
 
-        func_def = types.Function(node.name, args, body)
+        type_name = self.get_symbol_type(node.type_name)
+        func_def = types.Function(node.name, type_name, args, body)
         self.symbol_table.add_function_def(func_def)
         return func_def
 

@@ -181,11 +181,12 @@ class ScriptParser(object):
         p[0].is_arguments = True
 
     def p_function_define(self, p):
-        '''statement : FUNC NAME LPAREN args RPAREN LBRACE module RBRACE'''
-        func_name = p[2]
-        args = p[4]
-        body = p[7].body
+        '''statement : FUNC TYPENAME NAME LPAREN args RPAREN LBRACE module RBRACE'''
+        func_name = p[3]
+        args = p[5]
+        body = p[8].body
         p[0] = ast.FunctionDef(name=func_name, args=ast.arguments(args=args), body=body)
+        p[0].type_name = p[2]
 
     def p_assume(self, p):
         '''statement : ASSUME args SEMICOLON'''

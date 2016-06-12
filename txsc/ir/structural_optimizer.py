@@ -197,19 +197,26 @@ class StructuralOptimizer(BaseStructuralVisitor):
         node.value = self.visit(node.value)
         return node.value
 
+    def visit_function_body(self, body):
+        for stmt in body:
+            if isinstance(stmt, types.Return):
+                result = self.visit(stmt)
+                if isinstance(result, types.Symbol):
+                    result = self.symbol_table.lookup(result.name).value
+                return result
+            self.visit(stmt)
+        raise IRError('Function did not return a value')
+
     def visit_FunctionCall(self, node):
         node.args = self.map_visit(node.args)
         func = self.add_FunctionCall(node)
         body = copy.deepcopy(func.body)
 
-        new_body = self.map_visit(body)
-        self.symbol_table.end_scope()
+        return_value = self.visit_function_body(body)
+        return_value = self.cast_return_type(return_value, func.return_type)
 
-        # If optimization succeeded, return the result.
-        # Otherwise, return the original node.
-        if new_body != body:
-            return new_body[0] if len(new_body) == 1 else new_body
-        return node
+        self.symbol_table.end_scope()
+        return return_value
 
 def params(cls):
     """Causes the arguments to a method to be converted to cls."""

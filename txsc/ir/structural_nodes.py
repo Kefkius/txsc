@@ -20,7 +20,7 @@ class If(ScriptOp):
 
 class Function(ScriptOp):
     """A function."""
-    _fields = ('name', 'args', 'body')
+    _fields = ('name', 'return_type', 'args', 'body')
 
 class Return(ScriptOp):
     """A return statement."""
