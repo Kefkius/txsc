@@ -296,5 +296,12 @@ class ScriptParser(object):
         p[0] = ast.Num(n=p[1])
 
     def p_statement_expr(self, p):
-        '''statement : expr SEMICOLON'''
-        p[0] = p[1]
+        '''statement : expr SEMICOLON
+                     | PUSH expr SEMICOLON
+        '''
+        if len(p) == 3:
+            p[0] = p[1]
+        else:
+            p[0] = ast.Call(func=ast.Name(id='_push', ctx=ast.Load()),
+                    args=[p[2]],
+                    keywords=[])

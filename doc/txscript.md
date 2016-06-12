@@ -1,7 +1,6 @@
 # TxScript
 
-TxScript is a language made for constructing transaction scripts. It is expression-oriented
-in that nearly every language construct changes the state of the stack.
+TxScript is a language made for constructing transaction scripts.
 
 ## Syntax
 
@@ -18,6 +17,25 @@ TxScript has the following types:
 | bytes | Byte array.   |
 | int   | Integer.      |
 | expr  | Expression (non-specific type). |
+
+### Pushes
+
+Transaction scripts are executed using a stack for memory management. TxScript expressions can be
+implicitly or explicitly denoted as being push operations.
+
+Implicit pushes are denoted by using an expression as a statement:
+
+```
+5;
+```
+
+txsc will log a warning (or fail if `--no-implicit-pushes` is used) whenever an implicit push operation is encountered.
+
+Explicit pushes are denoted using the keyword `push`:
+
+```
+push 5;
+```
 
 ### Comments
 
@@ -152,6 +170,7 @@ The following keywords have meaning in txscript scripts.
 | let       | Declare a new name. |
 | mutable   | Declare a mutable name. |
 | verify    | Fail if the expression that follows is not true. |
+| push      | Push the expression that follows to the stack. |
 | and       | Logical AND operator. |
 | or        | Logical OR operator. |
 | if        | Begin an `if` statement. |

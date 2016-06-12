@@ -44,6 +44,7 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR', 'TYPENAME',
         'FUNC',
         'MUTABLE',
         'RETURN',
+        'PUSH',
         'VERIFY',
         'AND',
         'OR',
@@ -61,6 +62,7 @@ reserved_words = {
     'func': 'FUNC',
     'mutable': 'MUTABLE',
     'return': 'RETURN',
+    'push': 'PUSH',
     'verify': 'VERIFY',
 
     'and': 'AND',
@@ -125,6 +127,7 @@ t_ELSE = r'else'
 t_FUNC = r'func'
 t_MUTABLE = r'mutable'
 t_RETURN = r'return'
+t_PUSH = r'push'
 t_VERIFY = r'verify'
 t_AND = r'and'
 t_OR = r'or'

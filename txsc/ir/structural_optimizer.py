@@ -124,6 +124,10 @@ class StructuralOptimizer(BaseStructuralVisitor):
         except IRError as e:
             raise e.__class__(e.args[0], node.lineno)
 
+    def visit_Push(self, node):
+        node.expr = self.visit(node.expr)
+        return node
+
     def visit_Declaration(self, node):
         self.add_Declaration(node)
         return node

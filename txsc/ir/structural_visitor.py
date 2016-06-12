@@ -231,7 +231,7 @@ class StructuralVisitor(BaseStructuralVisitor):
     def visit_Script(self, node):
         return_value = []
         for stmt in node.statements:
-            if SInstructions.is_push_operation(stmt):
+            if not isinstance(stmt, structural_nodes.Push) and SInstructions.is_push_operation(stmt):
                 msg = 'Implicit push of %s %s' % (stmt.__class__.__name__, SInstructions.format_op(stmt))
                 if not self.options.implicit_pushes:
                     self.error(msg, stmt.lineno)

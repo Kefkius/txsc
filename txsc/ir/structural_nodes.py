@@ -14,6 +14,10 @@ class Script(ScriptOp):
     def dump(self, *args):
         return ast.dump(self, *args)
 
+class Push(ScriptOp):
+    """A data push operation."""
+    _fields = ('expr',)
+
 class If(ScriptOp):
     """A conditional statement."""
     _fields = ('test', 'truebranch', 'falsebranch')

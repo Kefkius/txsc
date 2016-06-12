@@ -371,6 +371,10 @@ class BuiltinFunctions(object):
             raise ValueError('Unknown function: "%s"' % name)
         return self.builtins[name](*args)
 
+    def builtin__push(self, arg):
+        """Push a value to the stack."""
+        return types.Push(self.visit(arg))
+
     def builtin_raw(self, *args):
         """Embed a raw script within a script."""
         return types.InnerScript(self.map_visit(args))
