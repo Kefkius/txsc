@@ -228,7 +228,7 @@ Invert = _unary_opcode('Invert', 0, 'OP_INVERT', arithmetic=True, opstr='~{}')
 And = _binary_opcode('And', -1, 'OP_AND', arithmetic=True, opstr='{} & {}')
 Or = _binary_opcode('Or', -1, 'OP_OR', arithmetic=True, opstr='{} | {}')
 Xor = _binary_opcode('Xor', -1, 'OP_XOR', arithmetic=True, opstr='{} ^ {}')
-Equal = _binary_opcode('Equal', -1, 'OP_EQUAL', opstr='{} = {}')
+Equal = _binary_opcode('Equal', -1, 'OP_EQUAL', opstr='{} == {}')
 EqualVerify = _binary_opcode('EqualVerify', -2, 'OP_EQUALVERIFY', verifier=True)
 
 # Arithmetic.
