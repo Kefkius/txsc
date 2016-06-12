@@ -8,7 +8,7 @@ class ExampleTest(BaseCompilerTest):
     def test_function(self):
         """Test examples/function.txscript."""
         expected = '5 1ADD'
-        src = ['func addA(x) {return x + A;}',
+        src = ['func int addA(x) {return x + A;}',
                'let A = 5;',
                'addA(1);']
         self._test(expected, src)

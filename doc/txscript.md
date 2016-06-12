@@ -9,6 +9,16 @@ TxScript source code is comprised of one or more statements. Statements in this 
 encompass expressions.
 Every statement must end with a semicolon (`;`). Whitespace is ignored.
 
+### Types
+
+TxScript has the following types:
+
+| Type  | Description   |
+| ----- | ------------- |
+| bytes | Byte array.   |
+| int   | Integer.      |
+| expr  | Expression (non-specific type). |
+
 ### Comments
 
 Comments are denoted by a pound sign (`#`).
@@ -97,10 +107,27 @@ myArbitraryData;
 Functions can be defined in a script. This is done using the keyword `func`:
 
 ```
-func addFive(x) {
+func int addFive(x) {
     return x + 5;
 }
 ```
+
+The general syntax for function defintions is as follows:
+
+```
+func <return_type> <name>(<parameters>) {
+    <statements>
+    return <expression>;
+}
+```
+
+where
+
+* `return_type` is the return type of the function.
+* `name` is the name of the function.
+* `parameters` are comma-separated arguments that the function takes.
+* `statments` are any statements that the function body includes.
+* `return <expression>;` is the return statement.
 
 Functions may not push values to the stack. They can only return values.
 

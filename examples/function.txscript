@@ -7,7 +7,7 @@
 @target asm
 
 # This function adds its argument and a global variable called A.
-func addA(x) {
+func int addA(x) {
     return x + A;
 }
 

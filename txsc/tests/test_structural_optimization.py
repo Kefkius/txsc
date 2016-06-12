@@ -10,9 +10,9 @@ class BaseStructuralOptimizationTest(BaseCompilerTest):
     @classmethod
     def _options(cls):
         namespace = super(BaseStructuralOptimizationTest, cls)._options()
-        # Optimization is not set to 3 because we don't want the constant
+        # Optimization is not set to 2 because we don't want the constant
         # expressions to be evaluated.
-        namespace.optimization = 2
+        namespace.optimization = 1
         return namespace
 
     def _test(self, test):
@@ -68,7 +68,7 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
     def _options(cls):
         namespace = super(AggressiveOptimizationsTest, cls)._options()
         # Optimization level that causes constant expressions to be evaluated.
-        namespace.optimization = 3
+        namespace.optimization = 2
         return namespace
 
     def test_negative_number(self):
@@ -87,8 +87,8 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
 
     def test_function_calls(self):
         for expected, src in [
-            ('5', 'func addVars(a, b) {return a + b;} addVars(2, 3);'),
-            ('12', 'func addVars(a, b) {return a + b;} addVars(addVars(2, 3), 7);'),
+            ('5', 'func int addVars(a, b) {return a + b;} addVars(2, 3);'),
+            ('12', 'func int addVars(a, b) {return a + b;} addVars(addVars(2, 3), 7);'),
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)

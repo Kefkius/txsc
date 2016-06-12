@@ -77,7 +77,7 @@ def create_arg_parser():
     argparser.add_argument('--list-opcode-sets', dest='list_opcode_sets', action='store_true', default=False, help='List available opcode sets and exit.')
     argparser.add_argument('-c', '--config', dest='config_file', metavar='CONFIG_FILE', type=str, help='Configuration file.')
     argparser.add_argument('-o', '--output', dest='output_file', metavar='OUTPUT_FILE', type=str, help='Output to a file.')
-    argparser.add_argument('-O', '--optimize', nargs='?', action=OAction, dest='optimization', metavar='OPTIMIZATION_LEVEL', default=2, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
+    argparser.add_argument('-O', '--optimize', nargs='?', action=OAction, dest='optimization', metavar='OPTIMIZATION_LEVEL', default=1, help='Optimization level (Max: %d).' % OptimizationLevel.max_optimization)
 
     argparser.add_argument('-s', '--source', metavar='SOURCE_LANGUAGE', dest='source_lang', choices=source_choices, default='txscript', help='Source language (Choices: %(choices)s).')
     argparser.add_argument('-t', '--target', metavar='TARGET_LANGUAGE', dest='target_lang', choices=target_choices, default='btc', help='Target language (Choices: %(choices)s).')
