@@ -53,6 +53,10 @@ class Deletion(ScriptOp):
     """Deletion of a symbol."""
     _fields = ('name',)
 
+class Cast(ScriptOp):
+    """A casting of a value to a type."""
+    _fields = ('value', 'as_type',)
+
 class Int(ScriptOp):
     """An integer."""
     _fields = ('value',)

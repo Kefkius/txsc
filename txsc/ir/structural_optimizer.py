@@ -208,12 +208,14 @@ class StructuralOptimizer(BaseStructuralVisitor):
         raise IRError('Function did not return a value')
 
     def visit_FunctionCall(self, node):
+        line_number = node.lineno
         node.args = self.map_visit(node.args)
         func = self.add_FunctionCall(node)
         body = copy.deepcopy(func.body)
 
         return_value = self.visit_function_body(body)
         return_value = self.cast_return_type(return_value, func.return_type)
+        return_value.lineno = line_number
 
         self.symbol_table.end_scope()
         return return_value

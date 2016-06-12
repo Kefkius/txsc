@@ -377,3 +377,11 @@ class BuiltinFunctions(object):
 
     def builtin_markInvalid(self):
         return types.OpCode(name='OP_RETURN')
+
+    def builtin_bytes(self, arg):
+        """Cast arg to a byte array."""
+        return types.Cast(self.visit(arg), SymbolType.ByteArray)
+
+    def builtin_int(self, arg):
+        """Cast arg to an integer."""
+        return types.Cast(self.visit(arg), SymbolType.Integer)

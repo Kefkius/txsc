@@ -201,7 +201,9 @@ class ScriptParser(object):
         p[0] = ast.Return(p[2])
 
     def p_function_call(self, p):
-        '''expr : NAME LPAREN args RPAREN'''
+        '''expr : NAME LPAREN args RPAREN
+                | TYPENAME LPAREN args RPAREN
+        '''
         p[0] = ast.Call(func=ast.Name(id=p[1], ctx=ast.Load()),
                 args=p[3].elts,
                 keywords=[])

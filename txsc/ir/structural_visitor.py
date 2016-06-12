@@ -59,6 +59,25 @@ class BaseStructuralVisitor(BaseTransformer):
         if not self.symbol_table:
             raise Exception('Cannot %s: No symbol table was supplied to %s.' % (purpose, self.__class__.__name__))
 
+    def visit_Cast(self, node):
+        value = node.value
+        if isinstance(value, structural_nodes.Symbol):
+            self.require_symbol_table('cast value')
+            value = self.symbol_table.lookup(value.name).value
+
+        line_number = value.lineno
+        value = self.visit(value)
+        return_value = None
+
+        if node.as_type == SymbolType.Integer:
+            return_value = structural_nodes.Int.coerce(value)
+        elif node.as_type == SymbolType.ByteArray:
+            return_value = structural_nodes.Bytes.coerce(value)
+
+        if return_value:
+            return_value.lineno = line_number
+        return return_value
+
     def cast_return_type(self, node, as_type):
         """Return node implicitly casted as as_type.
 
