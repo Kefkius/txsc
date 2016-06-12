@@ -79,7 +79,7 @@ let myVar = 2 + 5;
 verify min(myVar, 10) == myVar;
 ```
 
-### Inner Scripts
+#### Inner Scripts
 
 TxScript supports "inner scripts," which are scripts within a script. The most relevant example is in Pay-To-Script-Hash
 redeem scripts, which are serialized scripts that are executed during P2SH spending.
@@ -90,7 +90,7 @@ Inner scripts are created with the built-in function `raw()`. Every argument pas
 raw(2 + 5, 3 + 6);
 ```
 
-### Invalidating Scripts
+#### Invalidating Scripts
 
 The `markInvalid()` built-in function marks the script as invalid.
 This makes a given transaction output provably unspendable. It is often
@@ -100,6 +100,15 @@ used to add arbitrary data to a transaction.
 markInvalid();
 let myArbitraryData = '1122';
 myArbitraryData;
+```
+
+#### Casting Values
+
+There are built-in functions for certain types. These functions can be used to cast
+values as a specific type:
+
+```
+int('5');
 ```
 
 ### Defining Functions
