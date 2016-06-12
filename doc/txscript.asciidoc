@@ -1,0 +1,304 @@
+[[txscript]]
+TxScript
+========
+
+TxScript is a language made for constructing transaction scripts.
+
+[[syntax]]
+Syntax
+------
+
+TxScript source code is comprised of one or more statements. Statements
+in this sense also encompass expressions. Every statement must end with
+a semicolon (`;`). Whitespace is ignored.
+
+[[types]]
+Types
+~~~~~
+
+TxScript has the following types:
+
+[cols=",",options="header",]
+|=====================================
+|Type |Description
+|bytes |Byte array.
+|int |Integer.
+|expr |Expression (non-specific type).
+|=====================================
+
+[[pushes]]
+Pushes
+~~~~~~
+
+Transaction scripts are executed using a stack for memory management.
+TxScript expressions can be implicitly or explicitly denoted as being
+push operations.
+
+Implicit pushes are denoted by using an expression as a statement:
+
+--
+5;
+--
+
+txsc will log a warning (or fail if `--no-implicit-pushes` is used)
+whenever an implicit push operation is encountered.
+
+Explicit pushes are denoted using the keyword `push`:
+
+-------
+push 5;
+-------
+
+[[comments]]
+Comments
+~~~~~~~~
+
+Comments are denoted by a pound sign (`#`).
+
+--------------------
+# This is a comment.
+--------------------
+
+[[literals]]
+Literals
+~~~~~~~~
+
+Literal values in TxScript are either integers or hex strings. Hex
+strings are enclosed in single quotation marks, with no "0x" prefix.
+
+--------------------------------------------------------
+# The RIPEMD-160 hash of my public key.
+let myHash = '1111111111111111111111111111111111111111';
+--------------------------------------------------------
+
+[[assignments]]
+Assignments
+~~~~~~~~~~~
+
+TxScript supports immutable and mutable assignments. To bind an
+immutable name to a value, use the equals sign (`=`). To bind a mutable
+name to a value, use the keyword `mutable` before the name.
+
+Names can be bound to literal values or expressions. If bound to an
+expression, txsc will attempt to evaluate it during optimization. Names
+may not begin with an underscore or a number.
+
+The first time a name is declared, the keyword `let` must be used.
+
+---------------------------
+let myVar = 5 + 12;
+let mutable myOtherVar = 9;
+myOtherVar = 2;
+---------------------------
+
+[[conditionals]]
+Conditionals
+~~~~~~~~~~~~
+
+Conditional statements are denoted as follows: `if <expression> {body}`.
+An `else` statement can be specified as well:
+`if <expression> {body} else {elsebody}`.
+
+---------------
+let myVar = 5;
+if myVar == 5 {
+    myVar * 2;
+} else {
+    myVar / 2;
+}
+---------------
+
+There is a drawback to using conditionals: If the two execution paths of
+a conditional do not result in the same number of stack items being
+present, then stack assumptions (see below) cannot be used after the
+conditional. The reason for this is that the number of items between a
+stack assumption and the actual assumed stack item cannot be determined
+this way.
+
+[[built-in-functions]]
+Built-in Functions
+~~~~~~~~~~~~~~~~~~
+
+There are built-in functions for opcodes. They are named using camelCase
+conventions.
+
+-------------------------------
+let myVar = 2 + 5;
+verify min(myVar, 10) == myVar;
+-------------------------------
+
+[[inner-scripts]]
+Inner Scripts
+^^^^^^^^^^^^^
+
+TxScript supports "inner scripts," which are scripts within a script.
+The most relevant example is in Pay-To-Script-Hash redeem scripts, which
+are serialized scripts that are executed during P2SH spending.
+
+Inner scripts are created with the built-in function `raw()`. Every
+argument passed to `raw()` is an expression.
+
+------------------
+raw(2 + 5, 3 + 6);
+------------------
+
+[[invalidating-scripts]]
+Invalidating Scripts
+^^^^^^^^^^^^^^^^^^^^
+
+The `markInvalid()` built-in function marks the script as invalid. This
+makes a given transaction output provably unspendable. It is often used
+to add arbitrary data to a transaction.
+
+-----------------------------
+markInvalid();
+let myArbitraryData = '1122';
+myArbitraryData;
+-----------------------------
+
+[[casting-values]]
+Casting Values
+^^^^^^^^^^^^^^
+
+There are built-in functions for certain types. These functions can be
+used to cast values as a specific type:
+
+---------
+int('5');
+---------
+
+[[defining-functions]]
+Defining Functions
+~~~~~~~~~~~~~~~~~~
+
+Functions can be defined in a script. This is done using the keyword
+`func`:
+
+---------------------
+func int addFive(x) {
+    return x + 5;
+}
+---------------------
+
+The general syntax for function defintions is as follows:
+
+-----------------------------------------
+func <return_type> <name>(<parameters>) {
+    <statements>
+    return <expression>;
+}
+-----------------------------------------
+
+where
+
+* `return_type` is the return type of the function.
+* `name` is the name of the function.
+* `parameters` are comma-separated arguments that the function takes.
+* `statments` are any statements that the function body includes.
+* `return <expression>;` is the return statement.
+
+Functions may not push values to the stack. They can only return values.
+
+[[keywords]]
+Keywords
+--------
+
+The following keywords have meaning in txscript scripts.
+
+[cols=",",options="header",]
+|========================================================
+|Keyword |Meaning
+|assume |Declare assumed stack values by name.
+|del |Remove an assumed stack value by name.
+|func |Define a function.
+|let |Declare a new name.
+|mutable |Declare a mutable name.
+|verify |Fail if the expression that follows is not true.
+|push |Push the expression that follows to the stack.
+|and |Logical AND operator.
+|or |Logical OR operator.
+|if |Begin an `if` statement.
+|else |Begin an `else` statement.
+|========================================================
+
+[[assumptions]]
+Assumptions
+~~~~~~~~~~~
+
+Since TxScript is made for transaction scripts, there is a keyword used
+to signify that you _assume_ a number of values will already be on the
+stack when your script begins execution.
+
+For example, a Pay-to-Public-Key-Hash transaction output script expects
+two stack items to be present when it begines execution: A signature and
+a public key.
+
+-------------------
+assume sig, pubkey;
+-------------------
+
+You can then use the words `sig` and `pubkey` in your script to refer to
+these expected stack items. Assumption statements are internally treated
+as assignments.
+
+[[deletions]]
+Deletions
+~~~~~~~~~
+
+Deletions are the complement of assumptions. A deletion signifies the
+removal of an assumed stack value.
+
+------------
+assume a, b;
+del a;
+------------
+
+[[verify]]
+Verify
+~~~~~~
+
+Verification statements cause the script to fail if their value is not
+true.
+
+-------------------
+let myVar = 5 + 12;
+verify myVar == 17;
+-------------------
+
+[[operators]]
+Operators
+---------
+
+TxScript supports all of the common operators.
+
+[cols=",",options="header",]
+|=========================================
+|Operator |Meaning
+|`*` |Multiplication
+|`/` |Division
+|`+` |Addition
+|`-` |Subtraction (or negation when unary)
+|`%` |Modulus
+|`==` |Equality
+|`!=` |Inequality
+|`<` |Less than
+|`>` |Greater than
+|`<=` |Less than or equal to
+|`>=` |Greater than or equal to
+|`<<` |Bitwise left shift
+|`>>` |Bitwise right shift
+|=========================================
+
+[cols=",",options="header",]
+|=========================
+|Logical Operator |Meaning
+|`and` |Logical AND
+|`or` |Logical OR
+|`not` |Logical NOT
+|=========================
+
+The bitwise operators `AND`, `OR`, `XOR`, and `NOT` are implemented as
+`&`, `|`, `^`, and `~` respectively.
+
+All of the above operators (excluding logical operators) are also
+available in augmented assignment form (e.g. `a += 5`).
