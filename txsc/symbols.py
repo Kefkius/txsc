@@ -1,6 +1,11 @@
 """Symbol table implementation for languages that can use one."""
 import copy
 
+class StackItemValue(object):
+    def __init__(self, depth=0, height=0):
+        self.depth = depth
+        self.height = height
+
 class ImmutableError(Exception):
     """Exception raised when attempting to replace an immutable value."""
     pass
@@ -198,7 +203,8 @@ class SymbolTable(object):
 
         for height, name in items:
             depth = size - height - 1
-            self.insert(Symbol(name=name, value=depth, type_=SymbolType.StackItem, mutable=False), declaration=True)
+            value = StackItemValue(depth, height)
+            self.insert(Symbol(name=name, value=value, type_=SymbolType.StackItem, mutable=False), declaration=True)
         self.insert(Symbol(name='_stack_names', value=list(names), type_=SymbolType.Expr, mutable=False), declaration=True)
 
     def add_function_def(self, func_def):

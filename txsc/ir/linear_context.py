@@ -83,7 +83,7 @@ class LinearContextualizer(BaseLinearVisitor):
             return ([], [])
         all_items = copy.deepcopy(map(self.symbol_table.lookup, self.symbol_table.lookup('_stack_names').value))
         # Sort by depth.
-        all_items = sorted(all_items, key = lambda i: i.value, reverse = True)
+        all_items = sorted(all_items, key = lambda i: i.value.depth, reverse = True)
         # Find deleted stack assumptions.
         deleted_items = filter(lambda i: i.name in self.deletions, all_items)
         return (deleted_items, all_items)
@@ -264,11 +264,11 @@ class LinearInliner(BaseLinearVisitor):
 
         # Check for consecutive drops of top stack items.
         # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
-        if deleted_items and deleted_items[-1].value == 0:
+        if deleted_items and deleted_items[-1].value.depth == 0:
             iterator = reversed(deleted_items)
             consecutive_drops = [next(iterator)]
             for i, item in enumerate(iterator, 1):
-                if i == item.value:
+                if i == item.value.depth:
                     consecutive_drops.append(item)
                 else:
                     break
@@ -280,10 +280,10 @@ class LinearInliner(BaseLinearVisitor):
                     offset += 1
                 # Change the depths of non-consecutive stack items.
                 for stack_item in deleted_items:
-                    stack_item.value -= offset
+                    stack_item.value.depth -= offset
 
         for stack_item in deleted_items:
-            arg = self.op_for_int(stack_item.value)
+            arg = self.op_for_int(stack_item.value.depth)
             ops = [arg, types.Roll(), types.Drop()]
             idx = offset
             offset += len(ops)
@@ -295,8 +295,9 @@ class LinearInliner(BaseLinearVisitor):
         # If the first assumption's delta is 0 and the depths are sequential,
         # then nothing needs to be done.
         if self.total_delta(assumptions[0].idx) == 0:
+            symbols = map(self.symbol_table.lookup, [i.var_name for i in assumptions])
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
-            iterator = (i.depth for i in reversed(assumptions))
+            iterator = (i.value.depth for i in reversed(symbols))
             final_item_depth = next(iterator)
             values = [(a, b) for a, b in enumerate(iterator, final_item_depth + 1)]
             if all(a == b for (a, b) in values):
@@ -312,18 +313,25 @@ class LinearInliner(BaseLinearVisitor):
     def visit_Assumption(self, op):
         # Detect whether there are multiple assumptions in a row.
         assumptions = [op]
+        symbols = [self.symbol_table.lookup(op.var_name)]
         while 1:
             nextop = self.contextualizer.nextop(assumptions[-1])
-            if not isinstance(nextop, types.Assumption) or nextop.depth != assumptions[-1].depth - 1:
+            if nextop.__class__ is not types.Assumption:
                 break
+            symbol = self.symbol_table.lookup(nextop.var_name)
+            if symbol.value.depth != symbols[-1].value.depth - 1:
+                break
+
             assumptions.append(nextop)
+            symbols.append(symbol)
+
         if len(assumptions) > 1:
             result = self.visit_consecutive_assumptions(assumptions)
             if result is not None:
                 return result
 
         # If there are no consecutive assumptions, use opcodes to bring this assumption to the top.
-        arg = self.total_delta(op.idx) + op.depth
+        arg = self.total_delta(op.idx) + symbols[0].value.depth
         # TODO: Fix delta calculation so that total can't be negative.
         arg = self.op_for_int(max(0, arg))
 

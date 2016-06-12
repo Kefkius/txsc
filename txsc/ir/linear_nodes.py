@@ -46,11 +46,10 @@ class Assumption(Node):
     """Assumption that a stack value exists."""
     name = 'assume'
     var_name = ''
-    comparators = Node.comparators + ('var_name', 'depth',)
-    def __init__(self, var_name='', depth=-1, **kwargs):
+    comparators = Node.comparators + ('var_name',)
+    def __init__(self, var_name='', **kwargs):
         super(Assumption, self).__init__(**kwargs)
         self.var_name = var_name
-        self.depth = depth
 
     def __str__(self):
         return 'assume(%s)'%self.var_name

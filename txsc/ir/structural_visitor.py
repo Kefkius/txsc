@@ -278,7 +278,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         if symbol.type_ != SymbolType.StackItem:
             raise IRError('Only assumed stack items can be deleted.')
 
-        return types.Deletion(symbol.name, symbol.value)
+        return types.Deletion(symbol.name)
 
     @returnlist
     def visit_Symbol(self, node):
@@ -296,7 +296,7 @@ class StructuralVisitor(BaseStructuralVisitor):
             # same number of stack items.
             if self.after_uneven_conditional:
                 raise IRError("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
-            return types.Assumption(symbol.name, value)
+            return types.Assumption(symbol.name)
         # Push the bytes of the byte array.
         elif type_ in [SymbolType.ByteArray, SymbolType.Integer]:
             return self.visit(value)
