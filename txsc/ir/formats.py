@@ -12,12 +12,13 @@ def hex_to_list(s):
     s = hexs.format_hex(s)
     return [s[i:i+2] for i in range(0, len(s), 2)]
 
-def int_to_bytearray(value):
+def int_to_bytearray(value, as_opcode=True):
     """Encode an integer as a byte array or opcode value."""
-    try:
-        value = int(CScriptOp.encode_op_n(value))
-    except ValueError:
-        pass
+    if as_opcode:
+        try:
+            value = int(CScriptOp.encode_op_n(value))
+        except ValueError:
+            pass
     return _bignum.bn2vch(value)[::-1]
 
 def int_to_hex(value):
@@ -25,7 +26,7 @@ def int_to_hex(value):
 
     This is a convenience function that calls int_to_bytearray().
     """
-    return int_to_bytearray(value).encode('hex')
+    return int_to_bytearray(value, as_opcode=False).encode('hex')
 
 def hex_to_bytearray(value):
     """Encode a hex string as a byte array.
