@@ -124,7 +124,12 @@ class OptimizationTest(BaseOptimizationTest):
 class InlineTest(BaseOptimizationTest):
     def setUp(self):
         super(InlineTest, self).setUp()
-        self.symbol_table.add_stack_assumptions(['testItem'])
+        self._reset_table(['testItem'])
+
+    def _reset_table(self, stack_items=None):
+        self.symbol_table.clear()
+        if stack_items is not None:
+            self.symbol_table.add_stack_assumptions(stack_items)
 
     def test_implicit_assume(self):
         script = [types.Assumption('testItem'), types.Five(), types.Add()]
@@ -134,9 +139,11 @@ class InlineTest(BaseOptimizationTest):
         script = [types.Five(), types.Assumption('testItem'), types.Add()]
         self._do_test('OP_5 OP_ADD', script)
 
+        self._reset_table(['testItem'])
         script = [types.Five(), types.Five(), types.Assumption('testItem'), types.Add()]
         self._do_test('OP_5 OP_5 OP_2 OP_ROLL OP_ADD', script)
 
+        self._reset_table(['testItem'])
         script = [types.Five(), types.Five(), types.Assumption('testItem'), types.Add(), types.Assumption('testItem')]
         self._do_test('OP_5 OP_5 OP_2 OP_PICK OP_ADD OP_2 OP_ROLL', script)
 

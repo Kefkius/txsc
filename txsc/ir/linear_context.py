@@ -198,8 +198,7 @@ class LinearInliner(BaseLinearVisitor):
                 if branch.is_truebranch == True:
                     total += sum(i.delta for i in self.instructions[branch.start:branch.end])
 
-        # TODO: Fix delta calculation so that total can't be negative.
-        return max(0, total)
+        return total
 
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
@@ -251,6 +250,21 @@ class LinearInliner(BaseLinearVisitor):
                 if final_item_depth == 0:
                     return []
 
+    def bring_assumption_to_top(self, op):
+        symbol = self.symbol_table.lookup(op.var_name)
+        total_delta = self.total_delta(op.idx)
+        # Correct the assumption's depth offset.
+        while total_delta + symbol.value.depth < 0:
+            symbol.value.depth += 1
+
+        arg = total_delta + symbol.value.depth
+        arg = self.op_for_int(arg)
+
+        # Use OP_PICK if there are other occurrences after this one.
+        opcode = types.Pick if self.contextualizer.following_occurrences(op.var_name, op.idx) > 0 else types.Roll
+
+        return [arg, opcode()]
+
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)
         if not method:
@@ -278,11 +292,5 @@ class LinearInliner(BaseLinearVisitor):
                 return result
 
         # If there are no consecutive assumptions, use opcodes to bring this assumption to the top.
-        arg = self.total_delta(op.idx) + symbols[0].value.depth
-        # TODO: Fix delta calculation so that total can't be negative.
-        arg = self.op_for_int(max(0, arg))
-
-        # Use OP_PICK if there are other occurrences after this one.
-        opcode = types.Pick if self.contextualizer.following_occurrences(op.var_name, op.idx) > 0 else types.Roll
-        return [arg, opcode()]
+        return self.bring_assumption_to_top(op)
 
