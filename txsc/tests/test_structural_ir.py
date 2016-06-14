@@ -89,13 +89,12 @@ class StructuralFormatTest(unittest.TestCase):
         ]:
             self.assertEqual(expected, SInstructions.format_op(node))
 
-    def test_assignments_and_deletions(self):
+    def test_assignments(self):
         for node, expected in [
             (sir.Declaration(name='foo', value=sir.Int(5), type_=SymbolType.Integer, mutable=True), 'let mutable foo = 5'),
             (sir.Declaration(name='foo', value=sir.Int(5), type_=SymbolType.Integer, mutable=False), 'let foo = 5'),
             (sir.Assignment(name='foo', value=sir.Int(5), type_=SymbolType.Integer), 'foo = 5'),
             (sir.Assignment(name='foo', value=sir.Bytes('05'), type_=SymbolType.Integer), 'foo = 05'),
-            (sir.Deletion(name='foo'), 'del foo'),
         ]:
             self.assertEqual(expected, SInstructions.format_op(node))
 

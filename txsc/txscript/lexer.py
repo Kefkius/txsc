@@ -50,9 +50,8 @@ tokens = ['NAME', 'NUMBER', 'HEXSTR', 'TYPENAME',
         'OR',
         'NOT',
 
-        # Declarations/deletions.
+        # Declarations.
         'LET',
-        'DEL',
 ]
 
 reserved_words = {
@@ -70,7 +69,6 @@ reserved_words = {
     'not': 'NOT',
 
     'let': 'LET',
-    'del': 'DEL',
 }
 
 type_names = [
@@ -133,7 +131,6 @@ t_AND = r'and'
 t_OR = r'or'
 
 t_LET = r'let'
-t_DEL = r'del'
 
 @TOKEN(r'(' + r')|('.join(type_names) + r')')
 def t_TYPENAME(t):

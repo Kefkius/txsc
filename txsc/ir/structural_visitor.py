@@ -269,18 +269,6 @@ class StructuralVisitor(BaseStructuralVisitor):
         return None
 
     @returnlist
-    def visit_Deletion(self, node):
-        self.require_symbol_table('delete symbol')
-
-        symbol = self.symbol_table.lookup(node.name)
-        if not symbol:
-            raise IRError('Symbol "%s" was not declared.' % node.name)
-        if symbol.type_ != SymbolType.StackItem:
-            raise IRError('Only assumed stack items can be deleted.')
-
-        return types.Deletion(symbol.name)
-
-    @returnlist
     def visit_Symbol(self, node):
         self.require_symbol_table('process symbol')
 

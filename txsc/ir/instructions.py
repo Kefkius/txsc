@@ -46,8 +46,6 @@ def format_structural_op(op):
         return 'let %s%s = %s' % ('mutable ' if op.mutable else '', op.name, format_structural_op(op.value))
     elif isinstance(op, structural_nodes.Assignment):
         return '%s = %s' % (op.name, format_structural_op(op.value))
-    elif isinstance(op, structural_nodes.Deletion):
-        return 'del %s' % op.name
     elif isinstance(op, structural_nodes.Function):
         args_str = format_args(op.args)
         body_str = format_statements(op.body)
@@ -205,7 +203,7 @@ class SInstructions(Instructions):
     def is_push_operation(op):
         """Return whether op pushes a value to the stack if used as a statement."""
         non_push_classes = (structural_nodes.Script, structural_nodes.If, structural_nodes.Function,
-                structural_nodes.Declaration, structural_nodes.Assignment, structural_nodes.Deletion,
+                structural_nodes.Declaration, structural_nodes.Assignment,
                 structural_nodes.Return,)
         if isinstance(op, non_push_classes):
             return False
