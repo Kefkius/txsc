@@ -18,13 +18,10 @@ Types
 
 TxScript has the following types:
 
-[cols=",",options="header",]
-|=====================================
-|Type |Description
-|bytes |Byte array.
-|int |Integer.
-|expr |Expression (non-specific type).
-|=====================================
+[horizontal]
+bytes:: Byte array.
+int:: Integer.
+expr:: Expression (non-specific type).
 
 [[pushes]]
 Pushes
@@ -236,23 +233,20 @@ Functions may not push values to the stack. They can only return values.
 Keywords
 --------
 
-The following keywords have meaning in txscript scripts.
+The following keywords have meaning in txscript scripts:
 
-[cols=",",options="header",]
-|========================================================
-|Keyword |Meaning
-|assume |Declare assumed stack values by name.
-|del |Remove an assumed stack value by name.
-|func |Define a function.
-|let |Declare a new name.
-|mutable |Declare a mutable name.
-|verify |Fail if the expression that follows is not true.
-|push |Push the expression that follows to the stack.
-|and |Logical AND operator.
-|or |Logical OR operator.
-|if |Begin an `if` statement.
-|else |Begin an `else` statement.
-|========================================================
+[horizontal]
+assume:: Declare assumed stack values by name.
+del:: Remove an assumed stack value by name.
+func:: Define a function.
+let:: Declare a new name.
+mutable:: Declare a mutable name.
+verify:: Fail if the expression that follows is not true.
+push:: Push the expression that follows to the stack.
+and:: Logical AND operator.
+or:: Logical OR operator.
+if:: Begin an `if` statement.
+else:: Begin an `else` statement.
 
 [[assumptions]]
 Assumptions
@@ -304,31 +298,24 @@ Operators
 
 TxScript supports all of the common operators.
 
-[cols=",",options="header",]
-|=========================================
-|Operator |Meaning
-|`*` |Multiplication
-|`/` |Division
-|`+` |Addition
-|`-` |Subtraction (or negation when unary)
-|`%` |Modulus
-|`==` |Equality
-|`!=` |Inequality
-|`<` |Less than
-|`>` |Greater than
-|`<=` |Less than or equal to
-|`>=` |Greater than or equal to
-|`<<` |Bitwise left shift
-|`>>` |Bitwise right shift
-|=========================================
+[horizontal]
+`*`:: Multiplication
+`/`:: Division
+`+`:: Addition
+`-`:: Subtraction (or negation when unary)
+`%`:: Modulus
+`==`:: Equality
+`!=`:: Inequality
+`<`:: Less than
+`>`:: Greater than
+`<=`:: Less than or equal to
+`>=`:: Greater than or equal to
+`<<`:: Bitwise left shift
+`>>`:: Bitwise right shift
 
-[cols=",",options="header",]
-|=========================
-|Logical Operator |Meaning
-|`and` |Logical AND
-|`or` |Logical OR
-|`not` |Logical NOT
-|=========================
+`and`:: Logical AND
+`or`:: Logical OR
+`not`:: Logical NOT
 
 The bitwise operators `AND`, `OR`, `XOR`, and `NOT` are implemented as
 `&`, `|`, `^`, and `~` respectively.
