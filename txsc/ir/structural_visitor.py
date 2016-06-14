@@ -206,6 +206,8 @@ class BaseStructuralVisitor(BaseTransformer):
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None):
+        # Whether we're visiting a conditional statement.
+        self.in_conditional = False
         # Whether we've finished visiting a conditional that results in a different
         # number of stack items depending on whether or not it is true.
         self.after_uneven_conditional = False
@@ -295,6 +297,9 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_If(self, node):
+        if self.in_conditional:
+            raise IRError('Conditional statements cannot be nested.')
+        self.in_conditional = True
         test = self.visit(node.test)
         truebranch = self.visit(node.truebranch)
         falsebranch = []
@@ -309,6 +314,7 @@ class StructuralVisitor(BaseStructuralVisitor):
 
         if sum([i.delta for i in truebranch]) != sum([i.delta for i in falsebranch]):
             self.after_uneven_conditional = True
+        self.in_conditional = False
         return ops
 
     @returnlist

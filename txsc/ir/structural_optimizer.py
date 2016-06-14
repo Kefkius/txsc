@@ -224,6 +224,13 @@ class StructuralOptimizer(BaseStructuralVisitor):
         self.symbol_table.end_scope()
         return return_value
 
+    def visit_If(self, node):
+        node.test = self.visit(node.test)
+        node.truebranch.statements = self.map_visit(node.truebranch.statements)
+        if node.falsebranch:
+            node.falsebranch.statements = self.map_visit(node.falsebranch.statements)
+        return node
+
 def params(cls):
     """Causes the arguments to a method to be converted to cls."""
     def method_decorator(method):
