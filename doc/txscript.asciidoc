@@ -127,6 +127,39 @@ let myVar = 2 + 5;
 verify min(myVar, 10) == myVar;
 -------------------------------
 
+Generally, whenever there exists an opcode that cannot be expressed
+using an operator, a built-in function exists in its place. These
+built-in functions have arguments corresponding to those of the opcode
+they represent. This consistency is even present when it results in
+redundancy (e.g. `checkMultiSig()` requires the number of public keys
+present as its final argument, even though that number could be
+calculated programmatically).
+
+By default (these can be changed via plugins), the following built-in
+functions exist to represent their corresponding opcodes:
+
+[cols=",",options="header",]
+|=====================================================================================
+|Function |Opcode
+|`abs(arg)` |`OP_ABS`
+|`size(arg)` |`OP_SIZE`
+|`min(arg1, arg2)` |`OP_MIN`
+|`max(arg1, arg2)` |`OP_MAX`
+|`concat(arg1, arg2)` |`OP_CAT`
+|`left(arg1, arg2)` |`OP_LEFT`
+|`right(arg, arg2)` |`OP_RIGHT`
+|`ripemd160(arg)` |`OP_RIPEMD160`
+|`sha1(arg)` |`OP_SHA1`
+|`sha256(arg)` |`OP_SHA256`
+|`hash160(arg)` |`OP_HASH160`
+|`hash256(arg)` |`OP_HASH256`
+|`checkSig(signature, public_key)` |`OP_CHECKSIG`
+|`checkMultiSig(num_signatures, public_key, ..., num_public_keys)` |`OP_CHECKMULTISIG`
+|`substr(arg, start, size)` |`OP_SUBSTR`
+|`within(arg, minimum, maximum)` |`OP_WITHIN`
+|=====================================================================================
+
+
 [[inner-scripts]]
 Inner Scripts
 ^^^^^^^^^^^^^
