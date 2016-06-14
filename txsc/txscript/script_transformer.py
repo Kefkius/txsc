@@ -56,8 +56,6 @@ binary_ops = {
 OpFunc = namedtuple('OpFunc', ('name', 'nargs', 'op_name'))
 op_functions = [
     # Unary operations.
-    OpFunc('incr', 1, 'OP_1ADD'),
-    OpFunc('decr', 1, 'OP_1SUB'),
     OpFunc('abs', 1, 'OP_ABS'),
     OpFunc('size', 1, 'OP_SIZE'),
 
