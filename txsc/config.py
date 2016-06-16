@@ -43,19 +43,24 @@ opcode_sets = {'default': linear_nodes.get_opcodes()}
 linear_optimizers = {'default': linear_optimizer.LinearOptimizer}
 
 
+def add_language(lang):
+    """Add a language."""
+    # Must be a Language subclass instance.
+    if not isinstance(lang, Language):
+        return False
+    # The language must not have a duplicate name.
+    if lang.name in [i.name for i in languages]:
+        return False
+    languages.append(lang.__class__)
+    return True
+
 def load_languages():
     """Load languages from entry points."""
     global languages
     for entry_point in iter_entry_points(group='txsc.language'):
         lang_maker = entry_point.load()
         lang = lang_maker()
-        # Must be a Language subclass instance.
-        if not isinstance(lang, Language):
-            continue
-        # The language must not have a duplicate name.
-        if lang.name in [i.name for i in languages]:
-            continue
-        languages.append(lang)
+        add_language(lang)
 
 def get_languages():
     """Return supported languages."""
