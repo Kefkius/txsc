@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import argparse
 import ast
 import json
 import os
@@ -56,6 +57,31 @@ class Verbosity(object):
         self.show_structural_ir = value > 1 # Show the structural intermediate representation.
         self.echo_input = value > 2 # Echo the source that was input.
 
+class CompilationOptions(object):
+    """Model of script compilation options."""
+    def __init__(self, options):
+        if isinstance(options, argparse.Namespace):
+            options = options.__dict__
+        self.supplied_options = options.keys()
+
+        defaults = {
+            'optimization': OptimizationLevel.max_optimization,
+            'log_level': 'WARNING',
+            'verbosity': 0,
+            'source_lang': 'txscript',
+            'target_lang': 'btc',
+            'opcode_set': 'default',
+            'config_file': '',
+            'output_file': '',
+            'no_implicit_pushes': False,
+            'strict_num': False,
+        }
+        for k, v in defaults.items():
+            if k not in options.keys():
+                options[k] = v
+
+        for k, v in options.items():
+            setattr(self, k, v)
 
 class ScriptCompiler(object):
     """Script compiler."""
@@ -102,23 +128,9 @@ class ScriptCompiler(object):
         self.output_languages = {i.name: i for i in filter(lambda cls: cls.has_target_visitor(), self.langs)}
 
     def setup_options(self, options):
+        if not isinstance(options, CompilationOptions):
+            options = CompilationOptions(options)
         self.options = options
-        # Default values for options.
-        defaults = {
-            'optimization': OptimizationLevel.max_optimization,
-            'log_level': 'WARNING',
-            'verbosity': 0,
-            'source_lang': 'txscript',
-            'target_lang': 'btc',
-            'opcode_set': 'default',
-            'config_file': '',
-            'output_file': '',
-            'no_implicit_pushes': False,
-            'strict_num': False,
-        }
-        for k, v in defaults.items():
-            if not hasattr(self.options, k):
-                setattr(self.options, k, v)
 
         # Load options from config file (if one exists).
         if self.options.config_file:
@@ -127,7 +139,8 @@ class ScriptCompiler(object):
             config_options = self.load_config_file()
         if config_options:
             for k, v in config_options.items():
-                setattr(self.options, k, v)
+                if k not in self.options.supplied_options:
+                    setattr(self.options, k, v)
 
 
         self.optimization = OptimizationLevel(self.options.optimization)
