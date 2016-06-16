@@ -53,6 +53,10 @@ class ASMSourceVisitor(SourceVisitor):
 class ASMTargetVisitor(BtcScriptTargetVisitor):
     """Transforms the linear representation into ASM."""
     def __init__(self, *args, **kwargs):
+        self.omit_op_prefixes = True
+        if kwargs.get('omit_op_prefixes') is not None:
+            self.omit_op_prefixes = kwargs['omit_op_prefixes']
+            del kwargs['omit_op_prefixes']
         super(ASMTargetVisitor, self).__init__(*args, **kwargs)
         self.values = []
         # If we're transforming an InnerScript, we use BtcScriptTargetVisitor
@@ -87,12 +91,12 @@ class ASMTargetVisitor(BtcScriptTargetVisitor):
     def generic_visit_OpCode(self, node):
         if self.visiting_innerscript:
             return super(ASMTargetVisitor, self).generic_visit_OpCode(node)
-        return node.name[3:]
+        return node.name[3:] if self.omit_op_prefixes else node.name
 
     def generic_visit_SmallIntOpCode(self, node):
         if self.visiting_innerscript:
             return super(ASMTargetVisitor, self).generic_visit_SmallIntOpCode(node)
-        return node.name[3:]
+        return node.name[3:] if self.omit_op_prefixes else node.name
 
 
 class ASMLanguage(Language):
