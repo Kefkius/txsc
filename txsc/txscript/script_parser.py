@@ -226,7 +226,7 @@ class ScriptParser(object):
         p[0] = ast.UnaryOp(op=op, operand=p[2])
 
     def p_verify(self, p):
-        '''statement : VERIFY expr SEMICOLON'''
+        '''expr : VERIFY expr'''
         p[0] = ast.Assert(test=p[2], msg=None)
 
     def p_expr_binop(self, p):
