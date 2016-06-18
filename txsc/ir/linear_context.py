@@ -82,6 +82,38 @@ class LinearContextualizer(BaseLinearVisitor):
         except IndexError:
             return None
 
+    def total_delta(self, idx):
+        """Get the total delta of script operations before idx."""
+        branches = self.branches
+        if not branches or idx <= branches[0].start:
+            return sum(i.delta for i in self.instructions[:idx])
+
+        is_truebranch = None
+        for branch in branches:
+            if branch.is_in_branch(idx):
+                is_truebranch = branch.is_truebranch
+                break
+
+        total = sum(i.delta for i in self.instructions[:branches[0].start])
+        for branch in branches:
+            if branch.is_truebranch == is_truebranch and branch.start <= idx:
+                if branch.end > idx:
+                    total += sum(i.delta for i in self.instructions[branch.start:idx])
+                    break
+                else:
+                    total += sum(i.delta for i in self.instructions[branch.start:branch.end])
+
+        # If is_truebranch is None, then idx is after a conditional.
+        # Add the delta of one of the conditional branches.
+        # If the branches do not result in the same number of stack items,
+        # then the script will have failed in StructuralVisitor.
+        if is_truebranch is None:
+            for branch in branches:
+                if branch.is_truebranch == True:
+                    total += sum(i.delta for i in self.instructions[branch.start:branch.end])
+
+        return total
+
     def contextualize(self, instructions):
         """Perform contextualization on instructions.
 
@@ -168,38 +200,6 @@ class LinearInliner(BaseLinearVisitor):
         super(LinearInliner, self).__init__(symbol_table, options)
         self.contextualizer = LinearContextualizer(symbol_table, options)
 
-    def total_delta(self, idx):
-        """Get the total delta of script operations before idx."""
-        branches = list(self.contextualizer.branches)
-        if not branches or idx <= branches[0].start:
-            return sum(i.delta for i in self.instructions[:idx])
-
-        is_truebranch = None
-        for branch in branches:
-            if branch.is_in_branch(idx):
-                is_truebranch = branch.is_truebranch
-                break
-
-        total = sum(i.delta for i in self.instructions[:branches[0].start])
-        for branch in branches:
-            if branch.is_truebranch == is_truebranch and branch.start <= idx:
-                if branch.end > idx:
-                    total += sum(i.delta for i in self.instructions[branch.start:idx])
-                    break
-                else:
-                    total += sum(i.delta for i in self.instructions[branch.start:branch.end])
-
-        # If is_truebranch is None, then idx is after a conditional.
-        # Add the delta of one of the conditional branches.
-        # If the branches do not result in the same number of stack items,
-        # then the script will have failed in StructuralVisitor.
-        if is_truebranch is None:
-            for branch in branches:
-                if branch.is_truebranch == True:
-                    total += sum(i.delta for i in self.instructions[branch.start:branch.end])
-
-        return total
-
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
 
@@ -240,7 +240,7 @@ class LinearInliner(BaseLinearVisitor):
         """Handle a row of consecutive assumptions."""
         # If the first assumption's delta is 0 and the depths are sequential,
         # then nothing needs to be done.
-        if self.total_delta(assumptions[0].idx) == 0:
+        if self.contextualizer.total_delta(assumptions[0].idx) == 0:
             symbols = map(self.symbol_table.lookup, [i.var_name for i in assumptions])
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
             iterator = (i.value.depth for i in reversed(symbols))
@@ -252,7 +252,7 @@ class LinearInliner(BaseLinearVisitor):
 
     def bring_assumption_to_top(self, op):
         symbol = self.symbol_table.lookup(op.var_name)
-        total_delta = self.total_delta(op.idx)
+        total_delta = self.contextualizer.total_delta(op.idx)
         # Correct the assumption's depth offset.
         while total_delta + symbol.value.depth < 0:
             symbol.value.depth += 1
