@@ -4,7 +4,13 @@ from txsc.transformer import BaseTransformer
 import txsc.ir.linear_nodes as types
 
 class LIROptions(object):
-    """Options for the linear intermediate representation."""
+    """Options for the linear intermediate representation.
+
+    Attributes:
+        inline_assumptions (bool): Whether to inline assumptions as stack operations.
+        peephole_optimizations (bool): Whether to perform peephole optimizations.
+
+    """
     def __init__(self, inline_assumptions=True,
                  peephole_optimizations=True):
         self.inline_assumptions = inline_assumptions

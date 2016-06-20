@@ -23,7 +23,14 @@ def returnlist(func):
 
 
 class SIROptions(object):
-    """Options for the structural intermediate representation."""
+    """Options for the structural intermediate representation.
+
+    Attributes:
+        evaluate_expressions (bool): Whether to evaluate constant expressions.
+        implicit_pushes (bool): Whether to allow implicit pushing of values to the stack.
+        strict_num (bool): Whether to fail if values longer than 4 bytes are treated as integers.
+
+    """
     def __init__(self, evaluate_expressions=True, implicit_pushes=True,
                  strict_num=False):
         self.evaluate_expressions = evaluate_expressions
