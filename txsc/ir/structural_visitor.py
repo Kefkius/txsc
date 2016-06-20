@@ -3,7 +3,7 @@ import logging
 
 from txsc.symbols import SymbolType, ImmutableError, MultipleDeclarationsError, UndeclaredError
 from txsc.transformer import BaseTransformer
-from txsc.ir import formats, structural_nodes
+from txsc.ir import formats, structural_nodes, IRError, IRImplicitPushError, IRStrictNumError, IRTypeError
 from txsc.ir.instructions import LInstructions, SInstructions
 import txsc.ir.linear_nodes as types
 
@@ -21,21 +21,6 @@ def returnlist(func):
         return result
     return wrapper
 
-class IRError(Exception):
-    """Exception raised when converting SIR instructions to the LIR."""
-    pass
-
-class IRImplicitPushError(IRError):
-    """Exception raised when an implicit push is encountered."""
-    pass
-
-class IRStrictNumError(IRError):
-    """Exception raised when using a non-number value in an arithmetic operation."""
-    pass
-
-class IRTypeError(IRError):
-    """Exception raised when using incompatible or incorrect types."""
-    pass
 
 class SIROptions(object):
     """Options for the structural intermediate representation."""

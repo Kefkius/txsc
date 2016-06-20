@@ -10,9 +10,9 @@ import logging
 from txsc.symbols import SymbolTable
 from txsc.ir.instructions import LINEAR, STRUCTURAL
 from txsc.ir.linear_visitor import LIROptions
-from txsc.ir.structural_visitor import SIROptions, StructuralVisitor, IRError
+from txsc.ir.structural_visitor import SIROptions, StructuralVisitor
 from txsc.ir.structural_optimizer import StructuralOptimizer
-from txsc.ir import linear_optimizer
+from txsc.ir import linear_optimizer, IRError
 from txsc.txscript import ParsingError
 from txsc import config
 

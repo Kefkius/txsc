@@ -7,9 +7,9 @@ import hexs
 
 from txsc.symbols import SymbolTable, SymbolType, ImmutableError, MultipleDeclarationsError, UndeclaredError
 from txsc.transformer import BaseTransformer
-from txsc.ir import formats
+from txsc.ir import formats, IRError, IRStrictNumError, IRTypeError
 from txsc.ir.instructions import SInstructions, format_structural_op
-from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, IRError, IRStrictNumError, IRTypeError
+from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor
 import txsc.ir.structural_nodes as types
 
 

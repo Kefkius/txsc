@@ -1,7 +1,7 @@
 import unittest
 from collections import namedtuple
 
-from txsc.ir.structural_visitor import IRError
+from txsc.ir import IRError
 from txsc.tests import BaseCompilerTest
 
 
