@@ -1,0 +1,12 @@
+# Builtin functions example.
+
+# Compiler directives.
+@target asm
+
+push min(5, 6);
+push max(5, 6);
+push abs(-5);
+
+# Only byte arrays can be used with size(). Below, size() will
+# return 1 since the argument occupies one byte.
+push size('5');

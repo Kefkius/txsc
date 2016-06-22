@@ -4,10 +4,15 @@ import unittest
 from txsc.tests import BaseCompilerTest
 
 class ExampleTest(BaseCompilerTest):
+    @classmethod
+    def _options(cls):
+        namespace = super(ExampleTest, cls)._options()
+        namespace.optimization = 2
+        return namespace
 
     def test_function(self):
         """Test examples/function.txscript."""
-        expected = '5 1ADD'
+        expected = '6'
         src = ['func int addA(x) {return x + A;}',
                'let A = 5;',
                'addA(1);']
@@ -56,4 +61,16 @@ class ExampleTest(BaseCompilerTest):
 
             "verify (secretKnown or signedByB) and signedByA;"
         ]
+        self._test(expected, src)
+
+    def test_mark_invalid_example(self):
+        """Test examples/mark-invalid.txscript."""
+        expected = 'RETURN 0x04 0x74657374'
+        src = ["markInvalid();", "push '74657374';", "markInvalid();"]
+        self._test(expected, src)
+
+    def test_builtin_functions_example(self):
+        """Test examples/builtin-functions.txscript."""
+        expected = '5 6 5 1'
+        src = ["push min(5, 6);", "push max(5, 6);", "push abs(-5);", "push size('5');"]
         self._test(expected, src)

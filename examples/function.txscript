@@ -1,7 +1,8 @@
 # Function example.
 #
 # Expected output:
-# 5 1ADD
+# 5 1ADD (without evaluation)
+# 6      (with evaluation)
 
 # Compiler directives.
 @target asm

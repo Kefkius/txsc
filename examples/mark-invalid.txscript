@@ -1,0 +1,19 @@
+# OP_RETURN (i.e. marked invalid) script.
+# Expected output: "RETURN 0x04 0x74657374"
+
+# Compiler directives.
+@target asm
+
+# The built-in function markInvalid() can be placed anywhere in the
+# global scope of a script. The result will be OP_RETURN preprended
+# to the rest of the script.
+markInvalid();
+
+# Push the word "test" to the stack.
+push '74657374';
+
+# The markInvalid() function can be called more than once, though
+# it will always result in only one OP_RETURN occurrence.
+#
+# Redundant:
+markInvalid();
