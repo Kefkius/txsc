@@ -182,7 +182,7 @@ class ScriptTransformer(BaseTransformer):
         else:
             if isinstance(value, ast.Num):
                 sym_type = SymbolType.Integer
-            elif isinstance(value, ast.List):
+            elif isinstance(value, (ast.List, ast.Str)):
                 sym_type = SymbolType.ByteArray
 
             value = self.visit(value)
@@ -225,6 +225,11 @@ class ScriptTransformer(BaseTransformer):
 
     def visit_Num(self, node):
         return types.Int(node.n)
+
+    def visit_Str(self, node):
+        hex_strs = [hex(ord(i)) for i in node.s]
+        hex_strs = map(hexs.format_hex, hex_strs)
+        return types.Bytes(''.join(hex_strs))
 
     def visit_List(self, node):
         """Transform array of bytes to bytes."""

@@ -60,8 +60,31 @@ Comments are denoted by a pound sign (`#`).
 Literals
 ~~~~~~~~
 
-Literal values in TxScript are either integers or hex strings. Hex
-strings are enclosed in single quotation marks, with no "0x" prefix.
+Literal values in TxScript can take three forms:
+
+Integer literals:: Numeric values.
+
+Integer literals can be decimal digits, or hex digits prefixed with "0x".
+
+-----------------------
+# The decimal value 10.
+let ten = 10;
+# The decimal value 16.
+let sixteen = 0x10;
+-----------------------
+
+String literals:: String values.
+
+String literals are enclosed in double quotation marks.
+
+---------------------------------------
+# The bytes 0x74, 0x65, 0x78, 0x74.
+let myText = "text";
+---------------------------------------
+
+Hex string literals:: Strings containing hex-encoded byte values.
+
+Hex strings are enclosed in single quotation marks, with no "0x" prefix.
 
 --------------------------------------------------------
 # The RIPEMD-160 hash of my public key.

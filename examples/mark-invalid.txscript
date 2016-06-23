@@ -10,7 +10,7 @@
 markInvalid();
 
 # Push the word "test" to the stack.
-push '74657374';
+push "test";
 
 # The markInvalid() function can be called more than once, though
 # it will always result in only one OP_RETURN occurrence.

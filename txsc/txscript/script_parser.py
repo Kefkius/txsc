@@ -268,7 +268,7 @@ class ScriptParser(object):
 
         p[0] = ast.Compare(left=p[1], ops=[op], comparators=[p[3]])
 
-    def p_expr_str(self, p):
+    def p_expr_hexstr(self, p):
         '''expr : HEXSTR'''
         s = p[1].replace('\'','')
         try:
@@ -277,6 +277,10 @@ class ScriptParser(object):
             raise Exception('Invalid hex literal.')
         byte_arr = [s[i:i+2] for i in range(0, len(s), 2)]
         p[0] = ast.List(elts=byte_arr, ctx=ast.Store())
+
+    def p_expr_str(self, p):
+        '''expr : STR'''
+        p[0] = ast.Str(p[1][1:-1])
 
     def p_expr_name(self, p):
         '''expr : NAME'''

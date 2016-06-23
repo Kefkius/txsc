@@ -68,6 +68,9 @@ class TypeTest(BaseScriptTransformerTest):
         for s in ["'004'", "'0004'"]:
             self._test_transform(s + ';', "[Bytes(0x0004)]")
 
+    def test_literal_str_bytes(self):
+        self._test_transform("\"a\";", "[Bytes(0x61)]")
+
     def test_literal_int(self):
         self._test_transform("4;", "[Int(4)]")
 

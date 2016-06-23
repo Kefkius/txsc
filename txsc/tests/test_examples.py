@@ -66,7 +66,7 @@ class ExampleTest(BaseCompilerTest):
     def test_mark_invalid_example(self):
         """Test examples/mark-invalid.txscript."""
         expected = 'RETURN 0x04 0x74657374'
-        src = ["markInvalid();", "push '74657374';", "markInvalid();"]
+        src = ["markInvalid();", "push \"test\";", "markInvalid();"]
         self._test(expected, src)
 
     def test_builtin_functions_example(self):
