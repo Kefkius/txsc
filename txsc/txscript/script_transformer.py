@@ -222,14 +222,11 @@ class ScriptTransformer(BaseTransformer):
     def visit_Num(self, node):
         return types.Int(node.n)
 
-    def visit_Str(self, node):
-        return types.Bytes(hexs.format_hex(node.s))
-
     def visit_List(self, node):
         """Transform array of bytes to bytes."""
-        n = ast.Str(''.join(node.elts))
-        n.lineno = node.lineno
-        return self.visit(n)
+        op = types.Bytes(hexs.format_hex(''.join(node.elts)))
+        op.lineno = node.lineno
+        return self.visit(op)
 
     def visit_Assert(self, node):
         node.test = self.visit(node.test)
