@@ -4,7 +4,7 @@ import copy
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
-from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor
+from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor, StackState
 import txsc.ir.linear_nodes as types
 
 class ConditionalBranch(object):
@@ -40,6 +40,7 @@ class LinearContextualizer(BaseLinearVisitor):
         self.assumptions = defaultdict(list)
         # [ConditionalBranch(), ...]
         self.branches = []
+        self.stack = StackState()
 
     def following_occurrences(self, assumption_name, idx):
         """Get the number of occurrences of assumption_name after idx."""
@@ -124,6 +125,7 @@ class LinearContextualizer(BaseLinearVisitor):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
         self.branches = []
+        self.stack.clear(clear_assumptions=False)
         self.instructions = instructions
 
         for i, instruction in enumerate(iter(instructions)):
@@ -217,6 +219,10 @@ class LinearInliner(BaseLinearVisitor):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
 
+        stack_names = self.symbol_table.lookup('_stack_names')
+        if stack_names:
+            self.contextualizer.stack.add_stack_assumptions([types.Assumption(var_name) for var_name in stack_names.value])
+
         # Loop until no inlining can be done.
         while 1:
             peephole_optimizer.optimize(instructions)
@@ -258,6 +264,12 @@ class LinearInliner(BaseLinearVisitor):
             symbol.value.depth += 1
 
         arg = total_delta + symbol.value.depth
+
+        self.contextualizer.stack.process_instructions(self.instructions[:op.idx])
+        highest, highest_stack_idx = self.contextualizer.stack.get_highest_assumption(op)
+        if highest is not None:
+            arg = total_delta - highest_stack_idx
+
         arg = self.op_for_int(arg)
 
         # Use OP_PICK if there are other occurrences after this one.
