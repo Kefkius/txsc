@@ -40,7 +40,7 @@ class ASMSourceVisitor(SourceVisitor):
 
     def process_value(self, value):
         # Encode integer.
-        if isinstance(value, int):
+        if isinstance(value, (int, long)):
             push = formats.int_to_bytearray(value)
             self.add_instruction(types.Push(data=push))
         else:
