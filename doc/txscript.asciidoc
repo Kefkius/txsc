@@ -112,8 +112,6 @@ conditional. The reason for this is that the number of items between a
 stack assumption and the actual assumed stack item cannot be determined
 this way.
 
-Conditionals cannot be nested.
-
 [[built-in-functions]]
 Built-in Functions
 ~~~~~~~~~~~~~~~~~~
