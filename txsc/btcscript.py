@@ -3,6 +3,7 @@
 Uses python-bitcoinlib internally.
 """
 
+import hexs
 from bitcoin.core import b2x, lx, x, script
 
 from txsc.transformer import SourceVisitor, TargetVisitor
@@ -72,7 +73,7 @@ class BtcScriptTargetVisitor(TargetVisitor):
 
     def generic_visit_OpCode(self, node):
         value = int(script.OPCODES_BY_NAME[node.name])
-        return hex(value)[2:]
+        return hexs.hexs(value)
 
     def generic_visit_SmallIntOpCode(self, node):
         return self.generic_visit_OpCode(node)
