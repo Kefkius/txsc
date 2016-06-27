@@ -116,6 +116,10 @@ class ParsingNameError(ParsingError):
     """Exception raised when an invalid name is encountered."""
     pass
 
+class ParsingCheckError(ParsingError):
+    """Exception raised when a builtin check_*() function fails."""
+    pass
+
 class ScriptTransformer(BaseTransformer):
     """Transforms input into a structural intermediate representation."""
     @staticmethod
@@ -381,3 +385,31 @@ class BuiltinFunctions(object):
     def builtin_int(self, arg):
         """Cast arg to an integer."""
         return types.Cast(self.visit(arg), SymbolType.Integer)
+
+    # check_*() functions.
+    # These are for validation.
+
+    def builtin_check_hash160(self, arg):
+        """Check that arg is 20 bytes."""
+        arg = self.visit(arg)
+        if not isinstance(arg, types.Bytes):
+            raise ParsingCheckError('check_hash160 failed: A byte array literal is required')
+        data_len = len(arg.data) / 2
+        if data_len != 20:
+            raise ParsingCheckError('check_hash160 failed: Hash160s are 20 bytes (got %d)' % data_len)
+        return arg
+
+    def builtin_check_pubkey(self, arg):
+        """Check that arg is 32 bytes."""
+        arg = self.visit(arg)
+        if not isinstance(arg, types.Bytes):
+            raise ParsingCheckError('check_pubkey failed: A byte array literal is required')
+        data_len = len(arg.data) / 2
+        if data_len not in [33, 65]:
+            raise ParsingCheckError('check_pubkey failed: Public keys are either 33 or 65 bytes (got %d)' % data_len)
+
+        if data_len == 33 and arg.data[0:2] not in ['02', '03']:
+            raise ParsingCheckError('check_pubkey failed: Compressed public keys begin with 02 or 03')
+        elif data_len == 65 and arg.data[0:2] != '04':
+            raise ParsingCheckError('check_pubkey failed: Uncompressed public keys begin with 04')
+        return arg

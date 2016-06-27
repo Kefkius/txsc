@@ -4,6 +4,7 @@ import ast
 from ply import yacc
 
 from txsc.txscript import ScriptParser, ScriptTransformer
+from txsc.txscript.script_transformer import ParsingCheckError
 
 
 def setUpModule():
@@ -73,3 +74,40 @@ class TypeTest(BaseScriptTransformerTest):
     def test_literal_hex_int(self):
         for s in ["0x4", "0x04", "0x004", "0x0004"]:
             self._test_transform(s + ';', "[Int(4)]")
+
+class CheckTest(BaseScriptTransformerTest):
+    def _test_check(self, src, expected_error=None):
+        t = self._parse(src)
+        if expected_error:
+            self.assertRaises(expected_error, self.transformer.visit, t)
+        else:
+            self.transformer.visit(t)
+
+    def test_check_hash160(self):
+        for src in [
+            # Too short.
+            "'10101010101010101010101010101010101010'",
+            # Too long.
+            "'101010101010101010101010101010101010101010'",
+        ]:
+            self._test_check('check_hash160(%s);' % src, ParsingCheckError)
+
+        self._test_check("check_hash160('1010101010101010101010101010101010101010');")
+
+    def test_check_pubkey(self):
+        for src in [
+            # Too short.
+            "'0210101010101010101010101010101010101010101010101010101010101010'",
+            "'04101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010'",
+            # Too long.
+            "'02101010101010101010101010101010101010101010101010101010101010101010'",
+            "'041010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010'",
+            # Invalid first byte.
+            "'041010101010101010101010101010101010101010101010101010101010101010'",
+            "'0210101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010'",
+            "'0310101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010'",
+        ]:
+            self._test_check('check_pubkey(%s);' % src, ParsingCheckError)
+
+        self._test_check("check_pubkey('021010101010101010101010101010101010101010101010101010101010101010');")
+        self._test_check("check_pubkey('0410101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010');")

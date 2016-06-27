@@ -156,6 +156,17 @@ functions exist to represent their corresponding opcodes:
 |`within(arg, minimum, maximum)` |`OP_WITHIN`
 |=====================================================================================
 
+There are also built-in functions which are used to validate data.
+These functions cause compilation to fail if the argument(s) are
+invalid; otherwise, their argument(s) will be returned.
+The following validation functions are available:
+
+[cols=",",options="header",]
+|==========================================================
+|Function |Purpose
+|`check_hash160(arg)` |Check that arg is a RIPEMD-160 hash.
+|`check_pubkey(arg)` |Check that arg is a public key.
+|==========================================================
 
 [[inner-scripts]]
 Inner Scripts
