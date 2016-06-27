@@ -119,7 +119,7 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_COMMA = r'\,'
 t_SEMICOLON = r'\;'
-t_STR = r'\".*\"'
+t_STR = r'\"[^\"]*\"'
 
 t_ASSUME = r'assume'
 t_IF = r'if'

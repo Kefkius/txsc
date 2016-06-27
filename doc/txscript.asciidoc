@@ -180,16 +180,18 @@ functions exist to represent their corresponding opcodes:
 |=====================================================================================
 
 There are also built-in functions which are used to validate data.
+They are named using snake_case conventions.
 These functions cause compilation to fail if the argument(s) are
 invalid; otherwise, their argument(s) will be returned.
 The following validation functions are available:
 
 [cols=",",options="header",]
-|==========================================================
+|===================================================================================
 |Function |Purpose
 |`check_hash160(arg)` |Check that arg is a RIPEMD-160 hash.
 |`check_pubkey(arg)` |Check that arg is a public key.
-|==========================================================
+|`address_to_hash160(arg)` |Check that arg is an address and return it as a hash160.
+|===================================================================================
 
 [[inner-scripts]]
 Inner Scripts

@@ -3,6 +3,7 @@ import binascii
 
 import hexs
 
+from bitcoin import base58
 from bitcoin.core import _bignum
 from bitcoin.core.script import CScriptOp
 from bitcoin.core.scripteval import _CastToBool
@@ -56,6 +57,10 @@ def hex_to_int(data):
 
 def bytearray_to_bool(data):
     return _CastToBool(data)
+
+def address_to_bytearray(s):
+    """Decode a base58 address into a bytearray."""
+    return base58.CBase58Data(s).to_bytes()
 
 max_int_32 = (1 << 31) - 1
 min_int_32 = -1 << 31

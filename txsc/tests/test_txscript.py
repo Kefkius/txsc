@@ -114,3 +114,16 @@ class CheckTest(BaseScriptTransformerTest):
 
         self._test_check("check_pubkey('021010101010101010101010101010101010101010101010101010101010101010');")
         self._test_check("check_pubkey('0410101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010');")
+
+    def test_address_to_hash160(self):
+        for src in [
+            "1111111111111111111114oLvT2",
+            "M7uAERuQW2AotfyLDyewFGcLUDtAYu9v5V",
+        ]:
+            self._test_check('address_to_hash160("%s");' % src)
+
+        for src in [
+            "1111111111111111111114oLvT",
+            "M7uAERuQW2AotfyLDyewFGcLUDtAYu9v5VA",
+        ]:
+            self._test_check('address_to_hash160("%s");' % src, ParsingCheckError)

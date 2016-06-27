@@ -394,15 +394,18 @@ class BuiltinFunctions(object):
     # check_*() functions.
     # These are for validation.
 
+    def _check_hash160(self, arg, caller_name):
+        if not isinstance(arg, types.Bytes):
+            raise ParsingCheckError('%s failed: A byte array literal is required' % (caller_name))
+        data_len = len(arg.data) / 2
+        if data_len != 20:
+            raise ParsingCheckError('%s failed: Hash160s are 20 bytes (got %d)' % (caller_name, data_len))
+        return arg
+
     def builtin_check_hash160(self, arg):
         """Check that arg is 20 bytes."""
         arg = self.visit(arg)
-        if not isinstance(arg, types.Bytes):
-            raise ParsingCheckError('check_hash160 failed: A byte array literal is required')
-        data_len = len(arg.data) / 2
-        if data_len != 20:
-            raise ParsingCheckError('check_hash160 failed: Hash160s are 20 bytes (got %d)' % data_len)
-        return arg
+        return self._check_hash160(arg, 'check_hash160')
 
     def builtin_check_pubkey(self, arg):
         """Check that arg is 32 bytes."""
@@ -418,3 +421,16 @@ class BuiltinFunctions(object):
         elif data_len == 65 and arg.data[0:2] != '04':
             raise ParsingCheckError('check_pubkey failed: Uncompressed public keys begin with 04')
         return arg
+
+    def builtin_address_to_hash160(self, arg):
+        """Check that arg is an address and convert it to bytes."""
+        if not isinstance(arg, ast.Str):
+            raise ParsingCheckError('address_to_hash_160 failed: A string is required')
+        # Convert to bytes and validate them.
+        try:
+            arg.s = formats.address_to_bytearray(arg.s)
+        except Exception:
+            raise ParsingCheckError('address_to_hash_160 failed: Invalid address (%s)' % arg.s)
+
+        arg = self.visit(arg)
+        return self._check_hash160(arg, 'address_to_hash160')
