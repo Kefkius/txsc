@@ -159,6 +159,37 @@ class LinearContextualizer(BaseLinearVisitor):
         if self.current_nest_level > 0:
             self.log_and_raise(IRError, 'Script ended without ending all conditionals')
 
+        # Validate arguments for certain opcodes.
+        for instruction in self.instructions:
+            if isinstance(instruction, (types.Hash160, types.RipeMD160)):
+                self.check_Hash160(instruction)
+            elif isinstance(instruction, (types.Hash256, types.Sha256)):
+                self.check_Hash256(instruction)
+
+    def check_Hash160(self, op):
+        """Check that 20-byte pushes are used as RIPEMD-160 hashes."""
+        data_push = self.nextop(op)
+        if not isinstance(data_push, types.Push):
+            return
+        opcode = self.nextop(data_push)
+
+        if not isinstance(opcode, (types.Equal, types.EqualVerify)):
+            return
+        if len(data_push.data) != 20:
+            self.log_and_raise(IRError, 'Non-hash160 compared to the result of %s' % op.name)
+
+    def check_Hash256(self, op):
+        """Check that 32-byte pushes are used as SHA256 hashes."""
+        data_push = self.nextop(op)
+        if not isinstance(data_push, types.Push):
+            return
+        opcode = self.nextop(data_push)
+
+        if not isinstance(opcode, (types.Equal, types.EqualVerify)):
+            return
+        if len(data_push.data) != 32:
+            self.log_and_raise(IRError, 'Non-hash256 compared to the result of %s' % op.name)
+
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)
         if not method:

@@ -1,7 +1,7 @@
 import unittest
 
 from txsc.symbols import SymbolTable
-from txsc.ir import formats
+from txsc.ir import formats, IRError
 from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_context import LinearContextualizer
 import txsc.ir.linear_nodes as types
@@ -58,3 +58,36 @@ class TestMultiSig(BaseContextTest):
         self.assertIsInstance(checkmultisig, types.CheckMultiSig)
         self.assertEqual(2, checkmultisig.num_pubkeys)
         self.assertEqual(1, checkmultisig.num_sigs)
+
+class TestValidate(BaseContextTest):
+    def test_valid_hash160(self):
+        for script in [
+            [types.Five(), types.Hash160(), types.Push(b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'), types.EqualVerify()],
+            [types.Five(), types.RipeMD160(), types.Push(b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'), types.EqualVerify()],
+        ]:
+            script = LInstructions(script)
+            self._do_context(script)
+
+    def test_invalid_hash160(self):
+        for script in [
+            [types.Five(), types.Hash160(), types.Push(b'\x01\x02\x03\x04'), types.EqualVerify()],
+            [types.Five(), types.RipeMD160(), types.Push(b'\x01\x02\x03\x04'), types.EqualVerify()],
+        ]:
+            script = LInstructions(script)
+            self.assertRaises(IRError, self._do_context, script)
+
+    def test_valid_hash256(self):
+        for script in [
+            [types.Five(), types.Hash256(), types.Push(b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'), types.EqualVerify()],
+            [types.Five(), types.Sha256(), types.Push(b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'), types.EqualVerify()],
+        ]:
+            script = LInstructions(script)
+            self._do_context(script)
+
+    def test_invalid_hash256(self):
+        for script in [
+            [types.Five(), types.Hash256(), types.Push(b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'), types.EqualVerify()],
+            [types.Five(), types.Sha256(), types.Push(b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'), types.EqualVerify()],
+        ]:
+            script = LInstructions(script)
+            self.assertRaises(IRError, self._do_context, script)
