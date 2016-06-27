@@ -86,7 +86,7 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
     def test_conditional(self):
         for test in [
             Test('5 IF 6 ELSE 7 ENDIF', ['let a = 5;' 'if a {6;} else {7;}']),
-            Test('NOT IF 5 ENDIF', ['assume a;', 'if not a {5;}']),
+            Test('NOTIF 5 ENDIF', ['assume a;', 'if not a {5;}']),
             Test('SWAP IF SWAP ENDIF', ['assume a, b, c;' 'if b {a;} else {c;}']),
         ]:
             self._test(test)
@@ -150,3 +150,19 @@ class CompileAsmTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_conditional_errors(self):
+        # These scripts end without ending all conditionals.
+        for src in [
+            'IF 5 ELSE 6',
+            'IF IF 5 ELSE 6 ENDIF',
+        ]:
+            self.assertRaises(IRError, self._compile, src)
+
+        # This script has too many ENDIFs.
+        self.assertRaises(IRError, self._compile, 'IF 5 ENDIF ENDIF')
+
+        # This script has an ENDIF without any preceding conditional.
+        self.assertRaises(IRError, self._compile, '5 ENDIF')
+
+        # This script has an ELSE without any preceding conditional.
+        self.assertRaises(IRError, self._compile, 'ELSE 5 ENDIF')

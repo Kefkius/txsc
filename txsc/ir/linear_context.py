@@ -122,6 +122,12 @@ class LinearContextualizer(BaseLinearVisitor):
 
         return total
 
+    def get_last_branch(self):
+        """Get the last conditional branch with the current nest level."""
+        for branch in reversed(self.branches):
+            if branch.nest_level == self.current_nest_level:
+                return branch
+
     def contextualize(self, instructions):
         """Perform contextualization on instructions.
 
@@ -139,6 +145,11 @@ class LinearContextualizer(BaseLinearVisitor):
             instruction.idx = i
             self.visit(instruction)
 
+        # If the current nest level is greater than 0,
+        # then the script ended within a conditional branch.
+        if self.current_nest_level > 0:
+            raise IRError('Script ended without ending all conditionals')
+
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)
         if not method:
@@ -152,21 +163,26 @@ class LinearContextualizer(BaseLinearVisitor):
         self.current_nest_level += 1
         self.branches.append(ConditionalBranch(is_truebranch = True, start = op.idx + 1, nest_level = self.current_nest_level))
 
+    def visit_NotIf(self, op):
+        self.current_nest_level += 1
+        self.branches.append(ConditionalBranch(is_truebranch = False, start = op.idx + 1, nest_level = self.current_nest_level))
+
     def visit_Else(self, op):
-        if not self.branches:
-            raise Exception('Else statement requires a preceding If statement')
-        orelse = None
-        for branch in reversed(self.branches):
-            if branch.nest_level == self.current_nest_level:
-                orelse = branch
-                break
-        self.branches[-1].end = op.idx - 1
-        self.branches.append(ConditionalBranch(is_truebranch = False, start = op.idx + 1, nest_level = self.current_nest_level, orelse = orelse))
-        if orelse:
-            orelse.orelse = self.branches[-1]
+        last_branch = self.get_last_branch()
+        if not last_branch:
+            raise IRError('Else statement requires a preceding If or NotIf statement')
+        last_branch.end = op.idx - 1
+
+        new_branch = ConditionalBranch(is_truebranch = not last_branch.is_truebranch, start = op.idx + 1, nest_level = self.current_nest_level, orelse = last_branch)
+        self.branches.append(new_branch)
+        # Assign this branch to the orelse attribute of the preceding statement.
+        last_branch.orelse = new_branch
 
     def visit_EndIf(self, op):
-        self.branches[-1].end = op.idx - 1
+        last_branch = self.get_last_branch()
+        if not last_branch:
+            raise IRError('EndIf encountered with no preceding conditional')
+        last_branch.end = op.idx - 1
         self.current_nest_level -= 1
 
     def visit_CheckMultiSig(self, op):

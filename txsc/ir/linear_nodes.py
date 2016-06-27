@@ -172,6 +172,7 @@ NegativeOne = _opcode('NegativeOne', 1, 'OP_1NEGATE')
 
 # TODO: Conditionals.
 If = _unary_opcode('If', -1, 'OP_IF')
+NotIf = _unary_opcode('NotIf', -1, 'OP_NOTIF')
 Else = _opcode('Else', 0, 'OP_ELSE')
 EndIf = _opcode('EndIf', 0, 'OP_ENDIF')
 Verify = _unary_opcode('Verify', -1, 'OP_VERIFY', verifier=True)

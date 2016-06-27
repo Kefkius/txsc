@@ -217,6 +217,11 @@ def remove_null_conditionals(instructions):
     # OP_IF OP_ENDIF -> OP_DROP
     instructions.replace_template([types.If(), types.EndIf()], lambda values: [types.Drop()])
 
+@peephole
+def replace_not_if(instructions):
+    # OP_NOT OP_IF -> OP_NOTIF
+    instructions.replace_template([types.Not(), types.If()], lambda values: [types.NotIf()])
+
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
     MAX_PASSES = 5
