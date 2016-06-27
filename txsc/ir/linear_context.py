@@ -48,6 +48,11 @@ class LinearContextualizer(BaseLinearVisitor):
         self.current_nest_level = 0
         self.stack = StackState()
 
+    def log_and_raise(self, err_class, msg):
+        """Log an error and raise an exception."""
+        self.error(msg)
+        raise err_class(msg)
+
     def is_before_conditionals(self, idx):
         """Get whether idx is before any conditional branches."""
         if not self.branches or idx < self.branches[0].start:
@@ -116,7 +121,7 @@ class LinearContextualizer(BaseLinearVisitor):
         # If the index is after a conditional branch, check that the
         # branches before it result in the same number of stack items.
         if not sum(branch_deltas[True]) == sum(branch_deltas[False]):
-            raise IRError('Assumption encountered after uneven conditional')
+            self.log_and_raise(IRError, 'Assumption encountered after uneven conditional')
         # Add the deltas from conditional branches before idx.
         total += sum(branch_deltas[True])
 
@@ -148,7 +153,7 @@ class LinearContextualizer(BaseLinearVisitor):
         # If the current nest level is greater than 0,
         # then the script ended within a conditional branch.
         if self.current_nest_level > 0:
-            raise IRError('Script ended without ending all conditionals')
+            self.log_and_raise(IRError, 'Script ended without ending all conditionals')
 
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)
@@ -170,7 +175,7 @@ class LinearContextualizer(BaseLinearVisitor):
     def visit_Else(self, op):
         last_branch = self.get_last_branch()
         if not last_branch:
-            raise IRError('Else statement requires a preceding If or NotIf statement')
+            self.log_and_raise(IRError, 'Else statement requires a preceding If or NotIf statement')
         last_branch.end = op.idx - 1
 
         new_branch = ConditionalBranch(is_truebranch = not last_branch.is_truebranch, start = op.idx + 1, nest_level = self.current_nest_level, orelse = last_branch)
@@ -181,7 +186,7 @@ class LinearContextualizer(BaseLinearVisitor):
     def visit_EndIf(self, op):
         last_branch = self.get_last_branch()
         if not last_branch:
-            raise IRError('EndIf encountered with no preceding conditional')
+            self.log_and_raise(IRError, 'EndIf encountered with no preceding conditional')
         last_branch.end = op.idx - 1
         self.current_nest_level -= 1
 

@@ -29,6 +29,7 @@ class BaseLinearVisitor(BaseTransformer):
         return types.Push(data=value)
 
     def __init__(self, symbol_table, options=LIROptions()):
+        super(BaseLinearVisitor, self).__init__()
         self.symbol_table = symbol_table
         self.options = options
 
