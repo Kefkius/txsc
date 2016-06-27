@@ -96,9 +96,13 @@ class LinearContextualizer(BaseLinearVisitor):
 
     def total_delta(self, idx):
         """Get the total delta of script operations before idx."""
+        total = 0
+        # Add 1 for every assumed stack item.
+        total += len(self.symbol_table.lookup('_stack_names').value)
         branches = self.branches
         if self.is_before_conditionals(idx):
-            return sum(i.delta for i in self.instructions[:idx])
+            total += sum(i.delta for i in self.instructions[:idx])
+            return total
 
         idx_branch = None
         # Find the branch that idx is in.
@@ -108,7 +112,7 @@ class LinearContextualizer(BaseLinearVisitor):
                     idx_branch = branch
 
         # Add the deltas of instructions before the first branch in the script.
-        total = sum(i.delta for i in self.instructions[:branches[0].start])
+        total += sum(i.delta for i in self.instructions[:branches[0].start])
         branch_deltas = {True: [], False: []}
         for branch in branches:
             if branch == idx_branch:
@@ -283,7 +287,7 @@ class LinearInliner(BaseLinearVisitor):
         """Handle a row of consecutive assumptions."""
         # If the first assumption's delta is 0 and the depths are sequential,
         # then nothing needs to be done.
-        if self.contextualizer.total_delta(assumptions[0].idx) == 0:
+        if self.contextualizer.total_delta(assumptions[0].idx) - self.contextualizer.stack.assumptions_offset == 0:
             symbols = map(self.symbol_table.lookup, [i.var_name for i in assumptions])
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
             iterator = (i.value.depth for i in reversed(symbols))
@@ -296,11 +300,8 @@ class LinearInliner(BaseLinearVisitor):
     def bring_assumption_to_top(self, op):
         symbol = self.symbol_table.lookup(op.var_name)
         total_delta = self.contextualizer.total_delta(op.idx)
-        # Correct the assumption's depth offset.
-        while total_delta + symbol.value.depth < 0:
-            symbol.value.depth += 1
 
-        arg = total_delta + symbol.value.depth
+        arg = max(0, total_delta - symbol.value.height - 1)
 
         self.contextualizer.stack.process_instructions(self.instructions[:op.idx])
         highest, highest_stack_idx = self.contextualizer.stack.get_highest_assumption(op)

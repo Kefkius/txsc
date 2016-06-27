@@ -69,6 +69,7 @@ class StackState(object):
     """
     def __init__(self):
         self.assumptions = []
+        self.assumptions_offset = 0
         self.state = []
         self.clear()
 
@@ -79,12 +80,16 @@ class StackState(object):
         state = copy.deepcopy(other.state)
         self = StackState()
         self.assumptions = assumptions
+        self.assumptions_offset = other.assumptions_offset
         self.state = state
         return self
 
+    def state_after_assumptions(self):
+        return self.state[self.assumptions_offset:]
+
     def get_assumptions(self, assumption_name):
         """Get occurrences of assumption_name."""
-        state = self.state[len(self.assumptions):]
+        state = self.state_after_assumptions()
         ret_list = copy.deepcopy(filter(lambda i: i.is_assumption() and i.op.var_name == assumption_name, state))
         return ret_list
 
@@ -95,7 +100,7 @@ class StackState(object):
         if assumptions:
             highest = assumptions[-1]
             stack_index = 0
-            for i, item in enumerate(self.state[len(self.assumptions):]):
+            for i, item in enumerate(self.state_after_assumptions()):
                 if item.is_assumption() and item.op.var_name == assumption.var_name:
                     assumptions.pop(0)
 
@@ -127,11 +132,22 @@ class StackState(object):
 
         self.state.append(op)
 
+    def state_pop(self, i=-1):
+        if i < 0:
+            i = len(self.state) - 1
+
+        op = self.state.pop(i)
+
+        while i < self.assumptions_offset:
+            self.assumptions_offset -= 1
+        return op
+
     def add_stack_assumptions(self, assumptions):
         """Add assumed stack items to the stack."""
         assumptions = map(StackItem, assumptions)
         self.assumptions = copy.deepcopy(assumptions)
-        self.state[:len(assumptions)] = assumptions
+        self.assumptions_offset = len(self.assumptions)
+        self.state[:self.assumptions_offset] = assumptions
 
     def index(self, op):
         return self.state.index(op)
@@ -166,7 +182,7 @@ class StackState(object):
         if delta > 0:
             map(lambda i: self.state_append('_delta_%s_%d' % (str(op), i)), range(delta))
         elif delta < 0:
-            map(lambda i: self.state.pop(-1), range(abs(delta)))
+            map(lambda i: self.state_pop(-1), range(abs(delta)))
 
     def visit_Push(self, op):
         self.state_append(op)
@@ -179,24 +195,24 @@ class StackState(object):
         self.state_append(len(self.state))
 
     def visit_Drop(self, op):
-        self.state.pop()
+        self.state_pop()
 
     def visit_Dup(self, op):
         self.state_append(self.state[-1])
 
     def visit_Nip(self, op):
-        self.state.pop(-2)
+        self.state_pop(-2)
 
     def visit_Over(self, op):
         self.state_append(self.state[-2])
 
     def visit_Pick(self, op):
-        i = int(self.state.pop())
+        i = int(self.state_pop())
         self.state_append(self.state[-i - 1])
 
     def visit_Roll(self, op):
-        i = int(self.state.pop())
-        val = self.state.pop(-i - 1)
+        i = int(self.state_pop())
+        val = self.state_pop(-i - 1)
         self.state_append(val)
 
     def visit_Rot(self, op):
@@ -219,8 +235,8 @@ class StackState(object):
         self.state.insert(len(self.state) - 2, val)
 
     def visit_TwoDrop(self, op):
-        self.state.pop()
-        self.state.pop()
+        self.state_pop()
+        self.state_pop()
 
     def visit_TwoDup(self, op):
         val1 = self.state[-2]
