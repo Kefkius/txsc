@@ -75,6 +75,7 @@ class CompilationOptions(object):
             'output_file': '',
             'no_implicit_pushes': False,
             'strict_num': False,
+            'allow_invalid_comparisons': False,
         }
         for k, v in defaults.items():
             if k not in options.keys():
@@ -152,13 +153,20 @@ class ScriptCompiler(object):
         self.target_lang = self.output_languages[self.options.target_lang]
 
         # LIR options.
-        self.lir_options = LIROptions(inline_assumptions=True,
-                        peephole_optimizations=self.optimization.optimize_linear)
+        lir_kwargs = {
+            'allow_invalid_comparisons': self.options.allow_invalid_comparisons,
+            'inline_assumptions': True,
+            'peephole_optimizations': self.optimization.optimize_linear,
+        }
+        self.lir_options = LIROptions(**lir_kwargs)
 
         # SIR options.
-        self.sir_options = SIROptions(evaluate_expressions=self.optimization.evaluate_structural,
-                        implicit_pushes=not self.options.no_implicit_pushes,
-                        strict_num=self.options.strict_num)
+        sir_kwargs = {
+            'evaluate_expressions': self.optimization.evaluate_structural,
+            'implicit_pushes': not self.options.no_implicit_pushes,
+            'strict_num': self.options.strict_num,
+        }
+        self.sir_options = SIROptions(**sir_kwargs)
 
         # Opcode set.
         config.set_opcode_set(self.options.opcode_set)

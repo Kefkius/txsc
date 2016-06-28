@@ -160,11 +160,12 @@ class LinearContextualizer(BaseLinearVisitor):
             self.log_and_raise(IRError, 'Script ended without ending all conditionals')
 
         # Validate arguments for certain opcodes.
-        for instruction in self.instructions:
-            if isinstance(instruction, (types.Hash160, types.RipeMD160)):
-                self.check_Hash160(instruction)
-            elif isinstance(instruction, (types.Hash256, types.Sha256)):
-                self.check_Hash256(instruction)
+        if not self.options.allow_invalid_comparisons:
+            for instruction in self.instructions:
+                if isinstance(instruction, (types.Hash160, types.RipeMD160)):
+                    self.check_Hash160(instruction)
+                elif isinstance(instruction, (types.Hash256, types.Sha256)):
+                    self.check_Hash256(instruction)
 
     def check_Hash160(self, op):
         """Check that 20-byte pushes are used as RIPEMD-160 hashes."""

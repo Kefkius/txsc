@@ -8,12 +8,16 @@ class LIROptions(object):
     """Options for the linear intermediate representation.
 
     Attributes:
+        allow_invalid_comparisons (bool): Whether to allow any data push to be compared
+            with the result of an OP_HASH* opcode.
         inline_assumptions (bool): Whether to inline assumptions as stack operations.
         peephole_optimizations (bool): Whether to perform peephole optimizations.
 
     """
-    def __init__(self, inline_assumptions=True,
+    def __init__(self, allow_invalid_comparisons=False,
+                 inline_assumptions=True,
                  peephole_optimizations=True):
+        self.allow_invalid_comparisons = allow_invalid_comparisons
         self.inline_assumptions = inline_assumptions
         self.peephole_optimizations = peephole_optimizations
 

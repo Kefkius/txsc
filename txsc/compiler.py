@@ -88,6 +88,7 @@ def create_arg_parser():
     argparser.add_argument('-v', '--verbose', nargs='?', action=VAction, dest='verbosity', default=0, help='Verbosity level (Max: %d).' % Verbosity.max_verbosity)
 
     group = argparser.add_argument_group('compilation flags', 'These optional flags place restrictions on script contents.')
+    group.add_argument('--allow-invalid-comparisons', dest='allow_invalid_comparisons', action='store_true', default=False, help='Allow data pushes of the wrong length to be compared with hash digests.')
     group.add_argument('--no-implicit-pushes', dest='no_implicit_pushes', action='store_true', default=False, help='Fail if values are implicitly pushed to the stack.')
     group.add_argument('--strict-num', dest='strict_num', action='store_true', default=False, help='Fail if values larger than 4 bytes are treated as integers.')
 
