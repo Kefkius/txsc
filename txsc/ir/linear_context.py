@@ -42,6 +42,8 @@ class LinearContextualizer(BaseLinearVisitor):
         super(LinearContextualizer, self).__init__(symbol_table, options)
         # {assumption_name: [occurrence_index, ...], ...}
         self.assumptions = defaultdict(list)
+        # {assumption_name: [operation_index, ...], ...}
+        self.duplicated_assumptions = defaultdict(list)
         # [ConditionalBranch(), ...]
         self.branches = []
         # Current level of conditional nesting.
@@ -53,6 +55,35 @@ class LinearContextualizer(BaseLinearVisitor):
         self.error(msg)
         raise err_class(msg)
 
+    def find_duplicate_assumptions(self):
+        """Find operations which use the same assumption more than once."""
+        base = [types.Assumption(), types.Assumption()]
+        templates = []
+        # Collect opcodes that use the last two stack items as arguments.
+        for opcode in types.get_opcodes().values():
+            if not issubclass(opcode, types.OpCode) or not opcode.args:
+                continue
+            if all(arg_idx in opcode.args for arg_idx in [1, 2]):
+                templates.append(base + [opcode()])
+
+        for i in range(len(self.instructions)):
+            for template in templates:
+                if not self.instructions.matches_template(template, i, strict=False):
+                    continue
+                ops = self.instructions[i:i + len(template)]
+                # Continue if the assumptions aren't of the same value.
+                if ops[0].var_name != ops[1].var_name:
+                    continue
+                # Append the negative index of the operation to duplicated_assumptions[assumption_name].
+                self.duplicated_assumptions[ops[0].var_name].append(-1 * (len(self.instructions) - ops[-1].idx))
+
+    def is_duplicated_assumption(self, op):
+        """Get whether op is in an operation that uses its assumed value twice."""
+        for depth in self.duplicated_assumptions[op.var_name]:
+            if self.instructions[depth] == self.nextop(op):
+                return True
+        return False
+
     def is_before_conditionals(self, idx):
         """Get whether idx is before any conditional branches."""
         if not self.branches or idx < self.branches[0].start:
@@ -60,30 +91,30 @@ class LinearContextualizer(BaseLinearVisitor):
         return False
 
     def following_occurrences(self, assumption_name, idx):
-        """Get the number of occurrences of assumption_name after idx."""
+        """Get the indices of occurrences of assumption_name after idx."""
         branches = list(self.branches)
         match_any_branch = False
         if self.is_before_conditionals(idx):
             match_any_branch = True
 
         assumptions = self.assumptions[assumption_name]
-        following = 0
+        following = []
 
-        for assumption in assumptions:
-            if assumption <= idx:
+        for assumption_idx in assumptions:
+            if assumption_idx <= idx:
                 continue
             if not branches:
-                following += 1
+                following.append(assumption_idx)
             else:
                 for branch in branches:
                     if not match_any_branch and branch.is_in_branch(idx):
                         continue
                     if branch.end > idx:
-                        following += 1
+                        following.append(assumption_idx)
 
                 # Assumption beyond a conditional.
-                if assumption > branches[-1].end:
-                    following += 1
+                if assumption_idx > branches[-1].end:
+                    following.append(assumption_idx)
 
         return following
 
@@ -296,6 +327,10 @@ class LinearInliner(BaseLinearVisitor):
         if stack_names:
             self.contextualizer.stack.add_stack_assumptions([types.Assumption(var_name) for var_name in stack_names.value])
 
+        # Find operations that use the same assumed stack item more than once.
+        self.contextualizer.contextualize(instructions)
+        self.contextualizer.find_duplicate_assumptions()
+
         # Loop until no inlining can be done.
         while 1:
             peephole_optimizer.optimize(instructions)
@@ -338,14 +373,26 @@ class LinearInliner(BaseLinearVisitor):
         self.contextualizer.stack.process_instructions(self.instructions[:op.idx])
         highest, highest_stack_idx = self.contextualizer.stack.get_highest_assumption(op)
         if highest is not None:
-            arg = total_delta - highest_stack_idx
+            arg = total_delta - highest_stack_idx - 1
 
         arg = self.op_for_int(arg)
+        opcode = self.get_opcode_for_assumption(op)
+        return [arg, opcode]
 
-        # Use OP_PICK if there are other occurrences after this one.
-        opcode = types.Pick if self.contextualizer.following_occurrences(op.var_name, op.idx) > 0 else types.Roll
-
-        return [arg, opcode()]
+    def get_opcode_for_assumption(self, op):
+        """Get the opcode to use when bringing op to the top of the stack."""
+        # Use OP_PICK if there are other occurrences after this one,
+        # or if the same assumed item is used more than once in an operation.
+        opcode = types.Roll
+        following = self.contextualizer.following_occurrences(op.var_name, op.idx)
+        if following:
+            # Don't change the opcode if the only following occurrence is a duplicated assumption.
+            nextop = self.contextualizer.nextop(op)
+            if nextop.idx not in following or (len(following) == 1 and not self.contextualizer.is_duplicated_assumption(nextop)):
+                opcode = types.Pick
+        if self.contextualizer.is_duplicated_assumption(op):
+            opcode = types.Pick
+        return opcode()
 
     def visit(self, instruction):
         method = getattr(self, 'visit_%s' % instruction.__class__.__name__, None)

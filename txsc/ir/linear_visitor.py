@@ -103,15 +103,15 @@ class StackState(object):
 
         if assumptions:
             highest = assumptions[-1]
-            stack_index = 0
-            for i, item in enumerate(self.state_after_assumptions()):
+            stack_index = self.assumptions_offset
+            for item in self.state_after_assumptions():
                 if item.is_assumption() and item.op.var_name == assumption.var_name:
                     assumptions.pop(0)
 
-                stack_index += 1
-
                 if not assumptions:
                     break
+
+                stack_index += 1
 
         return highest, stack_index
 
@@ -138,7 +138,7 @@ class StackState(object):
 
     def state_pop(self, i=-1):
         if i < 0:
-            i = len(self.state) - 1
+            i = len(self.state) - abs(i)
 
         op = self.state.pop(i)
 

@@ -127,6 +127,8 @@ class LInstructions(Instructions, list):
         for i in range(len(template)):
             if not template[i]:
                 continue
+            if len(self) - 1 < index + i:
+                return False
 
             equal = template[i] == self[index + i]
             if strict and not equal:

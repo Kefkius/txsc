@@ -30,6 +30,13 @@ class CompileTxScriptTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_duplicated_assumptions(self):
+        for test in [
+            Test('5 2 ROLL DUP ADD', ['assume a, b;', '5;', 'a + a;']),
+            Test('5 SWAP DUP ADD', ['assume a, b;', '5;', 'b + b;']),
+        ]:
+            self._test(test)
+
     def test_augmented_assignment(self):
         for test in [
             Test('2 5 ADD', ['let mutable a = 2;', 'a += 5;', 'a;']),
