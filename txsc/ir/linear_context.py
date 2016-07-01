@@ -48,7 +48,6 @@ class LinearContextualizer(BaseLinearVisitor):
         self.branches = []
         # Current level of conditional nesting.
         self.current_nest_level = 0
-        self.stack = StackState()
 
     def log_and_raise(self, err_class, msg):
         """Log an error and raise an exception."""
@@ -178,7 +177,6 @@ class LinearContextualizer(BaseLinearVisitor):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
         self.branches = []
-        self.stack.clear(clear_assumptions=False)
         self.instructions = instructions
 
         for i, instruction in enumerate(iter(instructions)):
@@ -305,6 +303,7 @@ class LinearInliner(BaseLinearVisitor):
     def __init__(self, symbol_table, options=LIROptions()):
         super(LinearInliner, self).__init__(symbol_table, options)
         self.contextualizer = LinearContextualizer(symbol_table, options)
+        self.stack = StackState()
 
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
@@ -322,10 +321,11 @@ class LinearInliner(BaseLinearVisitor):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
+        self.stack.clear(clear_assumptions=True)
 
         stack_names = self.symbol_table.lookup('_stack_names')
         if stack_names:
-            self.contextualizer.stack.add_stack_assumptions([types.Assumption(var_name) for var_name in stack_names.value])
+            self.stack.add_stack_assumptions([types.Assumption(var_name) for var_name in stack_names.value])
 
         # Find operations that use the same assumed stack item more than once.
         self.contextualizer.contextualize(instructions)
@@ -333,6 +333,7 @@ class LinearInliner(BaseLinearVisitor):
 
         # Loop until no inlining can be done.
         while 1:
+            self.stack.clear(clear_assumptions=False)
             peephole_optimizer.optimize(instructions)
             self.contextualizer.contextualize(instructions)
             inlined = False
@@ -354,7 +355,7 @@ class LinearInliner(BaseLinearVisitor):
         """Handle a row of consecutive assumptions."""
         # If the first assumption's delta is 0 and the depths are sequential,
         # then nothing needs to be done.
-        if self.contextualizer.total_delta(assumptions[0].idx) - self.contextualizer.stack.assumptions_offset == 0:
+        if self.contextualizer.total_delta(assumptions[0].idx) - self.stack.assumptions_offset == 0:
             symbols = map(self.symbol_table.lookup, [i.var_name for i in assumptions])
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
             iterator = (i.value.depth for i in reversed(symbols))
@@ -370,8 +371,8 @@ class LinearInliner(BaseLinearVisitor):
 
         arg = max(0, total_delta - symbol.value.height - 1)
 
-        self.contextualizer.stack.process_instructions(self.instructions[:op.idx])
-        highest, highest_stack_idx = self.contextualizer.stack.get_highest_assumption(op)
+        self.stack.process_instructions(self.instructions[:op.idx])
+        highest, highest_stack_idx = self.stack.get_highest_assumption(op)
         if highest is not None:
             arg = total_delta - highest_stack_idx - 1
 
