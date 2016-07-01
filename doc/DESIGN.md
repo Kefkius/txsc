@@ -82,6 +82,8 @@ other opcodes. Arithmetic shortcut opcodes such as `2MUL` and `2DIV` are some ex
 Stack manipulation opcodes can also often be optimized. Particularly, the opcodes `PICK` and `ROLL`
 (which copy or move a given stack item to the top, respectively) can sometimes be replaced with shortcut opcodes.
 
+Specific peephole optimizations can be displayed using [this script](../tools/show-peephole-optimizers.py).
+
 #### Examples
 
 - `5 1 ADD` will be optimized into `5 1ADD`.

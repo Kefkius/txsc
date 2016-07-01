@@ -86,17 +86,22 @@ def replace_shortcut_ops(instructions):
     """Replace opcodes with a corresponding shortcut form."""
     optimizations = []
     # Replace division by 2.
+    # OP_2 OP_DIV -> OP_2DIV
     optimizations.append(([types.Two(), types.Div()], lambda values: [types.Div2()]))
     # Replace subtraction by 1.
+    # OP_1 OP_SUB -> OP_1SUB
     optimizations.append(([types.One(), types.Sub()], lambda values: [types.Sub1()]))
     # Replace 1 * -1 with -1.
+    # OP_1 OP_NEGATE -> OP_1NEGATE
     optimizations.append(([types.One(), types.Negate()], lambda values: [types.NegativeOne()]))
     # Replace addition by 1.
+    # OP_1 OP_ADD -> OP_1ADD
     for permutation in permutations([types.Push(), types.One()]) + permutations([types.SmallIntOpCode(), types.One()]):
         idx = 0 if not isinstance(permutation[0], types.One) else 1
         optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx], types.Add1()]))
     optimizations.append(([types.Assumption(), types.One(), types.Add()], lambda values: [values[0], types.Add1()]))
     # Replace multiplication by 2.
+    # OP_2 OP_MUL -> OP_2MUL
     for permutation in permutations([types.Push(), types.Two()]) + permutations([types.SmallIntOpCode(), types.Two()]):
         idx = 0 if not isinstance(permutation[0], types.Two) else 1
         optimizations.append((permutation + [types.Mul()], lambda values, idx=idx: [values[idx], types.Mul2()]))
@@ -110,8 +115,10 @@ def replace_shortcut_ops(instructions):
 def replace_null_ops(instructions):
     """Replace operations that do nothing."""
     # Remove subtraction by 0.
+    # OP_0 OP_SUB -> _
     optimizations = [([types.Zero(), types.Sub()], lambda values: [])]
     # Remove addition by 0.
+    # OP_0 OP_ADD -> _
     for permutation in permutations([None, types.Zero()]):
         idx = 0 if permutation[0] is None else 1
         optimizations.append((permutation + [types.Add()], lambda values, idx=idx: [values[idx]]))
