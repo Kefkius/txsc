@@ -68,6 +68,13 @@ class CompileTxScriptTest(BaseCompilerTest):
                'checkSig(sig, pubkey);']
         self._test(Test('DUP HASH160 0x14 0x1111111111111111111111111111111111111111 EQUALVERIFY CHECKSIG', src))
 
+    def test_stack_state_scope(self):
+        for test in [
+            Test('SWAP DUP ADD', ['assume a, b;', 'a + a;']),
+            Test('OVER DUP ADD 2 ROLL 2 ROLL ADD', ['assume a, b;', 'a + a;', 'a + b;']),
+        ]:
+            self._test(test)
+
 class CompileTxScriptFunctionTest(BaseCompilerTest):
     def _test(self, test):
         return super(CompileTxScriptFunctionTest, self)._test(test.expected, test.src)
@@ -110,12 +117,6 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
         for test in [
             Test('2 ROLL IF IF 5 ENDIF ENDIF', ['assume a, b, c;', 'if a { if c {5;} }'],),
             Test('2 ROLL IF IF 5 ELSE 6 ENDIF ENDIF', ['assume a, b, c;', 'if a { if c {5;} else {6;} }'],),
-        ]:
-            self._test(test)
-
-    def test_stack_state_scope(self):
-        for test in [
-            Test('SWAP DUP ADD', ['assume a, b;', 'a + a;']),
         ]:
             self._test(test)
 

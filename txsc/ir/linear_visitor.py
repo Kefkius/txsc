@@ -213,6 +213,8 @@ class StackState(object):
                 op = types.Push(data=op)
 
             op = StackItem(op)
+        elif isinstance(op, str):
+            op = StackItem(types.Push(data=op))
 
         self.state.append(op)
 
@@ -262,11 +264,11 @@ class StackState(object):
         self.state_append(op.value)
 
     def generic_visit_OpCode(self, op):
-        delta = op.delta
-        if delta > 0:
-            map(lambda i: self.state_append('_delta_%s_%d' % (str(op), i)), range(delta))
-        elif delta < 0:
-            map(lambda i: self.state_pop(-1), range(abs(delta)))
+        # Pop mutated values.
+        map(lambda i: self.state_pop(-1), range(len(op.args)))
+        # Add stack markers for mutated values.
+        for i in range(abs(abs(op.delta) - len(op.args))):
+            self.state_append('_result_of_%s' % op.name)
 
     def visit_Push(self, op):
         self.state_append(StackItem(op))

@@ -388,7 +388,10 @@ class LinearInliner(BaseLinearVisitor):
         if following:
             # Don't change the opcode if the only following occurrence is a duplicated assumption.
             nextop = self.contextualizer.nextop(op)
-            if nextop.idx not in following or (len(following) == 1 and not self.contextualizer.is_duplicated_assumption(nextop)):
+            # If more than one occurrence follows, use OP_PICK.
+            if len(following) > 1:
+                opcode = types.Pick
+            elif nextop.idx not in following or not self.contextualizer.is_duplicated_assumption(nextop):
                 opcode = types.Pick
         if self.contextualizer.is_duplicated_assumption(op):
             opcode = types.Pick
