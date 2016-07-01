@@ -62,6 +62,34 @@ class StackItem(object):
     def is_assumption(self):
         return type(self.op) is types.Assumption
 
+class StateScope(object):
+    def __init__(self, assumptions_offset=0, state=None):
+        self.assumptions_offset = assumptions_offset
+        self.state = state if state is not None else []
+
+    @classmethod
+    def copy(cls, other):
+        return cls(assumptions_offset=other.assumptions_offset,
+                   state=copy.deepcopy(other.state))
+
+    def __len__(self):
+        return len(self.state)
+
+    def __getitem__(self, key):
+        return self.state[key]
+
+    def __setitem__(self, key, value):
+        self.state[key] = value
+
+    def append(self, item):
+        return self.state.append(item)
+
+    def pop(self, index):
+        return self.state.pop(index)
+
+    def index(self, item):
+        return self.state.index(item)
+
 class StackState(object):
     """Model of a stack's state.
 
@@ -71,22 +99,72 @@ class StackState(object):
     Primarily, the delta values of instructions are used to determine
     their effects, but there are specific methods for stack manipulation opcodes.
     """
-    def __init__(self):
+    def __init__(self, symbol_table):
+        self.symbol_table = symbol_table
         self.assumptions = []
-        self.assumptions_offset = 0
-        self.state = []
+        self._current_scope = StateScope()
+        self.scopes = [self.state]
         self.clear()
+
+    def begin_scope(self):
+        """Begin a new scope.
+
+        Also start a new scope in the symbol table so that assumption
+        values can be altered.
+        """
+        stack_names = self.symbol_table.lookup('_stack_names')
+        self.symbol_table.begin_scope()
+        if stack_names:
+            self.symbol_table.add_stack_assumptions(stack_names.value)
+
+        self.scopes.append(StateScope.copy(self.state))
+        self.state = self.scopes[-1]
+
+    def end_scope(self):
+        """End the current scope in the stack state and the symbol table."""
+        self.symbol_table.end_scope()
+        self.scopes.pop()
+        if not self.scopes:
+            raise Exception('Popped the topmost scope')
+        self.state = self.scopes[-1]
+
+    @property
+    def assumptions_offset(self):
+        return self.state.assumptions_offset
+
+    @assumptions_offset.setter
+    def assumptions_offset(self, value):
+        self.state.assumptions_offset = value
+
+    @property
+    def state(self):
+        return self._current_scope
+
+    @state.setter
+    def state(self, value):
+        self._current_scope = value
 
     @classmethod
     def copy(cls, other):
         """Instantiate from another instance of StackState."""
-        assumptions = copy.deepcopy(other.assumptions)
-        state = copy.deepcopy(other.state)
-        self = StackState()
-        self.assumptions = assumptions
-        self.assumptions_offset = other.assumptions_offset
-        self.state = state
+        self = StackState(other.symbol_table)
+        self.assumptions = copy.deepcopy(other.assumptions)
+        self.state = copy.deepcopy(other.state)
+        self.scopes = copy.deepcopy(other.scopes)
         return self
+
+    def change_depth(self, stack_offset, amount):
+        """Change the value of the assumption at stack_offset.
+
+        This does nothing if the stack item at stack_offset is
+        not an assumption.
+        """
+        item = self.state[stack_offset]
+        if not isinstance(item, StackItem) or not isinstance(item.op, types.Assumption):
+            return
+        symbol = self.symbol_table.lookup(item.op.var_name)
+        symbol.value.depth += amount
+        symbol.value.height -= amount
 
     def state_after_assumptions(self):
         return self.state[self.assumptions_offset:]
@@ -116,10 +194,12 @@ class StackState(object):
         return highest, stack_index
 
     def clear(self, clear_assumptions=True):
-        self.state = []
+        self.state = StateScope()
+        self.scopes = [self.state]
         if clear_assumptions:
             self.assumptions = []
-        self.state[:len(self.assumptions)] = list(self.assumptions)
+        self.assumptions_offset = len(self.assumptions)
+        self.state[:self.assumptions_offset] = copy.deepcopy(self.assumptions)
 
     def state_append(self, op):
         """Append op to the stack state."""
@@ -149,16 +229,16 @@ class StackState(object):
     def add_stack_assumptions(self, assumptions):
         """Add assumed stack items to the stack."""
         assumptions = map(StackItem, assumptions)
-        self.assumptions = copy.deepcopy(assumptions)
+        self.assumptions = assumptions
         self.assumptions_offset = len(self.assumptions)
-        self.state[:self.assumptions_offset] = assumptions
+        self.state[:self.assumptions_offset] = copy.deepcopy(assumptions)
 
     def index(self, op):
         return self.state.index(op)
 
     def process_instruction(self, op):
         """Process op and update the stack."""
-        if not isinstance(op, types.OpCode):
+        if not isinstance(op, (types.OpCode, types.InnerScript, types.Push)):
             return
         self.visit(op)
 
@@ -189,10 +269,10 @@ class StackState(object):
             map(lambda i: self.state_pop(-1), range(abs(delta)))
 
     def visit_Push(self, op):
-        self.state_append(op)
+        self.state_append(StackItem(op))
 
     def visit_InnerScript(self, op):
-        self.state_append(op)
+        self.state_append(StackItem(op))
 
 
     def visit_Depth(self, op):
@@ -228,11 +308,17 @@ class StackState(object):
         self.state[-2] = self.state[-1]
         self.state[-1] = val
 
+        self.change_depth(-1, -2)
+        self.change_depth(-2, 1)
+        self.change_depth(-3, 1)
 
     def visit_Swap(self, op):
         val = self.state[-2]
         self.state[-2] = self.state[-1]
         self.state[-1] = val
+
+        self.change_depth(-1, -1)
+        self.change_depth(-2, 1)
 
     def visit_Tuck(self, op):
         val = self.state[-1]
@@ -270,6 +356,13 @@ class StackState(object):
         self.state_append(val1)
         self.state_append(val2)
 
+        self.change_depth(-1, -4)
+        self.change_depth(-2, -4)
+        self.change_depth(-3, 2)
+        self.change_depth(-4, 2)
+        self.change_depth(-5, 2)
+        self.change_depth(-6, 2)
+
     def visit_TwoSwap(self, op):
         val = self.state[-4]
         self.state[-4] = self.state[-2]
@@ -278,3 +371,21 @@ class StackState(object):
         val = self.state[-3]
         self.state[-3] = self.state[-1]
         self.state[-1] = val
+
+        self.change_depth(-1, -2)
+        self.change_depth(-2, -2)
+        self.change_depth(-3, 2)
+        self.change_depth(-4, 2)
+
+    def visit_If(self, op):
+        self.begin_scope()
+
+    def visit_NotIf(self, op):
+        self.begin_scope()
+
+    def visit_Else(self, op):
+        self.end_scope()
+        self.begin_scope()
+
+    def visit_EndIf(self, op):
+        self.end_scope()

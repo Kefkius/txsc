@@ -303,7 +303,7 @@ class LinearInliner(BaseLinearVisitor):
     def __init__(self, symbol_table, options=LIROptions()):
         super(LinearInliner, self).__init__(symbol_table, options)
         self.contextualizer = LinearContextualizer(symbol_table, options)
-        self.stack = StackState()
+        self.stack = StackState(symbol_table)
 
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
@@ -371,7 +371,6 @@ class LinearInliner(BaseLinearVisitor):
 
         arg = max(0, total_delta - symbol.value.height - 1)
 
-        self.stack.process_instructions(self.instructions[:op.idx])
         highest, highest_stack_idx = self.stack.get_highest_assumption(op)
         if highest is not None:
             arg = total_delta - highest_stack_idx - 1
@@ -402,6 +401,7 @@ class LinearInliner(BaseLinearVisitor):
         return method(instruction)
 
     def visit_Assumption(self, op):
+        self.stack.process_instructions(self.instructions[:op.idx])
         # Detect whether there are multiple assumptions in a row.
         assumptions = [op]
         symbols = [self.symbol_table.lookup(op.var_name)]

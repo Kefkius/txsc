@@ -113,6 +113,12 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_stack_state_scope(self):
+        for test in [
+            Test('SWAP DUP ADD', ['assume a, b;', 'a + a;']),
+        ]:
+            self._test(test)
+
     def test_error(self):
         """An exception should be thrown if an assumption is used after an uneven conditional.
 
