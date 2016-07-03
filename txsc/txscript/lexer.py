@@ -151,7 +151,7 @@ class ScriptLexer(object):
         try:
             t.value = int(t.value, 16 if is_hex else 10)
         except ValueError:
-            print("Line %d: Number %s is too large!" % (t.lineno, t.value))
+            raise Exception("Line %d: Number %s is too large!" % (t.lineno, t.value))
         return t
 
     @TOKEN(r'\'' + implicit_hex + r'\'')
@@ -167,7 +167,7 @@ class ScriptLexer(object):
         t.lexer.lineno += len(t.value)
 
     def t_error(self, t):
-        print("Illegal character '%s'" % t.value[0])
+        raise Exception("Illegal character '%s'" % t.value[0])
 
     precedence = (
         ('left', 'EQUALITY', 'INEQUALITY',),
