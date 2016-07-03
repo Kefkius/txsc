@@ -304,3 +304,7 @@ class ScriptParser(object):
             p[0] = ast.Call(func=ast.Name(id='_push', ctx=ast.Load()),
                     args=[p[2]],
                     keywords=[])
+
+    def p_comment(self, p):
+        '''statement : COMMENT'''
+        p[0] = ast.Pass()

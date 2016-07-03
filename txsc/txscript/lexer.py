@@ -7,6 +7,7 @@ explicit_hex = r'(0x)' + implicit_hex
 
 class ScriptLexer(object):
     tokens = (
+            'COMMENT',
             'NAME', 'NUMBER', 'HEXSTR', 'TYPENAME',
             'EQUALS',
             'LBRACE', 'RBRACE',
@@ -80,6 +81,7 @@ class ScriptLexer(object):
 
 
     t_ignore = ' \t'
+    t_COMMENT = r'\#.*'
 
     t_PLUS = r'\+'
     t_MINUS = r'\-'
@@ -157,10 +159,6 @@ class ScriptLexer(object):
     @TOKEN(r'\'' + implicit_hex + r'\'')
     def t_HEXSTR(self, t):
         return t
-
-    def t_COMMENT(self, t):
-        r'\#.*'
-        pass
 
     def t_newline(self, t):
         r'\n+'
