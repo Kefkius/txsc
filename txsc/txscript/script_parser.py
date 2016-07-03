@@ -5,14 +5,14 @@ from ply import lex, yacc
 import lexer
 
 class ScriptParser(object):
-    tokens = lexer.tokens
-    precedence = lexer.precedence
+    tokens = lexer.ScriptLexer.tokens
+    precedence = lexer.ScriptLexer.precedence
 
     def __init__(self, **kwargs):
         self.debug = False
         for k, v in kwargs.items():
             setattr(self, k, v)
-        self.lexer = lex.lex(module=lexer)
+        self.lexer = lex.lex(module=lexer.ScriptLexer())
         self.parser = yacc.yacc(module=self, debug=self.debug)
 
     def parse(self, s):
