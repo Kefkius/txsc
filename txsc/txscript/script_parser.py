@@ -290,9 +290,13 @@ class ScriptParser(object):
         '''expr : LPAREN expr RPAREN'''
         p[0] = p[2]
 
-    def p_expr_number(self, p):
-        '''expr : NUMBER'''
-        p[0] = ast.Num(n=p[1])
+    def p_expr_decimal_number(self, p):
+        '''expr : DECIMALNUMBER'''
+        p[0] = ast.Num(int(p[1]))
+
+    def p_expr_hex_number(self, p):
+        '''expr : HEXNUMBER'''
+        p[0] = ast.Num(int(p[1], 16))
 
     def p_statement_expr(self, p):
         '''statement : expr SEMICOLON

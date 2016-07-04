@@ -8,7 +8,8 @@ explicit_hex = r'(0x)' + implicit_hex
 class ScriptLexer(object):
     tokens = (
             'COMMENT',
-            'NAME', 'NUMBER', 'HEXSTR', 'TYPENAME',
+            'NAME', 'HEXSTR', 'TYPENAME',
+            'DECIMALNUMBER', 'HEXNUMBER',
             'EQUALS',
             'LBRACE', 'RBRACE',
             'LPAREN', 'RPAREN',
@@ -138,6 +139,9 @@ class ScriptLexer(object):
 
     t_LET = r'let'
 
+    t_DECIMALNUMBER = r'\d+'
+    t_HEXNUMBER = explicit_hex
+
     @TOKEN(r'(' + r')|('.join(type_names) + r')')
     def t_TYPENAME(self, t):
         return t
@@ -145,15 +149,6 @@ class ScriptLexer(object):
     def t_NAME(self, t):
         r'[a-zA-Z][a-zA-Z0-9_]*'
         t.type = self.reserved_words.get(t.value, 'NAME')
-        return t
-
-    @TOKEN(r'(' + explicit_hex + r')|(\d+)')
-    def t_NUMBER(self, t):
-        is_hex = t.value.startswith('0x')
-        try:
-            t.value = int(t.value, 16 if is_hex else 10)
-        except ValueError:
-            raise Exception("Line %d: Number %s is too large!" % (t.lineno, t.value))
         return t
 
     @TOKEN(r'\'' + implicit_hex + r'\'')
