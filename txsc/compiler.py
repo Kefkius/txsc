@@ -20,7 +20,7 @@ if is_local:
         path = path[:-1]
     sys.path.insert(0, path)
 
-from txsc.script_compiler import DirectiveError, ScriptCompiler, OptimizationLevel, Verbosity
+from txsc.script_compiler import CompilationFailedError, DirectiveError, ScriptCompiler, OptimizationLevel, Verbosity
 from txsc import config
 
 # Will not reload the entry points if they've already been loaded.
@@ -153,6 +153,10 @@ def main():
     compiler.setup_options(args)
     try:
         compiler.compile(src)
+    except CompilationFailedError as e:
+        print(e.message)
+        print(e.exception_message)
+        sys.exit(1)
     except DirectiveError as e:
         print(str(e))
         sys.exit(1)

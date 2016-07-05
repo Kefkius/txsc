@@ -31,6 +31,12 @@ class DirectiveError(Exception):
     def __init__(self, msg):
         super(DirectiveError, self).__init__('Directive error: %s' % msg)
 
+class CompilationFailedError(Exception):
+    """Exception raised when compilation fails."""
+    def __init__(self, message, exception_message):
+        super(CompilationFailedError, self).__init__(message)
+        self.exception_message = exception_message
+
 class OptimizationLevel(object):
     """Level of optimization."""
     max_optimization = 2
@@ -243,9 +249,7 @@ class ScriptCompiler(object):
         except ParsingError as e:
             if self.testing_mode:
                 raise e
-            print('%s encountered during compilation of source:' % e.__class__.__name__)
-            print(e)
-            sys.exit(1)
+            raise CompilationFailedError('%s encountered during compilation of source:' % e.__class__.__name__, str(e))
 
         self.process_ir(instructions)
 
@@ -271,9 +275,7 @@ class ScriptCompiler(object):
                 msg += self.source_lines[lineno - 1]
                 if e.args[0]:
                     msg += '\n' + e.args[0]
-                print('%s encountered in intermediate representation:' % e.__class__.__name__)
-                print(msg)
-                sys.exit(1)
+                raise CompilationFailedError('%s encountered in intermediate representation:' % e.__class__.__name__, msg)
 
         if self.verbosity.show_linear_ir:
             self.outputs['Linear Intermediate Representation'] = str(instructions)
@@ -286,9 +288,7 @@ class ScriptCompiler(object):
         except IRError as e:
             if self.testing_mode:
                 raise e
-            print('%s encountered in intermediate representation:' % e.__class__.__name__)
-            print(e)
-            sys.exit(1)
+            raise CompilationFailedError('%s encountered in intermediate representation:' % e.__class__.__name__, str(e))
         if self.verbosity.show_linear_ir:
             self.outputs['Optimized Linear Representation'] = str(instructions)
 
