@@ -22,6 +22,9 @@ class TxScriptSourceVisitor(SourceVisitor):
         if isinstance(source, list):
             source = ''.join(source)
 
+        # Sanity check: Ensure that at least one statement exists.
+        if ';' not in source:
+            raise ParsingError('Source contains no statements.')
         node = self.parser.parse(source)
         if not isinstance(node, ast.Module):
             node = ast.Module(body=node)
