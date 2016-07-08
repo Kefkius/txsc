@@ -404,6 +404,7 @@ class LinearInliner(BaseLinearVisitor):
         return method(instruction)
 
     def visit_Assumption(self, op):
+        self.stack.clear(clear_assumptions=False)
         self.stack.process_instructions(self.instructions[:op.idx])
         # Detect whether there are multiple assumptions in a row.
         assumptions = [op]
@@ -427,3 +428,28 @@ class LinearInliner(BaseLinearVisitor):
         # If there are no consecutive assumptions, use opcodes to bring this assumption to the top.
         return self.bring_assumption_to_top(op)
 
+    def visit_Variable(self, op):
+        self.stack.clear(clear_assumptions=False)
+        self.stack.process_instructions(self.instructions[:op.idx])
+        symbol = self.symbol_table.lookup(op.symbol_name)
+        return symbol.value
+
+    def visit_InnerScript(self, op):
+        result = self.map_visit(op.ops)
+
+        changed = False
+        new_ops = []
+        for i, node in enumerate(result):
+            if node is None:
+                new_ops.append(op.ops[i])
+                continue
+            changed = True
+            new = node
+            if isinstance(node, list):
+                new = node[0]
+            new_ops.append(new)
+
+        if not changed:
+            return None
+        op.ops = new_ops
+        return op

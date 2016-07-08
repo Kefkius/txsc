@@ -243,6 +243,11 @@ class StructuralVisitor(BaseStructuralVisitor):
     @returnlist
     def visit_Declaration(self, node):
         self.add_Declaration(node)
+        # Names that start with an underscore are used internally.
+        if not node.name.startswith('_'):
+            symbol_value = self.symbol_table.lookup(node.name).value
+            ops = self.visit(symbol_value)
+            return types.Assignment(node.name, ops)
 
     @returnlist
     def visit_Assignment(self, node):
@@ -258,7 +263,11 @@ class StructuralVisitor(BaseStructuralVisitor):
                     self.warning(msg, assignment.lineno)
 
         self.add_Assignment(assignment)
-        return None
+        # Names that start with an underscore are used internally.
+        if not node.name.startswith('_'):
+            symbol_value = self.symbol_table.lookup(node.name).value
+            ops = self.visit(symbol_value)
+            return types.Assignment(node.name, ops)
 
     @returnlist
     def visit_Symbol(self, node):
@@ -277,13 +286,8 @@ class StructuralVisitor(BaseStructuralVisitor):
             if self.after_uneven_conditional:
                 raise IRError("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
             return types.Assumption(symbol.name)
-        # Push the bytes of the byte array.
-        elif type_ in [SymbolType.ByteArray, SymbolType.Integer]:
-            return self.visit(value)
-        # If the type is an expression, then StructuralOptimizer could not simplify it.
-        # Evaluate the expression as if it were encountered in the structural IR.
-        elif type_ == SymbolType.Expr:
-            return self.visit(value)
+        else:
+            return types.Variable(node.name)
 
     @returnlist
     def visit_If(self, node):

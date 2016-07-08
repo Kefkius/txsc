@@ -47,10 +47,18 @@ class BtcScriptTargetVisitor(TargetVisitor):
 
     def process_instruction(self, instruction):
         result = self.visit(instruction)
+        if result is None:
+            return
         self.hex_strs.append(result)
 
     def output(self):
         return ''.join(self.hex_strs)
+
+    def visit_Assignment(self, node):
+        return None
+
+    def visit_Variable(self, node):
+        return None
 
     def visit_InnerScript(self, node):
         s = []

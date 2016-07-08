@@ -66,6 +66,8 @@ class ASMTargetVisitor(BtcScriptTargetVisitor):
 
     def process_instruction(self, instruction):
         result = self.visit(instruction)
+        if result is None:
+            return
         if isinstance(result, list):
             self.values.extend(result)
         else:
@@ -73,6 +75,12 @@ class ASMTargetVisitor(BtcScriptTargetVisitor):
 
     def output(self):
         return ' '.join(self.values)
+
+    def visit_Assignment(self, node):
+        return None
+
+    def visit_Variable(self, node):
+        return None
 
     def visit_InnerScript(self, node):
         """Use BtcScriptTargetVisitor to transform node."""

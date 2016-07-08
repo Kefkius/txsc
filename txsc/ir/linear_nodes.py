@@ -32,6 +32,26 @@ class Node(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+class Variable(Node):
+    """A variable."""
+    name = 'variable'
+    symbol_name = ''
+    comparators = Node.comparators + ('symbol_name',)
+    def __init__(self, symbol_name='', **kwargs):
+        super(Variable, self).__init__(**kwargs)
+        self.symbol_name = symbol_name
+
+class Assignment(Node):
+    """An assignment to a variable."""
+    name = 'assign'
+    symbol_name = ''
+    value = None
+    comparators = Node.comparators + ('symbol_name', 'value',)
+    def __init__(self, symbol_name='', value=None, **kwargs):
+        super(Assignment, self).__init__(**kwargs)
+        self.symbol_name = symbol_name
+        self.value = value
+
 class InnerScript(Node):
     """A script contained inside a script."""
     name = 'innerscript'

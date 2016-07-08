@@ -240,7 +240,7 @@ class StackState(object):
 
     def process_instruction(self, op):
         """Process op and update the stack."""
-        if not isinstance(op, (types.OpCode, types.InnerScript, types.Push)):
+        if not isinstance(op, (types.Assignment, types.OpCode, types.InnerScript, types.Push)):
             return
         self.visit(op)
 
@@ -391,3 +391,7 @@ class StackState(object):
 
     def visit_EndIf(self, op):
         self.end_scope()
+
+    def visit_Assignment(self, op):
+        symbol = self.symbol_table.lookup(op.symbol_name)
+        symbol.value = op.value
