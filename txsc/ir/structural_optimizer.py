@@ -143,6 +143,8 @@ class StructuralOptimizer(BaseStructuralVisitor):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise IRError('Symbol "%s" was not declared.' % node.name)
+        if symbol.mutable:
+            return node
         value = symbol.value
 
         # Constant value.
