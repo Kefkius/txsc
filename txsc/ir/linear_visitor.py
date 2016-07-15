@@ -1,5 +1,6 @@
 import copy
 
+from txsc.symbols import ScopeType
 from txsc.ir import formats
 from txsc.transformer import BaseTransformer
 import txsc.ir.linear_nodes as types
@@ -106,14 +107,14 @@ class StackState(object):
         self.scopes = [self.state]
         self.clear()
 
-    def begin_scope(self):
+    def begin_scope(self, scope_type=ScopeType.General):
         """Begin a new scope.
 
         Also start a new scope in the symbol table so that assumption
         values can be altered.
         """
         stack_names = self.symbol_table.lookup('_stack_names')
-        self.symbol_table.begin_scope()
+        self.symbol_table.begin_scope(scope_type)
         if stack_names:
             self.symbol_table.add_stack_assumptions(stack_names.value)
 
@@ -380,14 +381,14 @@ class StackState(object):
         self.change_depth(-4, 2)
 
     def visit_If(self, op):
-        self.begin_scope()
+        self.begin_scope(ScopeType.Conditional)
 
     def visit_NotIf(self, op):
-        self.begin_scope()
+        self.begin_scope(ScopeType.Conditional)
 
     def visit_Else(self, op):
         self.end_scope()
-        self.begin_scope()
+        self.begin_scope(ScopeType.Conditional)
 
     def visit_EndIf(self, op):
         self.end_scope()

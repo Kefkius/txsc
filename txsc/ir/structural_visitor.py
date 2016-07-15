@@ -1,7 +1,7 @@
 from functools import wraps
 import logging
 
-from txsc.symbols import SymbolType, ImmutableError, MultipleDeclarationsError, UndeclaredError
+from txsc.symbols import ScopeType, SymbolType, ImmutableError, MultipleDeclarationsError, UndeclaredError
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, structural_nodes, IRError, IRImplicitPushError, IRStrictNumError, IRTypeError
 from txsc.ir.instructions import LInstructions, SInstructions
@@ -187,7 +187,7 @@ class BaseStructuralVisitor(BaseTransformer):
         if len(func.args) != len(node.args):
             raise IRError('Function "%s" requires %d argument(s) (got %d)' % (func.name, len(func.args), len(node.args)))
 
-        self.symbol_table.begin_scope()
+        self.symbol_table.begin_scope(scope_type=ScopeType.Function)
         # Bind arguments to formal parameters.
         for param, arg in zip(func.args, node.args):
             # TODO use a specific symbol type instead of expression.

@@ -45,10 +45,17 @@ class Symbol(object):
         mutable = 'mutable' if self.mutable else 'immutable'
         return '%s %s %s = %s' % (mutable, self.type_, self.name, self.value)
 
+class ScopeType(object):
+    """Scope types."""
+    Conditional = 'conditional'
+    Function = 'function'
+    General = 'general'
+
 class Scope(object):
     """A scope of symbols."""
-    def __init__(self, parent):
+    def __init__(self, parent, scope_type=ScopeType.General):
         self.parent = parent
+        self.scope_type = scope_type
         self.symbols = {}
 
     def __str__(self):
@@ -120,8 +127,8 @@ class SymbolTable(object):
                 yield value
             symbols = symbols.parent
 
-    def begin_scope(self):
-        self.scopes.append(Scope(self.symbols))
+    def begin_scope(self, scope_type=ScopeType.General):
+        self.scopes.append(Scope(self.symbols, scope_type=scope_type))
         self.symbols = self.scopes[-1]
 
     def end_scope(self):
@@ -129,22 +136,40 @@ class SymbolTable(object):
             raise Exception('Already at global scope.')
         self.symbols = self.symbols.parent
 
-    def insert(self, symbol, declaration=False):
-        # Check for multiple declarations in the current scope.
+    def _check_function(self, symbol):
+        """Validate a function before it is inserted."""
+        # Functions cannot be mutable.
+        if symbol.mutable:
+            raise Exception('Functions cannot be mutable.')
+        # Functions can only be defined in the global scope.
+        if not self.is_global_scope():
+            raise Exception('Functions can only be defined in the global scope.')
+
+    def check_symbol(self, symbol, declaration):
+        """Validate symbol before it is inserted.
+
+        An exception is raised if it is invalid.
+        """
+        # Make sure this symbol was declared.
+        if not declaration and not self.lookup(symbol.name):
+            raise UndeclaredError('Symbol "%s" was not declared.' % symbol.name)
+
+        if symbol.type_ == SymbolType.Func:
+            self._check_function(symbol)
+
         if self.symbols.get(symbol.name):
+            # Check for multiple declarations in the current scope.
             if declaration:
                 raise MultipleDeclarationsError('Symbol "%s" was already declared.' % symbol.name)
-
-            # Check for assignment to immutables in the current scope.
             other = self.symbols[symbol.name]
+            # Check for assignment to an immutable in the current scope.
             if not other.mutable:
                 raise ImmutableError('Cannot assign value to immutable symbol "%s".' % other.name)
             else:
                 symbol.mutable = True
-        # Make sure a declaration exists for this symbol.
-        elif not declaration:
-            if not self.lookup(symbol.name):
-                raise UndeclaredError('Symbol "%s" was not declared.' % symbol.name)
+
+    def insert(self, symbol, declaration=False):
+        self.check_symbol(symbol, declaration)
         self.symbols[symbol.name] = symbol
 
     def insert_global(self, symbol):
@@ -209,6 +234,4 @@ class SymbolTable(object):
 
     def add_function_def(self, func_def):
         """Add a function definition."""
-        if not self.is_global_scope():
-            raise Exception('Functions can only be defined in the global scope')
         self.insert(Symbol(name=func_def.name, value=func_def, type_=SymbolType.Func, mutable=False), declaration=True)

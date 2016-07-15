@@ -1,6 +1,6 @@
 import unittest
 
-from txsc.symbols import SymbolTable, SymbolType, Symbol
+from txsc.symbols import SymbolTable, SymbolType, Symbol, MultipleDeclarationsError, ImmutableError
 
 class SymbolTest(unittest.TestCase):
     def test_equality(self):
@@ -71,3 +71,27 @@ class ScopesTest(BaseSymbolsTest):
     def test_delete_global_symbol(self):
         self.symbol_table.delete_global('scope_0_symbol')
         self.assertIsNone(self.symbol_table.lookup_global('scope_0_symbol'))
+
+class ValidationTest(BaseSymbolsTest):
+    def setUp(self):
+        super(ValidationTest, self).setUp()
+        self.function_symbol = Symbol(name='function', value=0, type_=SymbolType.Func, mutable=False)
+        self.mutable_function_symbol = Symbol(name='function', value=0, type_=SymbolType.Func, mutable=True)
+
+        self.int_symbol = Symbol(name='integer', value=0, type_=SymbolType.Integer, mutable=False)
+        self.mutable_int_symbol = Symbol(name='integer', value=0, type_=SymbolType.Integer, mutable=True)
+
+    def test_function_definition_in_local_scope(self):
+        self.symbol_table.begin_scope()
+        self.assertRaises(Exception, self.symbol_table.insert, self.function_symbol)
+
+    def test_mutable_function_definition(self):
+        self.assertRaises(Exception, self.symbol_table.insert, self.mutable_function_symbol)
+
+    def test_multiple_declarations(self):
+        self.symbol_table.insert(self.int_symbol, declaration=True)
+        self.assertRaises(MultipleDeclarationsError, self.symbol_table.insert, self.int_symbol, declaration=True)
+
+    def test_assignment_to_immutable(self):
+        self.symbol_table.insert(self.int_symbol, declaration=True)
+        self.assertRaises(ImmutableError, self.symbol_table.insert, self.mutable_int_symbol)
