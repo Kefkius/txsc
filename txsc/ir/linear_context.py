@@ -4,7 +4,8 @@ import copy
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError
 from txsc.ir.instructions import LInstructions
-from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor, StackState
+from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor
+from txsc.ir.linear_runtime import StackState
 import txsc.ir.linear_nodes as types
 
 class ConditionalBranch(object):
