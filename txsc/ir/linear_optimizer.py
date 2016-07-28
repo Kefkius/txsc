@@ -229,6 +229,17 @@ def replace_not_if(instructions):
     # OP_NOT OP_IF -> OP_NOTIF
     instructions.replace_template([types.Not(), types.If()], lambda values: [types.NotIf()])
 
+@peephole
+def shorten_alt_stack_ops(instructions):
+    for template, replacement in [
+        # OP_TOALTSTACK OP_FROMALTSTACK -> _
+        ([types.ToAltStack(), types.FromAltStack()], []),
+        # OP_FROMALTSTACK OP_TOALTSTACK -> _
+        ([types.FromAltStack(), types.ToAltStack()], []),
+    ]:
+        callback = lambda values, replacement=replacement: replacement
+        instructions.replace_template(template, callback)
+
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
     MAX_PASSES = 5
