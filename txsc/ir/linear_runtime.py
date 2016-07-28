@@ -1,8 +1,161 @@
+from collections import defaultdict
 import copy
 
 from txsc.symbols import ScopeType
 from txsc.ir import formats
 import txsc.ir.linear_nodes as types
+from txsc.ir.linear_visitor import op_for_int
+
+class AltStackItem(object):
+    """Alt stack item.
+
+    Attributes:
+        initial value: Value that the variable was declared with.
+        assignments (int): Number of assignments to the variable.
+        variable_index (int): Index of the variable in the alt stack.
+        assigned_in_conditional (bool): Whether the variable was assigned to within a conditional.
+    """
+    def __init__(self):
+        self.initial_value = None
+        self.assignments = 0
+        self.variable_index = None
+        self.assigned_in_conditional = False
+
+    def is_immutable(self):
+        """Return whether this item can be treated as immutable."""
+        return self.assignments == 1
+
+    def requires_alt_stack(self):
+        """Return whether this item must be manipulated using the alt stack."""
+        return self.assigned_in_conditional and not self.is_immutable()
+
+class AltStackManager(object):
+    """Keeps track of and manipulates variable locations on the alt stack."""
+    def __init__(self):
+        self.alt_stack_items = defaultdict(AltStackItem)
+
+    def analyze(self, instructions):
+        self.alt_stack_items.clear()
+
+        conditional_level = 0
+        for i in instructions:
+            # Track the conditional nesting level.
+            if isinstance(i, types.If):
+                conditional_level += 1
+            elif isinstance(i, types.EndIf):
+                conditional_level -= 1
+
+            if isinstance(i, types.Assignment):
+                item = self.alt_stack_items[i.symbol_name]
+
+                # Record if the assignment is within a conditional.
+                if conditional_level > 0:
+                    item.assigned_in_conditional = True
+
+                item.assignments += 1
+                # Assign the item's index and initial value.
+                if item.variable_index is None:
+                    item.variable_index = len(self.alt_stack_items)
+                    item.initial_value = i.value
+
+        # Get rid of unused variable indices.
+        items = filter(lambda item: item[1].requires_alt_stack(), self.alt_stack_items.items())
+        indices = {k: v.variable_index for k, v in items}
+        # max() will raise an exception if an empty collection is passed.
+        all_indices = range(0, max(indices.values()) + 1) if indices else []
+        unused_indices = sorted(filter(lambda i: i not in indices.values(), all_indices))
+
+        while unused_indices:
+            index = unused_indices.pop(0)
+            # Decrease every index greater than the unused index by 1.
+            for k in indices.keys():
+                if indices[k] > index:
+                    indices[k] -= 1
+        # Assign the new indices (or None) to each alt stack item.
+        for k, v in self.alt_stack_items.items():
+            v.variable_index = indices.get(k, None)
+
+        # Return the ops used to set up the initial alt stack.
+        ops = []
+        for item in sorted(self.alt_stack_items.values(), key = lambda i: i.variable_index):
+            # Omit if the item doesn't require alt stack allocation.
+            if not item.requires_alt_stack():
+                continue
+            symbol_ops = []
+            val = item.initial_value
+            symbol_ops.extend(val)
+            symbol_ops.append(types.ToAltStack())
+
+            ops.extend(symbol_ops)
+
+        return ops
+
+    def get_values_after_item(self, item):
+        """Get the number of alt stack items after item."""
+        indices = filter(lambda i: i.variable_index is not None and i.variable_index > item.variable_index, self.alt_stack_items.values())
+        return len(indices)
+
+    def _repeat_ops(self, classes, count):
+        """Repeat instantiation of classes count times.
+
+        This is used to avoid multiplication of lists.
+        """
+        result = []
+        for i in range(count):
+            ops = [cls() for cls in classes]
+            result.extend(ops)
+        return result
+
+    def get_variable(self, op):
+        """Bring name to the top of the stack.
+
+        Returns:
+            The operations needed to bring op to the top of the stack,
+                or None if the value can be found without the alt stack.
+        """
+        name = op.symbol_name
+        item = self.alt_stack_items[name]
+        if not item.requires_alt_stack():
+            return None
+
+        values_after = self.get_values_after_item(item)
+        ops = []
+        # Pop the other items off the alt stack.
+        ops.extend(self._repeat_ops([types.FromAltStack], values_after))
+        # Pop the actual variable from the alt stack.
+        ops.extend([types.FromAltStack(), types.Dup(), types.ToAltStack()])
+        # Push the variables back onto the alt stack.
+        ops.extend(self._repeat_ops([types.Swap, types.ToAltStack], values_after))
+
+        return ops
+
+    def set_variable(self, op):
+        """Set the top stack item in name's place.
+
+        Returns:
+            The operations needed to set the value of op,
+                or None if no operations are required.
+        """
+        name = op.symbol_name
+        item = self.alt_stack_items[name]
+        if not item.requires_alt_stack():
+            return None
+
+        values_after = self.get_values_after_item(item)
+        ops = op.value
+        # Pop the other items off the alt stack.
+        ops.extend(self._repeat_ops([types.FromAltStack], values_after))
+        # Drop the old value.
+        ops.extend([types.FromAltStack(), types.Drop()])
+        # Bring the value on the main stack to the top.
+        arg = op_for_int(values_after)
+        ops.extend([arg, types.Roll()])
+        # Set the value.
+        ops.append(types.ToAltStack())
+        # Push the variables back onto the alt stack.
+        ops.extend(self._repeat_ops([types.ToAltStack], values_after))
+
+        return ops
 
 class StackItem(object):
     """Model of an item on a stack."""
@@ -29,14 +182,16 @@ class StackItem(object):
         return type(self.op) is types.Assumption
 
 class StateScope(object):
-    def __init__(self, assumptions_offset=0, state=None):
+    def __init__(self, assumptions_offset=0, state=None, altstack=None):
         self.assumptions_offset = assumptions_offset
         self.state = state if state is not None else []
+        self.altstack = altstack if altstack is not None else []
 
     @classmethod
     def copy(cls, other):
         return cls(assumptions_offset=other.assumptions_offset,
-                   state=copy.deepcopy(other.state))
+                   state=copy.deepcopy(other.state),
+                   altstack=copy.deepcopy(other.altstack))
 
     def __len__(self):
         return len(self.state)
@@ -361,3 +516,11 @@ class StackState(object):
     def visit_Assignment(self, op):
         symbol = self.symbol_table.lookup(op.symbol_name)
         symbol.value = op.value
+
+    def visit_ToAltStack(self, op):
+        item = self.state_pop()
+        self.state.altstack.append(item)
+
+    def visit_FromAltStack(self, op):
+        item = self.state.altstack.pop()
+        self.state_append(item)

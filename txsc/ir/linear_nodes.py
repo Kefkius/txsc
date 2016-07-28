@@ -41,6 +41,9 @@ class Variable(Node):
         super(Variable, self).__init__(**kwargs)
         self.symbol_name = symbol_name
 
+    def __str__(self):
+        return 'variable(%s)' % self.symbol_name
+
 class Assignment(Node):
     """An assignment to a variable."""
     name = 'assign'
@@ -51,6 +54,13 @@ class Assignment(Node):
         super(Assignment, self).__init__(**kwargs)
         self.symbol_name = symbol_name
         self.value = value
+
+    def __str__(self):
+        value = map(str, self.value)
+        # If the value is one operation, show it without list notation.
+        if len(value) == 1:
+            value = value[0]
+        return 'assign(%s, %s)' % (self.symbol_name, value)
 
 class InnerScript(Node):
     """A script contained inside a script."""
@@ -201,7 +211,8 @@ Return = _opcode('Return', 0, 'OP_RETURN')
 
 # Stack.
 
-# TODO: OP_TOALTSTACK, OP_FROMALTSTACK
+ToAltStack = _unary_opcode('ToAltStack', -1, 'OP_TOALTSTACK')
+FromAltStack = _opcode('FromAltStack', 1, 'OP_FROMALTSTACK')
 
 # TODO: delta of IfDup can only be guaranteed during execution.
 IfDup = _unary_opcode('IfDup', None, 'OP_IFDUP')

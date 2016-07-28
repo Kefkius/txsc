@@ -187,9 +187,16 @@ class BaseStructuralVisitor(BaseTransformer):
         if len(func.args) != len(node.args):
             raise IRError('Function "%s" requires %d argument(s) (got %d)' % (func.name, len(func.args), len(node.args)))
 
+        # Lookup and substitute symbols used as arguments.
+        args = list(node.args)
+        for i, arg in enumerate(args):
+            if isinstance(arg, structural_nodes.Symbol):
+                arg_value = self.symbol_table.lookup(arg.name).value
+                args[i] = arg_value
+
         self.symbol_table.begin_scope(scope_type=ScopeType.Function)
         # Bind arguments to formal parameters.
-        for param, arg in zip(func.args, node.args):
+        for param, arg in zip(func.args, args):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
 

@@ -2,6 +2,14 @@ from txsc.ir import formats
 from txsc.transformer import BaseTransformer
 import txsc.ir.linear_nodes as types
 
+def op_for_int(value):
+    """Get a small int or push operation for value."""
+    cls = types.opcode_by_name('OP_%d'%value)
+    if cls:
+        return cls()
+    value = formats.int_to_bytearray(value)
+    return types.Push(data=value)
+
 class LIROptions(object):
     """Options for the linear intermediate representation.
 
@@ -21,15 +29,6 @@ class LIROptions(object):
 
 class BaseLinearVisitor(BaseTransformer):
     """Base class for linear visitors."""
-    @classmethod
-    def op_for_int(self, value):
-        """Get a small int or push operation for value."""
-        cls = types.opcode_by_name('OP_%d'%value)
-        if cls:
-            return cls()
-        value = formats.int_to_bytearray(value)
-        return types.Push(data=value)
-
     def __init__(self, symbol_table, options=LIROptions()):
         super(BaseLinearVisitor, self).__init__()
         self.symbol_table = symbol_table

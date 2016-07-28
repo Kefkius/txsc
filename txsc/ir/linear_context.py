@@ -4,8 +4,8 @@ import copy
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError
 from txsc.ir.instructions import LInstructions
-from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor
-from txsc.ir.linear_runtime import StackState
+from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor, op_for_int
+from txsc.ir.linear_runtime import StackState, AltStackManager
 import txsc.ir.linear_nodes as types
 
 class ConditionalBranch(object):
@@ -45,6 +45,8 @@ class LinearContextualizer(BaseLinearVisitor):
         self.assumptions = defaultdict(list)
         # {assumption_name: [operation_index, ...], ...}
         self.duplicated_assumptions = defaultdict(list)
+        # {variable_name: declaration_index, ...}
+        self.declarations = {}
         # [ConditionalBranch(), ...]
         self.branches = []
         # Current level of conditional nesting.
@@ -83,6 +85,10 @@ class LinearContextualizer(BaseLinearVisitor):
             if self.instructions[depth] == self.nextop(op):
                 return True
         return False
+
+    def is_declaration(self, op):
+        """Get whether op is the first assignment to its symbol."""
+        return isinstance(op, types.Assignment) and op.idx == self.declarations.get(op.symbol_name)
 
     def is_before_conditionals(self, idx):
         """Get whether idx is before any conditional branches."""
@@ -177,6 +183,7 @@ class LinearContextualizer(BaseLinearVisitor):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
+        self.declarations.clear()
         self.branches = []
         self.instructions = instructions
 
@@ -226,6 +233,10 @@ class LinearContextualizer(BaseLinearVisitor):
         if not method:
             return
         return method(instruction)
+
+    def visit_Assignment(self, op):
+        if op.symbol_name not in self.declarations:
+            self.declarations[op.symbol_name] = op.idx
 
     def visit_Assumption(self, op):
         self.assumptions[op.var_name].append(op.idx)
@@ -305,6 +316,7 @@ class LinearInliner(BaseLinearVisitor):
         super(LinearInliner, self).__init__(symbol_table, options)
         self.contextualizer = LinearContextualizer(symbol_table, options)
         self.stack = StackState(symbol_table)
+        self.alt_stack_manager = AltStackManager()
 
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
@@ -323,6 +335,7 @@ class LinearInliner(BaseLinearVisitor):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
         self.stack.clear(clear_assumptions=True)
+        self.alt_stack_manager = AltStackManager()
 
         stack_names = self.symbol_table.lookup('_stack_names')
         if stack_names:
@@ -331,6 +344,10 @@ class LinearInliner(BaseLinearVisitor):
         # Find operations that use the same assumed stack item more than once.
         self.contextualizer.contextualize(instructions)
         self.contextualizer.find_duplicate_assumptions()
+
+        # Prepend the operations that set up the alt stack variables.
+        initial_ops = self.alt_stack_manager.analyze(instructions)
+        instructions.insert_slice(0, initial_ops)
 
         # Loop until no inlining can be done.
         while 1:
@@ -376,7 +393,7 @@ class LinearInliner(BaseLinearVisitor):
         if highest is not None:
             arg = total_delta - highest_stack_idx - 1
 
-        arg = self.op_for_int(arg)
+        arg = op_for_int(arg)
         opcode = self.get_opcode_for_assumption(op)
         return [arg, opcode]
 
@@ -429,11 +446,19 @@ class LinearInliner(BaseLinearVisitor):
         # If there are no consecutive assumptions, use opcodes to bring this assumption to the top.
         return self.bring_assumption_to_top(op)
 
+    def visit_Assignment(self, op):
+        if not self.contextualizer.is_declaration(op):
+            return self.alt_stack_manager.set_variable(op)
+
     def visit_Variable(self, op):
-        self.stack.clear(clear_assumptions=False)
-        self.stack.process_instructions(self.instructions[:op.idx])
-        symbol = self.symbol_table.lookup(op.symbol_name)
-        return symbol.value
+        result = self.alt_stack_manager.get_variable(op)
+        # If None is returned, calculate the variable's value using
+        # the runtime StackState.
+        if result is None:
+            self.stack.clear(clear_assumptions=False)
+            self.stack.process_instructions(self.instructions[:op.idx])
+            result = self.symbol_table.lookup(op.symbol_name).value
+        return result
 
     def visit_InnerScript(self, op):
         result = self.map_visit(op.ops)
