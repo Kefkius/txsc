@@ -14,12 +14,14 @@ class AltStackItem(object):
         assignments (int): Number of assignments to the variable.
         variable_index (int): Index of the variable in the alt stack.
         assigned_in_conditional (bool): Whether the variable was assigned to within a conditional.
+        is_assumption (bool): Whether the variable is an assumed stack item.
     """
     def __init__(self):
         self.initial_value = None
         self.assignments = 0
         self.variable_index = None
         self.assigned_in_conditional = False
+        self.is_assumption = False
 
     def is_immutable(self):
         """Return whether this item can be treated as immutable."""
@@ -27,15 +29,36 @@ class AltStackItem(object):
 
     def requires_alt_stack(self):
         """Return whether this item must be manipulated using the alt stack."""
+        if self.is_assumption:
+            return True
         return self.assigned_in_conditional and not self.is_immutable()
 
 class AltStackManager(object):
     """Keeps track of and manipulates variable locations on the alt stack."""
-    def __init__(self):
+    def __init__(self, options):
         self.alt_stack_items = defaultdict(AltStackItem)
+        self.options = options
 
-    def analyze(self, instructions):
+    def analyze(self, instructions, stack_names=None):
+        """Analyze instructions.
+
+        Args:
+            instructions (LInstructions): Script instructions.
+            stack_names (dict): A dict of the stack names which should be
+                accessed like user-defined variables and their depths.
+
+        Returns:
+            The operations needed to set up the alt stack.
+        """
         self.alt_stack_items.clear()
+        if stack_names and self.options.use_altstack_for_assumptions:
+            for i, (stack_name, depth) in enumerate(stack_names.items()):
+                item = AltStackItem()
+                item.is_assumption = True
+                item.variable_index = i
+                # Push the item to the alt stack.
+                item.initial_value = [op_for_int(depth), types.Roll()]
+                self.alt_stack_items[stack_name] = item
 
         conditional_level = 0
         for i in instructions:
@@ -113,7 +136,7 @@ class AltStackManager(object):
             The operations needed to bring op to the top of the stack,
                 or None if the value can be found without the alt stack.
         """
-        name = op.symbol_name
+        name = op.symbol_name if isinstance(op, types.Variable) else op.var_name
         item = self.alt_stack_items[name]
         if not item.requires_alt_stack():
             return None

@@ -205,9 +205,6 @@ class BaseStructuralVisitor(BaseTransformer):
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None):
-        # Whether we've finished visiting a conditional that results in a different
-        # number of stack items depending on whether or not it is true.
-        self.after_uneven_conditional = False
         self.symbol_table = symbol_table
         self.script = node
         self.instructions = LInstructions(self.visit(node.script))
@@ -288,10 +285,6 @@ class StructuralVisitor(BaseStructuralVisitor):
         type_ = symbol.type_
         # Add an assumption for the stack item.
         if type_ == SymbolType.StackItem:
-            # Fail if there are assumptions after a conditional and the conditional branches do not result in the
-            # same number of stack items.
-            if self.after_uneven_conditional:
-                raise IRError("Conditional branches must result in the same number of stack values, or assumptions afterward are not supported.")
             return types.Assumption(symbol.name)
         else:
             return types.Variable(node.name)
@@ -310,8 +303,6 @@ class StructuralVisitor(BaseStructuralVisitor):
                 ops.extend([types.Else()] + falsebranch)
         ops.append(types.EndIf())
 
-        if sum([i.delta for i in truebranch]) != sum([i.delta for i in falsebranch]):
-            self.after_uneven_conditional = True
         return ops
 
     @returnlist

@@ -45,6 +45,8 @@ class LinearContextualizer(BaseLinearVisitor):
         self.assumptions = defaultdict(list)
         # {assumption_name: [operation_index, ...], ...}
         self.duplicated_assumptions = defaultdict(list)
+        # {assumption_name: depth, ...}
+        self.alt_stack_assumptions = {}
         # {variable_name: declaration_index, ...}
         self.declarations = {}
         # [ConditionalBranch(), ...]
@@ -96,6 +98,49 @@ class LinearContextualizer(BaseLinearVisitor):
             return True
         return False
 
+    def _is_after_uneven_conditional(self, idx):
+        """Get whether idx is after an uneven conditional."""
+        branch_deltas = {True: [], False: []}
+        idx_branch = self.get_branch(idx)
+        for branch in self.branches:
+            if branch == idx_branch:
+                continue
+            elif branch.end < idx and (not idx_branch or branch != idx_branch.orelse):
+                # Sum the deltas of conditional branches before idx.
+                branch_deltas[branch.is_truebranch].append(sum(i.delta for i in self.instructions[branch.start:branch.end+1]))
+        return not sum(branch_deltas[True]) == sum(branch_deltas[False])
+
+    def get_branch(self, idx):
+        """Get the branch that idx is in."""
+        idx_branch = None
+        # Find the branch that idx is in.
+        for branch in self.branches:
+            if branch.is_in_branch(idx):
+                if not idx_branch or idx_branch.nest_level < branch.nest_level:
+                    idx_branch = branch
+        return idx_branch
+
+    def find_alt_stack_assumptions(self):
+        """Find the assumptions that are accessed with the alt stack.
+
+        These assumptions are those that are used after uneven conditionals.
+        """
+        names = {}
+        for name, idxs in self.assumptions.items():
+            if any(self._is_after_uneven_conditional(idx) for idx in idxs):
+                if not self.options.use_altstack_for_assumptions:
+                    self.log_and_raise(IRError, 'Assumption encountered after uneven conditional')
+                symbol = self.symbol_table.lookup(name).value
+                names[name] = symbol.depth
+                continue
+        self.alt_stack_assumptions = names
+
+    def uses_alt_stack(self, assumption_name):
+        """Get whether assumption_name is accessed via the alt stack."""
+        if not self.options.use_altstack_for_assumptions:
+            return False
+        return assumption_name in self.alt_stack_assumptions.keys()
+
     def following_occurrences(self, assumption_name, idx):
         """Get the indices of occurrences of assumption_name after idx."""
         branches = list(self.branches)
@@ -141,12 +186,7 @@ class LinearContextualizer(BaseLinearVisitor):
             total += sum(i.delta for i in self.instructions[:idx])
             return total
 
-        idx_branch = None
-        # Find the branch that idx is in.
-        for branch in branches:
-            if branch.is_in_branch(idx):
-                if not idx_branch or idx_branch.nest_level < branch.nest_level:
-                    idx_branch = branch
+        idx_branch = self.get_branch(idx)
 
         # Add the deltas of instructions before the first branch in the script.
         total += sum(i.delta for i in self.instructions[:branches[0].start])
@@ -157,13 +197,11 @@ class LinearContextualizer(BaseLinearVisitor):
                 total += sum(i.delta for i in self.instructions[branch.start:idx])
             elif branch.end < idx and (not idx_branch or branch != idx_branch.orelse):
                 # Sum the deltas of conditional branches before idx.
-                branch_deltas[branch.is_truebranch].append(sum(i.delta for i in self.instructions[branch.start:branch.end]))
+                branch_deltas[branch.is_truebranch].append(sum(i.delta for i in self.instructions[branch.start:branch.end+1]))
 
-        # If the index is after a conditional branch, check that the
-        # branches before it result in the same number of stack items.
-        if not sum(branch_deltas[True]) == sum(branch_deltas[False]):
-            self.log_and_raise(IRError, 'Assumption encountered after uneven conditional')
         # Add the deltas from conditional branches before idx.
+        # It doesn't matter which is_truebranch value we use here,
+        # since assumptions after uneven conditionals are not handled this way.
         total += sum(branch_deltas[True])
 
         return total
@@ -183,6 +221,7 @@ class LinearContextualizer(BaseLinearVisitor):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
+        self.alt_stack_assumptions.clear()
         self.declarations.clear()
         self.branches = []
         self.instructions = instructions
@@ -203,6 +242,8 @@ class LinearContextualizer(BaseLinearVisitor):
                     self.check_Hash160(instruction)
                 elif isinstance(instruction, (types.Hash256, types.Sha256)):
                     self.check_Hash256(instruction)
+
+        self.find_alt_stack_assumptions()
 
     def check_Hash160(self, op):
         """Check that 20-byte pushes are used as RIPEMD-160 hashes."""
@@ -316,7 +357,7 @@ class LinearInliner(BaseLinearVisitor):
         super(LinearInliner, self).__init__(symbol_table, options)
         self.contextualizer = LinearContextualizer(symbol_table, options)
         self.stack = StackState(symbol_table)
-        self.alt_stack_manager = AltStackManager()
+        self.alt_stack_manager = AltStackManager(options)
 
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
@@ -335,18 +376,18 @@ class LinearInliner(BaseLinearVisitor):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
         self.stack.clear(clear_assumptions=True)
-        self.alt_stack_manager = AltStackManager()
+        self.alt_stack_manager = AltStackManager(self.options)
 
         stack_names = self.symbol_table.lookup('_stack_names')
-        if stack_names:
-            self.stack.add_stack_assumptions([types.Assumption(var_name) for var_name in stack_names.value])
+        stack_names = stack_names.value if stack_names else []
+        self.stack.add_stack_assumptions([types.Assumption(var_name) for var_name in stack_names])
 
         # Find operations that use the same assumed stack item more than once.
         self.contextualizer.contextualize(instructions)
         self.contextualizer.find_duplicate_assumptions()
 
         # Prepend the operations that set up the alt stack variables.
-        initial_ops = self.alt_stack_manager.analyze(instructions)
+        initial_ops = self.alt_stack_manager.analyze(instructions, self.contextualizer.alt_stack_assumptions)
         instructions.insert_slice(0, initial_ops)
 
         # Loop until no inlining can be done.
@@ -373,7 +414,8 @@ class LinearInliner(BaseLinearVisitor):
         """Handle a row of consecutive assumptions."""
         # If the first assumption's delta is 0 and the depths are sequential,
         # then nothing needs to be done.
-        if self.contextualizer.total_delta(assumptions[0].idx) - self.stack.assumptions_offset == 0:
+        total_delta = self.contextualizer.total_delta(assumptions[0].idx)
+        if total_delta - self.stack.assumptions_offset == 0:
             symbols = map(self.symbol_table.lookup, [i.var_name for i in assumptions])
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
             iterator = (i.value.depth for i in reversed(symbols))
@@ -384,11 +426,14 @@ class LinearInliner(BaseLinearVisitor):
                     return []
 
     def bring_assumption_to_top(self, op):
+        # Use the alt stack if this is an alt stack assumption.
+        if self.contextualizer.uses_alt_stack(op.var_name):
+            return self.alt_stack_manager.get_variable(op)
+
         symbol = self.symbol_table.lookup(op.var_name)
         total_delta = self.contextualizer.total_delta(op.idx)
 
         arg = max(0, total_delta - symbol.value.height - 1)
-
         highest, highest_stack_idx = self.stack.get_highest_assumption(op)
         if highest is not None:
             arg = total_delta - highest_stack_idx - 1
@@ -438,7 +483,10 @@ class LinearInliner(BaseLinearVisitor):
             assumptions.append(nextop)
             symbols.append(symbol)
 
-        if len(assumptions) > 1:
+        # Only account for consecutive assumptions if none of them
+        # are accessed using the alt stack.
+        names = [i.var_name for i in assumptions]
+        if len(assumptions) > 1 and not any(self.contextualizer.uses_alt_stack(name) for name in names):
             result = self.visit_consecutive_assumptions(assumptions)
             if result is not None:
                 return result

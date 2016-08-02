@@ -18,14 +18,18 @@ class LIROptions(object):
             with the result of an OP_HASH* opcode.
         inline_assumptions (bool): Whether to inline assumptions as stack operations.
         peephole_optimizations (bool): Whether to perform peephole optimizations.
+        use_altstack_for_assumptions (bool): Whether to use the alt stack for assumptions
+            that are used after uneven conditionals.
 
     """
     def __init__(self, allow_invalid_comparisons=False,
                  inline_assumptions=True,
-                 peephole_optimizations=True):
+                 peephole_optimizations=True,
+                 use_altstack_for_assumptions=False):
         self.allow_invalid_comparisons = allow_invalid_comparisons
         self.inline_assumptions = inline_assumptions
         self.peephole_optimizations = peephole_optimizations
+        self.use_altstack_for_assumptions = use_altstack_for_assumptions
 
 class BaseLinearVisitor(BaseTransformer):
     """Base class for linear visitors."""

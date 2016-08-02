@@ -82,6 +82,7 @@ class CompilationOptions(object):
             'no_implicit_pushes': False,
             'strict_num': False,
             'allow_invalid_comparisons': False,
+            'use_altstack_for_assumptions': True,
         }
         for k, v in defaults.items():
             if k not in options.keys():
@@ -163,6 +164,7 @@ class ScriptCompiler(object):
             'allow_invalid_comparisons': self.options.allow_invalid_comparisons,
             'inline_assumptions': True,
             'peephole_optimizations': self.optimization.optimize_linear,
+            'use_altstack_for_assumptions': self.options.use_altstack_for_assumptions,
         }
         self.lir_options = LIROptions(**lir_kwargs)
 

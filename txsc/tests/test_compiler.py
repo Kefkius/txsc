@@ -97,6 +97,13 @@ class CompileTxScriptConditionalTest(BaseCompilerTest):
     def _test(self, test):
         return super(CompileTxScriptConditionalTest, self)._test(test.expected, test.src)
 
+    @classmethod
+    def _options(cls):
+        options = super(CompileTxScriptConditionalTest, cls)._options()
+        # We set this to False for test_error().
+        options.use_altstack_for_assumptions = False
+        return options
+
     def test_conditional(self):
         for test in [
             Test('5 IF 6 ELSE 7 ENDIF', ['let a = 5;' 'if a {6;} else {7;}']),

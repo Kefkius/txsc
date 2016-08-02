@@ -128,13 +128,6 @@ if myVar == 5 {
 }
 ---------------
 
-There is a drawback to using conditionals: If the two execution paths of
-a conditional do not result in the same number of stack items being
-present, then stack assumptions (see below) cannot be used after the
-conditional. The reason for this is that the number of items between a
-stack assumption and the actual assumed stack item cannot be determined
-this way.
-
 [[built-in-functions]]
 Built-in Functions
 ~~~~~~~~~~~~~~~~~~
