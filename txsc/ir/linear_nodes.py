@@ -37,6 +37,7 @@ class Variable(Node):
     name = 'variable'
     symbol_name = ''
     comparators = Node.comparators + ('symbol_name',)
+    delta = 1
     def __init__(self, symbol_name='', **kwargs):
         super(Variable, self).__init__(**kwargs)
         self.symbol_name = symbol_name

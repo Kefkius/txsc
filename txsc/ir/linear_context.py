@@ -221,7 +221,6 @@ class LinearContextualizer(BaseLinearVisitor):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
-        self.alt_stack_assumptions.clear()
         self.declarations.clear()
         self.branches = []
         self.instructions = instructions
@@ -242,8 +241,6 @@ class LinearContextualizer(BaseLinearVisitor):
                     self.check_Hash160(instruction)
                 elif isinstance(instruction, (types.Hash256, types.Sha256)):
                     self.check_Hash256(instruction)
-
-        self.find_alt_stack_assumptions()
 
     def check_Hash160(self, op):
         """Check that 20-byte pushes are used as RIPEMD-160 hashes."""
@@ -385,6 +382,7 @@ class LinearInliner(BaseLinearVisitor):
         # Find operations that use the same assumed stack item more than once.
         self.contextualizer.contextualize(instructions)
         self.contextualizer.find_duplicate_assumptions()
+        self.contextualizer.find_alt_stack_assumptions()
 
         # Prepend the operations that set up the alt stack variables.
         initial_ops = self.alt_stack_manager.analyze(instructions, self.contextualizer.alt_stack_assumptions)
@@ -426,10 +424,6 @@ class LinearInliner(BaseLinearVisitor):
                     return []
 
     def bring_assumption_to_top(self, op):
-        # Use the alt stack if this is an alt stack assumption.
-        if self.contextualizer.uses_alt_stack(op.var_name):
-            return self.alt_stack_manager.get_variable(op)
-
         symbol = self.symbol_table.lookup(op.var_name)
         total_delta = self.contextualizer.total_delta(op.idx)
 
@@ -469,6 +463,9 @@ class LinearInliner(BaseLinearVisitor):
     def visit_Assumption(self, op):
         self.stack.clear(clear_assumptions=False)
         self.stack.process_instructions(self.instructions[:op.idx])
+        # Use the alt stack if this is an alt stack assumption.
+        if self.contextualizer.uses_alt_stack(op.var_name):
+            return self.alt_stack_manager.get_variable(op)
         # Detect whether there are multiple assumptions in a row.
         assumptions = [op]
         symbols = [self.symbol_table.lookup(op.var_name)]
