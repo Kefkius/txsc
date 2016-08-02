@@ -47,8 +47,10 @@ class LinearContextualizer(BaseLinearVisitor):
         self.duplicated_assumptions = defaultdict(list)
         # {assumption_name: depth, ...}
         self.alt_stack_assumptions = {}
-        # {variable_name: declaration_index, ...}
-        self.declarations = {}
+        # {variable_name: [occurrence_index, ...], ...}
+        self.assignments = defaultdict(list)
+        # {variable_name: [occurrence_index, ...], ...}
+        self.variables = defaultdict(list)
         # [ConditionalBranch(), ...]
         self.branches = []
         # Current level of conditional nesting.
@@ -90,7 +92,10 @@ class LinearContextualizer(BaseLinearVisitor):
 
     def is_declaration(self, op):
         """Get whether op is the first assignment to its symbol."""
-        return isinstance(op, types.Assignment) and op.idx == self.declarations.get(op.symbol_name)
+        if not isinstance(op, types.Assignment):
+            return False
+        assignments = self.assignments.get(op.symbol_name, [])
+        return assignments and op.idx == assignments[0]
 
     def is_before_conditionals(self, idx):
         """Get whether idx is before any conditional branches."""
@@ -221,7 +226,8 @@ class LinearContextualizer(BaseLinearVisitor):
         if not isinstance(instructions, LInstructions):
             raise TypeError('A LInstructions instance is required')
         self.assumptions.clear()
-        self.declarations.clear()
+        self.assignments.clear()
+        self.variables.clear()
         self.branches = []
         self.instructions = instructions
 
@@ -273,8 +279,10 @@ class LinearContextualizer(BaseLinearVisitor):
         return method(instruction)
 
     def visit_Assignment(self, op):
-        if op.symbol_name not in self.declarations:
-            self.declarations[op.symbol_name] = op.idx
+        self.assignments[op.symbol_name].append(op.idx)
+
+    def visit_Variable(self, op):
+        self.variables[op.symbol_name].append(op.idx)
 
     def visit_Assumption(self, op):
         self.assumptions[op.var_name].append(op.idx)
