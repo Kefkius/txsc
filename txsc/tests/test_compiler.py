@@ -93,6 +93,16 @@ class CompileTxScriptFunctionTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+class CompileTxScriptAltStackConditionalTest(BaseCompilerTest):
+    def _test(self, test):
+        return super(CompileTxScriptAltStackConditionalTest, self)._test(test.expected, test.src)
+
+    def test_assumption_after_uneven_conditional(self):
+        for test in [
+            Test('SWAP TOALTSTACK IF 2 ENDIF FROMALTSTACK DUP TOALTSTACK', ['assume a, b;', 'if b {push 2;}', 'push a;']),
+        ]:
+            self._test(test)
+
 class CompileTxScriptConditionalTest(BaseCompilerTest):
     def _test(self, test):
         return super(CompileTxScriptConditionalTest, self)._test(test.expected, test.src)
