@@ -129,8 +129,11 @@ class AltStackManager(object):
             result.extend(ops)
         return result
 
-    def get_variable(self, op):
+    def get_variable(self, op, is_last_occurrence=False):
         """Bring name to the top of the stack.
+
+        If is_last_occurrence is True, the variable will not be pushed
+        back onto the alt stack.
 
         Returns:
             The operations needed to bring op to the top of the stack,
@@ -146,9 +149,13 @@ class AltStackManager(object):
         # Pop the other items off the alt stack.
         ops.extend(self._repeat_ops([types.FromAltStack], values_after))
         # Pop the actual variable from the alt stack.
-        ops.extend([types.FromAltStack(), types.Dup(), types.ToAltStack()])
+        ops.extend([types.FromAltStack()])
+        replacement_ops = [types.ToAltStack]
+        if not is_last_occurrence:
+            ops.extend([types.Dup(), types.ToAltStack()])
+            replacement_ops.insert(0, types.Swap)
         # Push the variables back onto the alt stack.
-        ops.extend(self._repeat_ops([types.Swap, types.ToAltStack], values_after))
+        ops.extend(self._repeat_ops(replacement_ops, values_after))
 
         return ops
 

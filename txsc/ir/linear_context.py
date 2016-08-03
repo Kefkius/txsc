@@ -103,6 +103,19 @@ class LinearContextualizer(BaseLinearVisitor):
             return True
         return False
 
+    def is_last_occurrence(self, op):
+        """Get whether op is the last occurrence of an Assignment, Assumption, or Variable."""
+        if not isinstance(op, (types.Assignment, types.Assumption, types.Variable)):
+            raise TypeError('An Assignment, Assumption, or Variable instance is required')
+        name = op.var_name if isinstance(op, types.Assumption) else op.symbol_name
+        dicts = {
+            'Assignment': self.assignments,
+            'Assumption': self.assumptions,
+            'Variable': self.variables,
+        }
+        idxs = dicts[op.__class__.__name__][name]
+        return idxs and op.idx == idxs[-1]
+
     def _is_after_uneven_conditional(self, idx):
         """Get whether idx is after an uneven conditional."""
         branch_deltas = {True: [], False: []}
@@ -473,7 +486,7 @@ class LinearInliner(BaseLinearVisitor):
         self.stack.process_instructions(self.instructions[:op.idx])
         # Use the alt stack if this is an alt stack assumption.
         if self.contextualizer.uses_alt_stack(op.var_name):
-            return self.alt_stack_manager.get_variable(op)
+            return self.alt_stack_manager.get_variable(op, self.contextualizer.is_last_occurrence(op))
         # Detect whether there are multiple assumptions in a row.
         assumptions = [op]
         symbols = [self.symbol_table.lookup(op.var_name)]
@@ -504,7 +517,7 @@ class LinearInliner(BaseLinearVisitor):
             return self.alt_stack_manager.set_variable(op)
 
     def visit_Variable(self, op):
-        result = self.alt_stack_manager.get_variable(op)
+        result = self.alt_stack_manager.get_variable(op, self.contextualizer.is_last_occurrence(op))
         # If None is returned, calculate the variable's value using
         # the runtime StackState.
         if result is None:
