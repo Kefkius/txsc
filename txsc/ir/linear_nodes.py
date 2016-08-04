@@ -6,6 +6,8 @@ caller. They will be determined automatically during contextualization.
 import inspect
 import sys
 
+from bitcoin.core.script import OPCODES_BY_NAME
+
 class Node(object):
     """Base class for nodes.
 
@@ -317,39 +319,83 @@ CheckLockTimeVerify = _unary_opcode('CheckLockTimeVerify', 0, 'OP_CHECKLOCKTIMEV
 is_op_subclass = lambda cls: (inspect.isclass(cls)
                     and issubclass(cls, OpCode)
                     and cls != OpCode)
-# Do NOT modify this.
-__opcode_classes = inspect.getmembers(sys.modules[__name__], is_op_subclass)
+__default_opcode_classes = inspect.getmembers(sys.modules[__name__], is_op_subclass)
 # Opcodes by name.
-opcode_classes = dict((i.name, i) for _, i in __opcode_classes)
+_default_opcode_classes = dict((i.name, i) for _, i in __default_opcode_classes)
+
+_opcode_set_cls = None
+
+def get_opcode_set_cls():
+    """Get the opcode set class."""
+    global _opcode_set_cls
+    # Set to default if not opcode set is set.
+    if not _opcode_set_cls:
+        _opcode_set_cls = OpCodeSet
+    return _opcode_set_cls
+
+def set_opcode_set_cls(cls):
+    """Set the opcode set class."""
+    global _opcode_set_cls
+    _opcode_set_cls = cls
+
+class OpCodeSet(object):
+    """A set of opcodes and a dictionary of their numeric values.
+
+    When subclassing this class, you likely only need to reimplement
+    opcode_classes() and opcode_values_by_name().
+    """
+    name = 'default'
+    @classmethod
+    def opcode_classes(cls):
+        """Return a dict of {opcode_name: opcode_class}."""
+        return dict(_default_opcode_classes)
+
+    @classmethod
+    def opcode_values_by_name(cls):
+        """Return a dict of {opcode_name: numeric_value}."""
+        return OPCODES_BY_NAME
+
+    @classmethod
+    def get_opcode_value(cls, op_name):
+        """Return the numeric value of op_name."""
+        return cls.opcode_values_by_name()[op_name]
+
+    @classmethod
+    def opcode_by_name(cls, name):
+        """Get an opcode class by name."""
+        return cls.opcode_classes().get(name)
+
+    @classmethod
+    def small_int_opcode(cls, value):
+        """Get a small int opcode by the value it pushes."""
+        return cls.opcode_by_name('OP_%d' % value)
+
+    @classmethod
+    def iter_opcode_classes(cls):
+        """Iterate through opcode classes."""
+        for op_cls in cls.opcode_classes().values():
+            yield op_cls
+
+    @classmethod
+    def get_opcodes(cls):
+        """Return the complete set of opcodes."""
+        return dict(cls.opcode_classes())
+
+def get_opcode_value(op_name):
+    """Return the numeric value of op_name."""
+    return get_opcode_set_cls().get_opcode_value(op_name)
 
 def opcode_by_name(name):
     """Get an opcode class by name."""
-    return opcode_classes.get(name)
+    return get_opcode_set_cls().opcode_by_name(name)
 
 def small_int_opcode(value):
     """Get a small int opcode by the value it pushes."""
-    return opcode_by_name('OP_%d' % value)
+    return get_opcode_set_cls().small_int_opcode(value)
 
 def iter_opcode_classes():
-    for cls in opcode_classes.values():
-        yield cls
+    return get_opcode_set_cls().iter_opcode_classes()
 
 def get_opcodes():
     """Return the complete set of opcodes."""
-    return dict(opcode_classes)
-
-def get_default_opcodes():
-    """Return the default set of opcodes."""
-    return dict((i.name, i) for _, i in __opcode_classes)
-
-def set_opcodes(classes):
-    """Set opcode_classes to classes.
-
-    Allows for extensibility via plugins.
-    """
-    global opcode_classes
-    opcode_classes = dict(classes)
-
-def reset_opcodes():
-    """Reset opcodes to the default set."""
-    set_opcodes(get_default_opcodes())
+    return get_opcode_set_cls().get_opcodes()

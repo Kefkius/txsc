@@ -7,6 +7,8 @@ Entry points have the following requirements:
     - txsc.alt_stack_manager: Must return a subclass of txsc.ir.linear_runtime.AltStackManager.
     - txsc.language: Must return an instance of a txsc.language.Language subclass.
     - txsc.linear_optimizer: Must return a subclass of txsc.ir.linear_optimizer.LinearOptimizer.
+    - txsc.opcode_set: Must return a subclass of txsc.ir.linear_nodes.OpCodeSet.
+
     - txsc.opcodes: Must return a 2-tuple of the form (name, opcodes), where:
         - name (str): The name of the opcode set.
         - opcodes (dict): A dict of {opcode_name: opcode_class}.
@@ -26,7 +28,7 @@ from txsc.txscript import TxScriptLanguage
 from txsc.asm import ASMLanguage
 from txsc.btcscript import BtcScriptLanguage
 
-# Default opcodes.
+# Default opcodes, linear optimizer, and alt stack manager.
 from txsc.ir import linear_nodes, linear_optimizer, linear_runtime
 
 # Default builtin functions.
@@ -42,7 +44,7 @@ def has_loaded():
 # Configurable collections.
 languages = [ASMLanguage, BtcScriptLanguage, TxScriptLanguage]
 alt_stack_managers = {'default': linear_runtime.AltStackManager}
-opcode_sets = {'default': linear_nodes.get_opcodes()}
+opcode_sets = {'default': linear_nodes.OpCodeSet}
 linear_optimizers = {'default': linear_optimizer.LinearOptimizer}
 
 
@@ -100,18 +102,15 @@ def set_alt_stack_manager(name):
 def load_opcode_sets():
     """Load opcode sets from entry points."""
     global opcode_sets
-    for entry_point in iter_entry_points(group='txsc.opcodes'):
-        ops_maker = entry_point.load()
-        ops = ops_maker()
-        if not isinstance(ops, tuple) or len(ops) != 2:
+    for entry_point in iter_entry_points(group='txsc.opcode_set'):
+        cls_maker = entry_point.load()
+        cls = cls_maker()
+        if not issubclass(cls, linear_nodes.OpCodeSet):
             continue
         # The name "default" is taken.
-        if ops[0] == 'default' or ops[0] in opcode_sets.keys():
+        if cls.name == 'default':
             continue
-        # All opcode classes must be subclasses of OpCode.
-        if not all(issubclass(cls, linear_nodes.OpCode) for cls in ops[1].values()):
-            continue
-        opcode_sets[ops[0]] = dict(ops[1])
+        opcode_sets[cls.name] = cls
 
 def get_opcode_sets():
     """Return supported opcode sets."""
@@ -120,17 +119,16 @@ def get_opcode_sets():
 def set_opcode_set(name):
     """Set the desired set of opcodes.
 
-    This is a wrapper around txsc.linear_nodes.set_opcodes().
+    This is a wrapper around txsc.linear_nodes.set_opcode_set_cls().
     """
-    linear_nodes.reset_opcodes()
-    d = opcode_sets[name]
-    linear_nodes.set_opcodes(d)
+    cls = opcode_sets.get(name, linear_nodes.OpCodeSet)
+    linear_nodes.set_opcode_set_cls(cls)
 
     # Set the builtin opcode functions if any are present.
     op_funcs = []
-    for cls in d.values():
-        if hasattr(cls, 'func') and isinstance(cls.func, script_transformer.OpFunc):
-            op_funcs.append(cls.func)
+    for op_cls in cls.get_opcodes().values():
+        if hasattr(op_cls, 'func') and isinstance(op_cls.func, script_transformer.OpFunc):
+            op_funcs.append(op_cls.func)
     script_transformer.reset_op_functions()
     # Extend the existing opcode functions with the custom ones.
     op_funcs = script_transformer.get_op_functions() + op_funcs

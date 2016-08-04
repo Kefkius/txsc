@@ -80,7 +80,7 @@ class BtcScriptTargetVisitor(TargetVisitor):
         return b2x(value)
 
     def generic_visit_OpCode(self, node):
-        value = int(script.OPCODES_BY_NAME[node.name])
+        value = types.get_opcode_value(node.name)
         return hexs.hexs(value)
 
     def generic_visit_SmallIntOpCode(self, node):
