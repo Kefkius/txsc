@@ -6,6 +6,22 @@ from txsc.ir import formats
 import txsc.ir.linear_nodes as types
 from txsc.ir.linear_visitor import op_for_int
 
+_alt_stack_manager_cls = None
+
+def get_alt_stack_manager_cls():
+    """Get the alt stack manager class."""
+    global _alt_stack_manager_cls
+    # Set to default if no alt stack manager is set.
+    if not _alt_stack_manager_cls:
+        _alt_stack_manager_cls = AltStackManager
+    return _alt_stack_manager_cls
+
+def set_alt_stack_manager_cls(cls):
+    """Set the alt stack manager class."""
+    global _alt_stack_manager_cls
+    _alt_stack_manager_cls = cls
+
+
 class AltStackItem(object):
     """Alt stack item.
 
@@ -35,9 +51,13 @@ class AltStackItem(object):
 
 class AltStackManager(object):
     """Keeps track of and manipulates variable locations on the alt stack."""
+    name = 'default'
     def __init__(self, options):
         self.alt_stack_items = defaultdict(AltStackItem)
         self.options = options
+
+    def clear(self):
+        self.alt_stack_items.clear()
 
     def analyze(self, instructions, stack_names=None):
         """Analyze instructions.

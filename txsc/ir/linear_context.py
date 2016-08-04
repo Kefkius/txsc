@@ -5,7 +5,7 @@ from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError
 from txsc.ir.instructions import LInstructions
 from txsc.ir.linear_visitor import LIROptions, BaseLinearVisitor, op_for_int
-from txsc.ir.linear_runtime import StackState, AltStackManager
+from txsc.ir.linear_runtime import StackState, get_alt_stack_manager_cls
 import txsc.ir.linear_nodes as types
 
 class ConditionalBranch(object):
@@ -375,7 +375,7 @@ class LinearInliner(BaseLinearVisitor):
         super(LinearInliner, self).__init__(symbol_table, options)
         self.contextualizer = LinearContextualizer(symbol_table, options)
         self.stack = StackState(symbol_table)
-        self.alt_stack_manager = AltStackManager(options)
+        self.alt_stack_manager = get_alt_stack_manager_cls()(options)
 
     def inline(self, instructions, peephole_optimizer):
         """Perform inlining of variables in instructions.
@@ -394,7 +394,7 @@ class LinearInliner(BaseLinearVisitor):
             raise TypeError('A LInstructions instance is required')
         self.instructions = instructions
         self.stack.clear(clear_assumptions=True)
-        self.alt_stack_manager = AltStackManager(self.options)
+        self.alt_stack_manager.clear()
 
         stack_names = self.symbol_table.lookup('_stack_names')
         stack_names = stack_names.value if stack_names else []

@@ -4,8 +4,9 @@ Handles configuration values and entry points.
 
 Entry points have the following requirements:
 
+    - txsc.alt_stack_manager: Must return a subclass of txsc.ir.linear_runtime.AltStackManager.
     - txsc.language: Must return an instance of a txsc.language.Language subclass.
-    - txsc.linear_optimizers: Must return a subclass of txsc.ir.linear_optimizer.LinearOptimizer.
+    - txsc.linear_optimizer: Must return a subclass of txsc.ir.linear_optimizer.LinearOptimizer.
     - txsc.opcodes: Must return a 2-tuple of the form (name, opcodes), where:
         - name (str): The name of the opcode set.
         - opcodes (dict): A dict of {opcode_name: opcode_class}.
@@ -26,7 +27,7 @@ from txsc.asm import ASMLanguage
 from txsc.btcscript import BtcScriptLanguage
 
 # Default opcodes.
-from txsc.ir import linear_nodes, linear_optimizer
+from txsc.ir import linear_nodes, linear_optimizer, linear_runtime
 
 # Default builtin functions.
 from txsc.txscript import script_transformer
@@ -40,6 +41,7 @@ def has_loaded():
 
 # Configurable collections.
 languages = [ASMLanguage, BtcScriptLanguage, TxScriptLanguage]
+alt_stack_managers = {'default': linear_runtime.AltStackManager}
 opcode_sets = {'default': linear_nodes.get_opcodes()}
 linear_optimizers = {'default': linear_optimizer.LinearOptimizer}
 
@@ -66,6 +68,33 @@ def load_languages():
 def get_languages():
     """Return supported languages."""
     return list(languages)
+
+
+def load_alt_stack_managers():
+    """Load alt stack managers from entry points."""
+    global alt_stack_managers
+    for entry_point in iter_entry_points(group='txsc.alt_stack_manager'):
+        cls_maker = entry_point.load()
+        cls = cls_maker()
+
+        if not issubclass(cls, linear_runtime.AltStackManager):
+            continue
+        # The name "default" is taken.
+        if cls.name == 'default':
+            continue
+        alt_stack_managers[cls.name] = cls
+
+def get_alt_stack_managers():
+    """Return supported alt stack managers."""
+    return dict(alt_stack_managers)
+
+def set_alt_stack_manager(name):
+    """Set the desired alt stack manager.
+
+    This is a wrapper around txsc.ir.linear_runtime.set_alt_stack_manager_cls().
+    """
+    cls = alt_stack_managers.get(name, linear_runtime.AltStackManager)
+    linear_runtime.set_alt_stack_manager_cls(cls)
 
 
 def load_opcode_sets():
@@ -111,7 +140,7 @@ def set_opcode_set(name):
 def load_linear_optimizers():
     """Load linear optimizers from entry points."""
     global linear_optimizers
-    for entry_point in iter_entry_points(group='txsc.linear_optimizers'):
+    for entry_point in iter_entry_points(group='txsc.linear_optimizer'):
         cls_maker = entry_point.load()
         cls = cls_maker()
         if not issubclass(cls, linear_optimizer.LinearOptimizer):
@@ -119,7 +148,7 @@ def load_linear_optimizers():
         # The name "default" is taken.
         if cls.name == 'default':
             continue
-        linear_optimizers[name] = cls
+        linear_optimizers[cls.name] = cls
 
 def get_linear_optimizers():
     """Return supported linear optimizers."""
@@ -139,6 +168,7 @@ def load_entry_points():
     if _loaded:
         return
     load_languages()
+    load_alt_stack_managers()
     load_opcode_sets()
     load_linear_optimizers()
 

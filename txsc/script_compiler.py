@@ -180,6 +180,8 @@ class ScriptCompiler(object):
         config.set_opcode_set(self.options.opcode_set)
         # Linear optimizer.
         config.set_linear_optimizer(self.options.opcode_set)
+        # Alt stack manager.
+        config.set_alt_stack_manager(self.options.opcode_set)
 
         self.output_file = self.options.output_file
 
