@@ -162,7 +162,9 @@ class ScriptTransformer(BaseTransformer):
         try:
             return self.visit(node)
         except ParsingError as e:
-            raise e.__class__(e.message, node.lineno, node.col_offset)
+            if len(e.args) < 2:
+                e.args = (e.message, node.lineno, node.col_offset)
+            raise e
 
     def visit_Pass(self, node):
         return None
