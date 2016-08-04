@@ -311,6 +311,7 @@ class CheckMultiSigVerify(CheckMultiSig):
     name = 'OP_CHECKMULTISIGVERIFY'
     verifier = True
 
+CheckLockTimeVerify = _unary_opcode('CheckLockTimeVerify', 0, 'OP_CHECKLOCKTIMEVERIFY')
 
 # From electrum Exchange Rates plugin.
 is_op_subclass = lambda cls: (inspect.isclass(cls)

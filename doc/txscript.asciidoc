@@ -156,6 +156,7 @@ functions exist to represent their corresponding opcodes:
 |Function |Opcode
 |`abs(arg)` |`OP_ABS`
 |`size(arg)` |`OP_SIZE`
+|`checkLockTimeVerify(arg)` |`OP_CHECKLOCKTIMEVERIFY`
 |`min(arg1, arg2)` |`OP_MIN`
 |`max(arg1, arg2)` |`OP_MAX`
 |`concat(arg1, arg2)` |`OP_CAT`

@@ -58,6 +58,7 @@ op_functions = [
     # Unary operations.
     OpFunc('abs', 1, 'OP_ABS'),
     OpFunc('size', 1, 'OP_SIZE'),
+    OpFunc('checkLockTimeVerify', 1, 'OP_CHECKLOCKTIMEVERIFY'),
 
     # Binary operations.
     OpFunc('min', 2, 'OP_MIN'),
