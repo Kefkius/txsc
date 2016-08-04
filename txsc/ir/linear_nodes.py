@@ -35,25 +35,25 @@ class Node(object):
 class Variable(Node):
     """A variable."""
     name = 'variable'
-    symbol_name = ''
-    comparators = Node.comparators + ('symbol_name',)
+    var_name = ''
+    comparators = Node.comparators + ('var_name',)
     delta = 1
-    def __init__(self, symbol_name='', **kwargs):
+    def __init__(self, var_name='', **kwargs):
         super(Variable, self).__init__(**kwargs)
-        self.symbol_name = symbol_name
+        self.var_name = var_name
 
     def __str__(self):
-        return 'variable(%s)' % self.symbol_name
+        return 'variable(%s)' % self.var_name
 
 class Assignment(Node):
     """An assignment to a variable."""
     name = 'assign'
-    symbol_name = ''
+    var_name = ''
     value = None
-    comparators = Node.comparators + ('symbol_name', 'value',)
-    def __init__(self, symbol_name='', value=None, **kwargs):
+    comparators = Node.comparators + ('var_name', 'value',)
+    def __init__(self, var_name='', value=None, **kwargs):
         super(Assignment, self).__init__(**kwargs)
-        self.symbol_name = symbol_name
+        self.var_name = var_name
         self.value = value
 
     def __str__(self):
@@ -61,7 +61,7 @@ class Assignment(Node):
         # If the value is one operation, show it without list notation.
         if len(value) == 1:
             value = value[0]
-        return 'assign(%s, %s)' % (self.symbol_name, value)
+        return 'assign(%s, %s)' % (self.var_name, value)
 
 class InnerScript(Node):
     """A script contained inside a script."""

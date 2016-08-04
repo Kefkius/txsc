@@ -94,7 +94,7 @@ class LinearContextualizer(BaseLinearVisitor):
         """Get whether op is the first assignment to its symbol."""
         if not isinstance(op, types.Assignment):
             return False
-        assignments = self.assignments.get(op.symbol_name, [])
+        assignments = self.assignments.get(op.var_name, [])
         return assignments and op.idx == assignments[0]
 
     def is_before_conditionals(self, idx):
@@ -107,7 +107,7 @@ class LinearContextualizer(BaseLinearVisitor):
         """Get whether op is the last occurrence of an Assignment, Assumption, or Variable."""
         if not isinstance(op, (types.Assignment, types.Assumption, types.Variable)):
             raise TypeError('An Assignment, Assumption, or Variable instance is required')
-        name = op.var_name if isinstance(op, types.Assumption) else op.symbol_name
+        name = op.var_name
         dicts = {
             'Assignment': self.assignments,
             'Assumption': self.assumptions,
@@ -292,10 +292,10 @@ class LinearContextualizer(BaseLinearVisitor):
         return method(instruction)
 
     def visit_Assignment(self, op):
-        self.assignments[op.symbol_name].append(op.idx)
+        self.assignments[op.var_name].append(op.idx)
 
     def visit_Variable(self, op):
-        self.variables[op.symbol_name].append(op.idx)
+        self.variables[op.var_name].append(op.idx)
 
     def visit_Assumption(self, op):
         self.assumptions[op.var_name].append(op.idx)
@@ -523,7 +523,7 @@ class LinearInliner(BaseLinearVisitor):
         if result is None:
             self.stack.clear(clear_assumptions=False)
             self.stack.process_instructions(self.instructions[:op.idx])
-            result = self.symbol_table.lookup(op.symbol_name).value
+            result = self.symbol_table.lookup(op.var_name).value
         return result
 
     def visit_InnerScript(self, op):

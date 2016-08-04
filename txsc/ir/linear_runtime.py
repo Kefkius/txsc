@@ -69,7 +69,7 @@ class AltStackManager(object):
                 conditional_level -= 1
 
             if isinstance(i, types.Assignment):
-                item = self.alt_stack_items[i.symbol_name]
+                item = self.alt_stack_items[i.var_name]
 
                 # Record if the assignment is within a conditional.
                 if conditional_level > 0:
@@ -139,7 +139,7 @@ class AltStackManager(object):
             The operations needed to bring op to the top of the stack,
                 or None if the value can be found without the alt stack.
         """
-        name = op.symbol_name if isinstance(op, types.Variable) else op.var_name
+        name = op.var_name
         item = self.alt_stack_items[name]
         if not item.requires_alt_stack():
             return None
@@ -166,7 +166,7 @@ class AltStackManager(object):
             The operations needed to set the value of op,
                 or None if no operations are required.
         """
-        name = op.symbol_name
+        name = op.var_name
         item = self.alt_stack_items[name]
         if not item.requires_alt_stack():
             return None
@@ -544,7 +544,7 @@ class StackState(object):
         self.end_scope()
 
     def visit_Assignment(self, op):
-        symbol = self.symbol_table.lookup(op.symbol_name)
+        symbol = self.symbol_table.lookup(op.var_name)
         symbol.value = op.value
 
     def visit_ToAltStack(self, op):
