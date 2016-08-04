@@ -22,11 +22,21 @@ class OptimizationTest(BaseOptimizationTest):
         super(OptimizationTest, self).setUp()
         self.symbol_table.add_stack_assumptions(['testItem'])
 
-    def test_repeated_ops(self):
-        script = [types.Five(), types.Five(), types.Five(), types.Drop(), types.Drop()]
-        self._do_test('OP_5 OP_5 OP_5 OP_2DROP', script)
+    def test_merge_op_and_verify(self):
+        script = [types.Five(), types.Five(), types.Equal(), types.Verify()]
+        self._do_test('OP_5 OP_5 OP_EQUALVERIFY', script)
 
-    def test_optimize_stack_ops(self):
+        script = [types.Five(), types.Five(), types.NumEqual(), types.Verify()]
+        self._do_test('OP_5 OP_5 OP_NUMEQUALVERIFY', script)
+
+    def test_alt_stack_ops(self):
+        for script in [
+            [types.Five(), types.ToAltStack(), types.FromAltStack()],
+            [types.Five(), types.FromAltStack(), types.ToAltStack()],
+        ]:
+            self._do_test('OP_5', script)
+
+    def test_stack_ops(self):
         script = [types.Five(), types.One(), types.Pick()]
         self._do_test('OP_5 OP_OVER', script)
 
@@ -42,7 +52,10 @@ class OptimizationTest(BaseOptimizationTest):
         script = [types.Five(), types.Six(), types.One(), types.Roll(), types.One(), types.Roll()]
         self._do_test('OP_5 OP_6', script)
 
-    def test_shortcut_ops(self):
+        script = [types.Five(), types.Five(), types.Five(), types.Drop(), types.Drop()]
+        self._do_test('OP_5 OP_5 OP_5 OP_2DROP', script)
+
+    def test_arithmetic_shortcut_ops(self):
         for script in [
             [types.Five(), types.One(), types.Add()],
             [types.One(), types.Five(), types.Add()],
@@ -68,7 +81,18 @@ class OptimizationTest(BaseOptimizationTest):
         script = [types.Five(), types.One(), types.Negate()]
         self._do_test('OP_5 OP_1NEGATE', script)
 
-    def test_null_ops(self):
+    def test_conditional_shortcut_ops(self):
+        script = [types.Five(), types.Not(), types.If(), types.Two(), types.EndIf()]
+        self._do_test('OP_5 OP_NOTIF OP_2 OP_ENDIF', script)
+
+    def test_hash_shortcut_ops(self):
+        script = [types.Five(), types.Sha256(), types.Sha256()]
+        self._do_test('OP_5 OP_HASH256', script)
+
+        script = [types.Five(), types.Sha256(), types.RipeMD160()]
+        self._do_test('OP_5 OP_HASH160', script)
+
+    def test_remove_null_arithmetic(self):
         for script in [
             [types.Five(), types.Zero(), types.Add()],
             [types.Zero(), types.Five(), types.Add()],
@@ -76,26 +100,15 @@ class OptimizationTest(BaseOptimizationTest):
         ]:
             self._do_test('OP_5', script)
 
+    def test_remove_null_conditionals(self):
+        script = [types.Five(), types.If(), types.Else(), types.EndIf()]
+        self._do_test('OP_5 OP_DROP', script)
 
-    def test_merge_op_and_verify(self):
-        script = [types.Five(), types.Five(), types.Equal(), types.Verify()]
-        self._do_test('OP_5 OP_5 OP_EQUALVERIFY', script)
+    def test_remove_trailing_verifications(self):
+        script = [types.Five(), types.Verify(), types.Verify()]
+        self._do_test('OP_5', script)
 
-        script = [types.Five(), types.Five(), types.NumEqual(), types.Verify()]
-        self._do_test('OP_5 OP_5 OP_NUMEQUALVERIFY', script)
-
-    def test_optimize_dup_and_checksig(self):
-        script = [types.Five(), types.Dup(), types.Six(), types.CheckSig()]
-        self._do_test('OP_5 OP_6 OP_CHECKSIG', script)
-
-    def test_optimize_hashes(self):
-        script = [types.Five(), types.Sha256(), types.Sha256()]
-        self._do_test('OP_5 OP_HASH256', script)
-
-        script = [types.Five(), types.Sha256(), types.RipeMD160()]
-        self._do_test('OP_5 OP_HASH160', script)
-
-    def test_arithmetic_ops(self):
+    def test_use_arithmetic_ops(self):
         script = [types.Five(), types.Five(), types.Equal(), types.Not()]
         self._do_test('OP_5 OP_5 OP_NUMNOTEQUAL', script)
 
@@ -106,9 +119,9 @@ class OptimizationTest(BaseOptimizationTest):
         script = [types.Five(), types.Push(b'\x01\x02\x03\x04\x05'), types.Equal(), types.Not()]
         self._do_test('OP_5 0102030405 OP_EQUAL OP_NOT', script)
 
-    def test_multiple_optimization_occurrences(self):
-        script = [types.Five(), types.Five(), types.Equal(), types.Verify(), types.Five(), types.Five(), types.Equal(), types.Verify()]
-        self._do_test('OP_5 OP_5 OP_EQUALVERIFY OP_5 OP_5 OP_EQUALVERIFY', script)
+    def test_use_small_int_ops(self):
+        script = [types.Push(b'\x05')]
+        self._do_test('OP_5', script)
 
     def test_promote_return(self):
         for script in [
@@ -117,9 +130,13 @@ class OptimizationTest(BaseOptimizationTest):
         ]:
             self._do_test('OP_RETURN OP_5', script)
 
-    def test_convert_to_small_int(self):
-        script = [types.Push(b'\x05')]
-        self._do_test('OP_5', script)
+    def test_commutative_operations(self):
+        script = [types.Two(), types.Five(), types.Swap(), types.Add()]
+        self._do_test('OP_2 OP_5 OP_ADD', script)
+
+    def test_multiple_optimization_occurrences(self):
+        script = [types.Five(), types.Five(), types.Equal(), types.Verify(), types.Five(), types.Five(), types.Equal(), types.Verify()]
+        self._do_test('OP_5 OP_5 OP_EQUALVERIFY OP_5 OP_5 OP_EQUALVERIFY', script)
 
 class InlineTest(BaseOptimizationTest):
     def setUp(self):

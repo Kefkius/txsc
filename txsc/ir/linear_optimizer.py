@@ -1,9 +1,35 @@
-"""Script optimizations."""
+"""Script optimizations.
+
+Peephole optimizations in this module that affect specific sequences of
+opcodes are accompanied by a comment with the following form:
+    # before -> after
+
+Here, "before" and "after" refer to opcodes. If the optimization results
+in the complete removal of the "before" opcodes, an underscore is
+used for "after".
+
+Examples:
+    - Replace "OP_1 OP_PICK" with "OP_OVER":
+        # OP_1 OP_PICK -> OP_OVER
+    - Remove "OP_0 OP_ROLL":
+        # OP_0 OP_ROLL -> _
+
+These comments are necessary so that tools/show-peephole-optimizers.py
+can display the set of peephole optimizations.
+
+Guidelines for naming peephole optimization functions:
+    - If the function affects a specific type of opcode, include it
+        in the name (e.g. "arithmetic", "conditional").
+    - Avoid using the words "optimize", "shorten", etc.
+    - Use the word "shortcut" if the optimization replaces opcodes
+        with shortcut opcodes (e.g. "OP_1 OP_ADD -> OP_1ADD").
+
+"""
 import itertools
 
 from txsc.ir import formats
 from txsc.ir.instructions import LInstructions
-from txsc.ir.linear_context import LinearContextualizer, LinearInliner
+from txsc.ir.linear_context import LinearInliner
 from txsc.ir.linear_visitor import BaseLinearVisitor
 import txsc.ir.linear_nodes as types
 
@@ -27,12 +53,18 @@ def permutations(nodes):
     """Return permutations of nodes."""
     return [list(i) for i in itertools.permutations(nodes, len(nodes))]
 
+
 @peephole
 def merge_op_and_verify(instructions):
     """Merge opcodes with a corresponding *VERIFY form.
 
     e.g. OP_EQUAL OP_VERIFY -> OP_EQUALVERIFY
     """
+    # Opcodes in Bitcoin that are covered by this function:
+    # OP_EQUAL OP_VERIFY -> OP_EQUALVERIFY
+    # OP_NUMEQUAL OP_VERIFY -> OP_NUMEQUALVERIFY
+    # OP_CHECKSIG OP_VERIFY -> OP_CHECKSIGVERIFY
+    # OP_CHECKMULTISIG OP_VERIFY -> OP_CHECKMULTISIGVERIFY
     optimizations = []
     for op in types.iter_opcode_classes():
         if op.name.endswith('VERIFY') and op.name != 'OP_VERIFY':
@@ -47,18 +79,19 @@ def merge_op_and_verify(instructions):
         instructions.replace_template(template, callback)
 
 @peephole
-def replace_repeated_ops(instructions):
-    """Replace repeated opcodes with single opcodes."""
-    optimizations = [
-        # OP_DROP OP_DROP -> OP_2DROP
-        ([types.Drop(), types.Drop()], [types.TwoDrop()]),
-    ]
-    for template, replacement in optimizations:
+def alt_stack_ops(instructions):
+    """Optimize alt stack operations."""
+    for template, replacement in [
+        # OP_TOALTSTACK OP_FROMALTSTACK -> _
+        ([types.ToAltStack(), types.FromAltStack()], []),
+        # OP_FROMALTSTACK OP_TOALTSTACK -> _
+        ([types.FromAltStack(), types.ToAltStack()], []),
+    ]:
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
 @peephole
-def optimize_stack_ops(instructions):
+def stack_ops(instructions):
     """Optimize stack operations."""
     for template, replacement in [
         # OP_1 OP_PICK -> OP_OVER
@@ -77,13 +110,15 @@ def optimize_stack_ops(instructions):
         ([types.Nip(), types.Drop()], [types.TwoDrop()]),
         # OP_OVER OP_OVER -> OP_2DUP
         ([types.Over(), types.Over()], [types.TwoDup()]),
+        # OP_DROP OP_DROP -> OP_2DROP
+        ([types.Drop(), types.Drop()], [types.TwoDrop()]),
     ]:
         callback = lambda values, replacement=replacement: replacement
         instructions.replace_template(template, callback)
 
 @peephole
-def replace_shortcut_ops(instructions):
-    """Replace opcodes with a corresponding shortcut form."""
+def arithmetic_shortcut_ops(instructions):
+    """Replace arithmetic opcodes with corresponding shortcut forms."""
     optimizations = []
     # Replace division by 2.
     # OP_2 OP_DIV -> OP_2DIV
@@ -112,8 +147,26 @@ def replace_shortcut_ops(instructions):
         instructions.replace_template(template, callback, strict=False)
 
 @peephole
-def replace_null_ops(instructions):
-    """Replace operations that do nothing."""
+def conditional_shortcut_ops(instructions):
+    """Replace conditional opcodes with corresponding shortcut forms."""
+    # OP_NOT OP_IF -> OP_NOTIF
+    instructions.replace_template([types.Not(), types.If()], lambda values: [types.NotIf()])
+
+@peephole
+def hash_shortcut_ops(instructions):
+    """Replace hash opcodes with corresponding shortcut forms."""
+    for template, replacement in [
+        # OP_SHA256 OP_SHA256 -> OP_HASH256
+        ([types.Sha256(), types.Sha256()], [types.Hash256()]),
+        # OP_SHA256 OP_RIPEMD160 -> OP_HASH160
+        ([types.Sha256(), types.RipeMD160()], [types.Hash160()]),
+    ]:
+        callback = lambda values, replacement=replacement: replacement
+        instructions.replace_template(template, callback)
+
+@peephole
+def remove_null_arithmetic(instructions):
+    """Remove arithmetic operations that do nothing."""
     # Remove subtraction by 0.
     # OP_0 OP_SUB -> _
     optimizations = [([types.Zero(), types.Sub()], lambda values: [])]
@@ -127,22 +180,22 @@ def replace_null_ops(instructions):
         instructions.replace_template(template, callback)
 
 @peephole
-def optimize_dup_and_checksig(instructions):
-    for template, callback in [
-        ([types.Dup(), None, types.CheckSig()], lambda values: values[1:]),
-    ]:
-        instructions.replace_template(template, callback)
+def remove_null_conditionals(instructions):
+    """Replace empty conditionals with an op that consumes the test value."""
+    # OP_ELSE OP_ENDIF -> OP_ENDIF
+    instructions.replace_template([types.Else(), types.EndIf()], lambda values: [types.EndIf()])
+    # OP_IF OP_ENDIF -> OP_DROP
+    instructions.replace_template([types.If(), types.EndIf()], lambda values: [types.Drop()])
 
 @peephole
-def optimize_hashes(instructions):
-    for template, replacement in [
-        # OP_SHA256 OP_SHA256 -> OP_HASH256
-        ([types.Sha256(), types.Sha256()], [types.Hash256()]),
-        # OP_SHA256 OP_RIPEMD160 -> OP_HASH160
-        ([types.Sha256(), types.RipeMD160()], [types.Hash160()]),
-    ]:
-        callback = lambda values, replacement=replacement: replacement
-        instructions.replace_template(template, callback)
+def remove_trailing_verifications(instructions):
+    """Remove any trailing OP_VERIFY occurrences.
+
+    A trailing OP_VERIFY is redundant since a truthy value
+    is required for a script to pass.
+    """
+    while len(instructions) and isinstance(instructions[-1], types.Verify):
+        instructions.pop(-1)
 
 @peephole
 def use_arithmetic_ops(instructions):
@@ -169,26 +222,6 @@ def use_arithmetic_ops(instructions):
         instructions.replace_template(template, callback, strict=False)
 
 @peephole
-def remove_trailing_verifications(instructions):
-    """Remove any trailing OP_VERIFY occurrences.
-
-    A trailing OP_VERIFY is redundant since a truthy value
-    is required for a script to pass.
-    """
-    while len(instructions) and isinstance(instructions[-1], types.Verify):
-        instructions.pop(-1)
-
-@peephole
-def promote_return(instructions):
-    """Place any OP_RETURN occurrence at the beginning of the script."""
-    # Get the indices of all OP_RETURN occurrences.
-    occurrences = instructions.find_occurrences(types.Return())
-    if not occurrences or occurrences == [0]:
-        return
-    map(instructions.pop, reversed(occurrences))
-    instructions.insert(0, types.Return())
-
-@peephole
 def use_small_int_opcodes(instructions):
     """Convert data pushes to equivalent small integer opcodes."""
     def convert_push(push):
@@ -202,7 +235,17 @@ def use_small_int_opcodes(instructions):
     instructions.replace_template([types.Push()], convert_push, strict=False)
 
 @peephole
-def shorten_commutative_operations(instructions):
+def promote_return(instructions):
+    """Place any OP_RETURN occurrence at the beginning of the script."""
+    # Get the indices of all OP_RETURN occurrences.
+    occurrences = instructions.find_occurrences(types.Return())
+    if not occurrences or occurrences == [0]:
+        return
+    map(instructions.pop, reversed(occurrences))
+    instructions.insert(0, types.Return())
+
+@peephole
+def commutative_operations(instructions):
     """Remove ops that change the order of commutative operations."""
     optimizations = []
     for op in [types.Add(), types.Mul(), types.BoolAnd(), types.BoolOr(),
@@ -216,29 +259,6 @@ def shorten_commutative_operations(instructions):
     for template, callback in optimizations:
         instructions.replace_template(template, callback)
 
-@peephole
-def remove_null_conditionals(instructions):
-    """Replace empty conditionals with an op that consumes the test value."""
-    # OP_ELSE OP_ENDIF -> OP_ENDIF
-    instructions.replace_template([types.Else(), types.EndIf()], lambda values: [types.EndIf()])
-    # OP_IF OP_ENDIF -> OP_DROP
-    instructions.replace_template([types.If(), types.EndIf()], lambda values: [types.Drop()])
-
-@peephole
-def replace_not_if(instructions):
-    # OP_NOT OP_IF -> OP_NOTIF
-    instructions.replace_template([types.Not(), types.If()], lambda values: [types.NotIf()])
-
-@peephole
-def shorten_alt_stack_ops(instructions):
-    for template, replacement in [
-        # OP_TOALTSTACK OP_FROMALTSTACK -> _
-        ([types.ToAltStack(), types.FromAltStack()], []),
-        # OP_FROMALTSTACK OP_TOALTSTACK -> _
-        ([types.FromAltStack(), types.ToAltStack()], []),
-    ]:
-        callback = lambda values, replacement=replacement: replacement
-        instructions.replace_template(template, callback)
 
 class PeepholeOptimizer(object):
     """Performs peephole optimization on the linear IR."""
