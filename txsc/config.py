@@ -5,6 +5,7 @@ Handles configuration values and entry points.
 Entry points have the following requirements:
 
     - txsc.language: Must return an instance of a txsc.language.Language subclass.
+    - txsc.linear_optimizers: Must return a subclass of txsc.ir.linear_optimizer.LinearOptimizer.
     - txsc.opcodes: Must return a 2-tuple of the form (name, opcodes), where:
         - name (str): The name of the opcode set.
         - opcodes (dict): A dict of {opcode_name: opcode_class}.
@@ -127,7 +128,7 @@ def get_linear_optimizers():
 def set_linear_optimizer(name):
     """Set the desired linear optimizer.
 
-    This is a wrapper arround txsc.linear_optimizer.set_linear_optimizer_cls().
+    This is a wrapper around txsc.ir.linear_optimizer.set_linear_optimizer_cls().
     """
     cls = linear_optimizers.get(name, linear_optimizer.LinearOptimizer)
     linear_optimizer.set_linear_optimizer_cls(cls)
