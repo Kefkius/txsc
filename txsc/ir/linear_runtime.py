@@ -551,9 +551,11 @@ class StackState(object):
         self.change_depth(-4, 2)
 
     def visit_If(self, op):
+        self.state_pop()
         self.begin_scope(ScopeType.Conditional)
 
     def visit_NotIf(self, op):
+        self.state_pop()
         self.begin_scope(ScopeType.Conditional)
 
     def visit_Else(self, op):
