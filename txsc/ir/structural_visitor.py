@@ -146,6 +146,9 @@ class BaseStructuralVisitor(BaseTransformer):
 
                 node.value.set_args(new_args)
 
+        if node.type_ == SymbolType.StackItem:
+            raise IRError('Cannot assign assumed stack item to symbol')
+
         try:
             self.symbol_table.add_symbol(node.name, node.value, node.type_)
         except (ImmutableError, UndeclaredError) as e:
@@ -165,6 +168,8 @@ class BaseStructuralVisitor(BaseTransformer):
             # Symbol value.
             if type_ == SymbolType.Symbol:
                 other = self.symbol_table.lookup(value.name)
+                if other.type_ == SymbolType.StackItem:
+                    raise IRError('Cannot assign assumed stack item to symbol')
                 type_ = other.type_
                 value = other.value
 
