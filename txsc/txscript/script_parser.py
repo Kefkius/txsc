@@ -4,6 +4,10 @@ from ply import lex, yacc
 
 import lexer
 
+class ScriptSyntaxError(Exception):
+    """Exception raised when yacc fails to parse."""
+    pass
+
 class ScriptParser(object):
     tokens = lexer.ScriptLexer.tokens
     precedence = lexer.ScriptLexer.precedence
@@ -46,7 +50,7 @@ class ScriptParser(object):
         return op
 
     def p_error(self, p):
-        raise SyntaxError('Syntax error: %s' % p)
+        pass
 
     def p_module(self, p):
         '''module : statement
@@ -62,6 +66,10 @@ class ScriptParser(object):
         if len(p) == 3:
             p[2].lineno = p.lineno(2)
             p[0].body.append(p[2])
+
+    def p_module_error(self, p):
+        '''module : error'''
+        raise ScriptSyntaxError('Invalid statement encountered', p[1])
 
     def p_ifbody(self, p):
         '''ifbody : module
@@ -308,6 +316,10 @@ class ScriptParser(object):
             p[0] = ast.Call(func=ast.Name(id='_push', ctx=ast.Load()),
                     args=[p[2]],
                     keywords=[])
+
+    def p_statement_push_error(self, p):
+        '''statement : PUSH error SEMICOLON'''
+        raise ScriptSyntaxError('Invalid expression encountered after push', p[2])
 
     def p_comment(self, p):
         '''statement : COMMENT'''

@@ -1,3 +1,3 @@
-from script_parser import ScriptParser
+from script_parser import ScriptParser, ScriptSyntaxError
 from script_transformer import ScriptTransformer, ParsingError
 from txscript_language import TxScriptLanguage
