@@ -195,6 +195,10 @@ class ScriptParser(object):
         '''statement : RETURN expr SEMICOLON'''
         p[0] = ast.Return(p[2])
 
+    def p_verify(self, p):
+        '''statement : VERIFY expr SEMICOLON'''
+        p[0] = ast.Assert(test=p[2], msg=None)
+
     def p_function_call(self, p):
         '''expr : NAME LPAREN args RPAREN
                 | TYPENAME LPAREN args RPAREN
@@ -224,10 +228,6 @@ class ScriptParser(object):
             op = ast.Not()
 
         p[0] = ast.UnaryOp(op=op, operand=p[2])
-
-    def p_verify(self, p):
-        '''expr : VERIFY expr'''
-        p[0] = ast.Assert(test=p[2], msg=None)
 
     def p_expr_binop(self, p):
         '''expr : expr PLUS expr

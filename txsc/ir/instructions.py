@@ -206,7 +206,7 @@ class SInstructions(Instructions):
         """Return whether op pushes a value to the stack if used as a statement."""
         non_push_classes = (structural_nodes.Script, structural_nodes.If, structural_nodes.Function,
                 structural_nodes.Declaration, structural_nodes.Assignment,
-                structural_nodes.Return,)
+                structural_nodes.Return, structural_nodes.VerifyOpCode,)
         if isinstance(op, non_push_classes):
             return False
         return True

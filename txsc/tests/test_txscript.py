@@ -44,7 +44,7 @@ class SingleStatementTest(BaseScriptTransformerTest):
 
     def test_boolops(self):
         self._test_transform('5 or 2;', "[BinOpCode('OP_BOOLOR', Int(5), Int(2))]")
-        self._test_transform('5 or 2 or 8;', "[BinOpCode('OP_BOOLOR', Int(5), BinOpCode('OP_BOOLOR', Int(2), Int(8)))]")
+        self._test_transform('5 or 2 or 8;', "[BinOpCode('OP_BOOLOR', BinOpCode('OP_BOOLOR', Int(5), Int(2)), Int(8))]")
         self._test_transform('5 and 2;', "[BinOpCode('OP_BOOLAND', Int(5), Int(2))]")
 
 class CompoundStatementTest(BaseScriptTransformerTest):

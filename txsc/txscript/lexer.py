@@ -163,6 +163,8 @@ class ScriptLexer(object):
         raise Exception("Illegal character '%s'" % t.value[0])
 
     precedence = (
+        ('left', 'AND', 'OR',),
+        ('left', 'AMPERSAND', 'CARET', 'PIPE',),
         ('left', 'EQUALITY', 'INEQUALITY',),
         ('left', 'LESSTHAN', 'GREATERTHAN', 'LESSTHANOREQUAL', 'GREATERTHANOREQUAL',),
         ('left', 'LSHIFT', 'RSHIFT',),
