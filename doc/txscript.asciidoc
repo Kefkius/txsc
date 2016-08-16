@@ -91,6 +91,25 @@ Hex strings are enclosed in single quotation marks, with no "0x" prefix.
 let myHash = '1111111111111111111111111111111111111111';
 --------------------------------------------------------
 
+[[slices]]
+Slices
+~~~~~~
+
+Slices are used to access part of a byte array.
+
+Slices may have negative indices to indicate an offset from the end of the byte array.
+
+-------------------------------
+let myVar = '00112233';
+# The last byte of myVar.
+let lastByte = myVar[-1];
+# The first two bytes of myVar.
+let firstBytes = myVar[:2];
+-------------------------------
+
+Note that slice notation is shorthand for existing built-in functions, and so,
+slices cannot be assigned to like names.
+
 [[assignments]]
 Assignments
 ~~~~~~~~~~~
