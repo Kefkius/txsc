@@ -278,10 +278,10 @@ class ConstEvaluator(object):
         result = method(*args)
         # Convert result to an Int instance.
         if isinstance(result, int):
-            result = types.Int.coerce(result)
+            result = SInstructions.coerce(result, types.Int)
         # Convert result to a Bytes instance.
         elif isinstance(result, str):
-            result = types.Bytes.coerce(result)
+            result = SInstructions.coerce(result, types.Bytes)
         result.lineno = node.lineno
 
         if not formats.is_strict_num(int(result)):

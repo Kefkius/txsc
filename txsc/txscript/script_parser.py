@@ -276,6 +276,28 @@ class ScriptParser(object):
 
         p[0] = ast.Compare(left=p[1], ops=[op], comparators=[p[3]])
 
+    def p_slice(self, p):
+        '''slice : LBRACKET COLON expr RBRACKET
+                 | LBRACKET expr COLON RBRACKET
+                 | LBRACKET expr COLON expr RBRACKET
+        '''
+        lower = None
+        upper = None
+
+        if len(p) == 6:
+            lower = p[2]
+            upper = p[4]
+        elif p[2] == ':':
+            upper = p[3]
+        elif p[3] == ':':
+            lower = p[2]
+
+        p[0] = ast.Slice(lower=lower, upper=upper)
+
+    def p_expr_slice(self, p):
+        '''expr : expr slice'''
+        p[0] = ast.Subscript(value=p[1], slice=p[2], ctx=ast.Load())
+
     def p_expr_hexstr(self, p):
         '''expr : HEXSTR'''
         s = p[1].replace('\'','')

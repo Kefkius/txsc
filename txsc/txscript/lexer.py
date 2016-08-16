@@ -13,7 +13,9 @@ class ScriptLexer(object):
             'EQUALS',
             'LBRACE', 'RBRACE',
             'LPAREN', 'RPAREN',
+            'LBRACKET', 'RBRACKET',
             'COMMA',
+            'COLON',
             'SEMICOLON',
             'STR',
 
@@ -122,7 +124,10 @@ class ScriptLexer(object):
     t_RBRACE = r'\}'
     t_LPAREN = r'\('
     t_RPAREN = r'\)'
+    t_LBRACKET = r'\['
+    t_RBRACKET = r'\]'
     t_COMMA = r'\,'
+    t_COLON = r'\:'
     t_SEMICOLON = r'\;'
     t_STR = r'\"[^\"]*\"'
 

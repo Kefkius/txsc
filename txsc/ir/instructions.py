@@ -244,6 +244,20 @@ class SInstructions(Instructions):
         # If no other type qualifies, use expression.
         return SymbolType.Expr
 
+    @staticmethod
+    def coerce(value, as_type):
+        """Coerce value as as_type."""
+        if not hasattr(as_type, 'coerce'):
+            raise TypeError('%s does not support coercion' % as_type.__name__)
+        if isinstance(value, list) and len(value) == 1:
+            value = value[0]
+        # Convert small int opcode to an integer.
+        if isinstance(value, linear_nodes.SmallIntOpCode):
+            value = value.value
+
+        result = as_type.coerce(value)
+        return result
+
 
     def __init__(self, script=structural_nodes.Script()):
         self.script = script

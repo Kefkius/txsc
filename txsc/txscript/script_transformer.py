@@ -210,6 +210,29 @@ class ScriptTransformer(BaseTransformer):
         assign.declaration = False
         return self.visit(assign)
 
+    def visit_Subscript(self, node):
+        value = self.visit(node.value)
+        lower, upper = None, None
+        if node.slice.lower is not None:
+            lower = types.Cast(self.visit(node.slice.lower), SymbolType.ByteArray)
+            lower.lineno = lower.value.lineno
+        if node.slice.upper is not None:
+            upper = types.Cast(self.visit(node.slice.upper), SymbolType.ByteArray)
+            upper.lineno = upper.value.lineno
+
+        op = None
+        if lower and upper is None:
+            op = types.BinOpCode(name='OP_RIGHT',
+                left=value, right=lower)
+        elif lower is None and upper:
+            op = types.BinOpCode(name='OP_LEFT',
+                left=value, right=upper)
+        else:
+            op = types.VariableArgsOpCode(name='OP_SUBSTR',
+                operands=[value, lower, upper])
+
+        return op
+
     def visit_Name(self, node):
         # Return the node if it's being assigned.
         if isinstance(node.ctx, ast.Store):

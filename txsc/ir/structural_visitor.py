@@ -62,9 +62,9 @@ class BaseStructuralVisitor(BaseTransformer):
         return_value = None
 
         if node.as_type == SymbolType.Integer:
-            return_value = structural_nodes.Int.coerce(value)
+            return_value = SInstructions.coerce(value, structural_nodes.Int)
         elif node.as_type == SymbolType.ByteArray:
-            return_value = structural_nodes.Bytes.coerce(value)
+            return_value = SInstructions.coerce(value, structural_nodes.Bytes)
 
         if return_value:
             return_value.lineno = line_number
@@ -227,6 +227,10 @@ class StructuralVisitor(BaseStructuralVisitor):
     @returnlist
     def visit_list(self, node):
         return self.visit(structural_nodes.Bytes(''.join(node)))
+
+    @returnlist
+    def visit_Cast(self, node):
+        return super(StructuralVisitor, self).visit_Cast(node)
 
     @returnlist
     def visit_Script(self, node):
