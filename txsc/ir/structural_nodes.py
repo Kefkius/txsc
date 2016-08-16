@@ -102,6 +102,11 @@ class Bytes(ScriptOp):
     def __str__(self):
         return self.data
 
+    def byte_slice(self, lower=None, upper=None):
+        """Get a slice of the bytes this array represents."""
+        data = self.data.decode('hex')
+        return data[lower:upper]
+
     def dump(self, annotate_fields=False):
         return 'Bytes(%s0x%s)' % ('data=' if annotate_fields else '', self.data)
 

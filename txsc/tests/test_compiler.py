@@ -61,6 +61,14 @@ class CompileTxScriptTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_slice(self):
+        for test in [
+            Test('0x04 0x00112233 2 LEFT', ["let a = '00112233';", "push a[:2];"]),
+            Test('0x04 0x00112233 2 RIGHT', ["let a = '00112233';", "push a[2:];"]),
+            Test('0x04 0x00112233 1 2 SUBSTR', ["let a = '00112233';", "push a[1:2];"]),
+        ]:
+            self._test(test)
+
     def test_standard_tx(self):
         # P2PKH output script.
         src = ['assume sig, pubkey;',

@@ -409,3 +409,21 @@ class ConstEvaluator(object):
     @params(str)
     def OP_EQUAL(self, left, right):
         return left == right
+
+    def OP_LEFT(self, value, index):
+        if not isinstance(value, types.Bytes):
+            raise TypeError('OP_LEFT requires a Bytes instance')
+        index = int(index)
+        return value.byte_slice(upper=index).encode('hex')
+
+    def OP_RIGHT(self, value, index):
+        if not isinstance(value, types.Bytes):
+            raise TypeError('OP_RIGHT requires a Bytes instance')
+        index = int(index)
+        return value.byte_slice(lower=index).encode('hex')
+
+    def OP_SUBSTR(self, value, lower, upper):
+        if not isinstance(value, types.Bytes):
+            raise TypeError('OP_SUBSTR requires a Bytes instance')
+        lower, upper = map(int, (lower, upper))
+        return value.byte_slice(lower=lower, upper=upper).encode('hex')

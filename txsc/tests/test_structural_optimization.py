@@ -92,3 +92,12 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)
+
+    def test_slice(self):
+        for expected, src in [
+            ('0x02 0x0011', "let a = '00112233'; push a[:2];"),
+            ('0x02 0x2233', "let a = '00112233'; push a[2:];"),
+            ('0x01 0x11', "let a = '00112233'; push a[1:2];"),
+        ]:
+            result = self._compile(src)
+            self.assertEqual(expected, result)
