@@ -213,12 +213,23 @@ class ScriptTransformer(BaseTransformer):
     def visit_Subscript(self, node):
         value = self.visit(node.value)
         lower, upper = None, None
-        if node.slice.lower is not None:
-            lower = types.Cast(self.visit(node.slice.lower), SymbolType.ByteArray)
+        # Slice notation.
+        if isinstance(node.slice, ast.Slice):
+            if node.slice.lower is not None:
+                lower = types.Cast(self.visit(node.slice.lower), SymbolType.ByteArray)
+                lower.lineno = lower.value.lineno
+            if node.slice.upper is not None:
+                upper = types.Cast(self.visit(node.slice.upper), SymbolType.ByteArray)
+                upper.lineno = upper.value.lineno
+        # Index notation.
+        elif isinstance(node.slice, ast.Index):
+            # Transform [index] into [index:index + 1].
+            lower = types.Cast(self.visit(node.slice.value), SymbolType.ByteArray)
             lower.lineno = lower.value.lineno
-        if node.slice.upper is not None:
-            upper = types.Cast(self.visit(node.slice.upper), SymbolType.ByteArray)
-            upper.lineno = upper.value.lineno
+            upper = types.BinOpCode(name='OP_ADD', left=types.Cast(self.visit(node.slice.value), SymbolType.ByteArray),
+                                    right=types.Int(1))
+            for i in [upper, upper.left, upper.right]:
+                i.lineno = lower.lineno
 
         op = None
         if lower and upper is None:

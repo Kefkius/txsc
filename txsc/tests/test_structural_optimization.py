@@ -98,6 +98,8 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
             ('0x02 0x0011', "let a = '00112233'; push a[:2];"),
             ('0x02 0x2233', "let a = '00112233'; push a[2:];"),
             ('0x01 0x11', "let a = '00112233'; push a[1:2];"),
+            ('0x01 0x11', "let a = '00112233'; push a[1];"),
+            ('0x01 0x22', "let a = '00112233'; push a[-2];"),
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)

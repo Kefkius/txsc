@@ -294,6 +294,10 @@ class ScriptParser(object):
 
         p[0] = ast.Slice(lower=lower, upper=upper)
 
+    def p_slice_index(self, p):
+        '''slice : LBRACKET expr RBRACKET'''
+        p[0] = ast.Index(p[2])
+
     def p_expr_slice(self, p):
         '''expr : expr slice'''
         p[0] = ast.Subscript(value=p[1], slice=p[2], ctx=ast.Load())
