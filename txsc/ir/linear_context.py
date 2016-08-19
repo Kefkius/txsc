@@ -169,6 +169,7 @@ class LinearContextualizer(BaseLinearVisitor):
         assumptions = self.assumptions[assumption_name]
         following = []
 
+        idx_branch = self.get_branch(idx)
         for assumption_idx in assumptions:
             if assumption_idx <= idx:
                 continue
@@ -178,7 +179,7 @@ class LinearContextualizer(BaseLinearVisitor):
                 for branch in branches:
                     if not match_any_branch and branch.is_in_branch(idx):
                         continue
-                    if branch.end > idx:
+                    if branch.end > idx and (not idx_branch or branch != idx_branch.orelse):
                         following.append(assumption_idx)
 
                 # Assumption beyond a conditional.
@@ -206,10 +207,10 @@ class LinearContextualizer(BaseLinearVisitor):
 
         idx_branch = self.get_branch(idx)
 
-        # Add the deltas of instructions before the first branch in the script.
-        total += sum(i.delta for i in self.instructions[:branches[0].start])
+        branch_ranges = []
         branch_deltas = {True: [], False: []}
         for branch in branches:
+            branch_ranges.append((branch.start, branch.end))
             if branch == idx_branch:
                 # Add the deltas of instructions before idx in its branch.
                 total += sum(i.delta for i in self.instructions[branch.start:idx])
@@ -221,6 +222,11 @@ class LinearContextualizer(BaseLinearVisitor):
         # It doesn't matter which is_truebranch value we use here,
         # since assumptions after uneven conditionals are not handled this way.
         total += sum(branch_deltas[True])
+
+        # Add the deltas from operations outside of branches before idx.
+        for instruction in self.instructions[:idx]:
+            if not any(instruction.idx >= start and instruction.idx <= end for start,end in branch_ranges):
+                total += instruction.delta
 
         return total
 
@@ -415,6 +421,7 @@ class LinearInliner(BaseLinearVisitor):
             peephole_optimizer.optimize(instructions)
             self.contextualizer.contextualize(instructions)
             inlined = False
+
             for i, node in enumerate(instructions):
                 result = self.visit(node)
                 if result is None:

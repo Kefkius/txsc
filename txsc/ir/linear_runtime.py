@@ -94,6 +94,14 @@ class AltStackManager(object):
                 # Record if the assignment is within a conditional.
                 if conditional_level > 0:
                     item.assigned_in_conditional = True
+                # Treat the item as if it were assigned in a condtional
+                # if the value being assigned to it was assigned in a conditional.
+                else:
+                    assignment_values = [op for op in i.value if isinstance(op, types.Variable)]
+                    for assignment_value in assignment_values:
+                        if self.alt_stack_items.get(assignment_value.var_name):
+                            item.assigned_in_conditional = True
+                            break
 
                 item.assignments += 1
                 # Assign the item's index and initial value.
@@ -174,6 +182,10 @@ class AltStackManager(object):
         if not is_last_occurrence:
             ops.extend([types.Dup(), types.ToAltStack()])
             replacement_ops.insert(0, types.Swap)
+        else:
+            for i in self.alt_stack_items.values():
+                if i.variable_index is not None and i.variable_index > item.variable_index:
+                    i.variable_index -= 1
         # Push the variables back onto the alt stack.
         ops.extend(self._repeat_ops(replacement_ops, values_after))
 
