@@ -438,18 +438,16 @@ class LinearInliner(BaseLinearVisitor):
 
     def visit_consecutive_assumptions(self, assumptions):
         """Handle a row of consecutive assumptions."""
-        # If the first assumption's delta is 0 and the depths are sequential,
-        # then nothing needs to be done.
-        total_delta = self.contextualizer.total_delta(assumptions[0].idx)
-        if total_delta - self.stack.assumptions_offset == 0:
-            symbols = map(self.symbol_table.lookup, [i.var_name for i in assumptions])
+        # If the assumptions are all being ROLL'd to the top, the final assumption's
+        # OP_ROLL argument is 0, and the others are sequential, then nothing needs to be done.
+        assumption_ops = map(self.bring_assumption_to_top, assumptions)
+        if all(len(ops) == 2 and isinstance(ops[1], types.Roll) for ops in assumption_ops):
+            roll_args = [ops[0] for ops in assumption_ops]
+            iterator = (LInstructions.instruction_to_int(i) for i in reversed(roll_args))
+            # Ensure that the value is 0 (instead of None).
             # http://stackoverflow.com/questions/28885455/python-check-whether-list-is-sequential-or-not
-            iterator = (i.value.depth for i in reversed(symbols))
-            final_item_depth = next(iterator)
-            values = [(a, b) for a, b in enumerate(iterator, final_item_depth + 1)]
-            if all(a == b for (a, b) in values):
-                if final_item_depth == 0:
-                    return []
+            if next(iterator) == 0 and all(a == b for (a, b) in enumerate(iterator, 1)):
+                return []
 
     def bring_assumption_to_top(self, op):
         symbol = self.symbol_table.lookup(op.var_name)
