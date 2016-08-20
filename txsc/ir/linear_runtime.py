@@ -178,10 +178,9 @@ class AltStackManager(object):
         ops.extend(self._repeat_ops([types.FromAltStack], values_after))
         # Pop the actual variable from the alt stack.
         ops.extend([types.FromAltStack()])
-        replacement_ops = [types.ToAltStack]
+        replacement_ops = [types.Swap, types.ToAltStack]
         if not is_last_occurrence:
             ops.extend([types.Dup(), types.ToAltStack()])
-            replacement_ops.insert(0, types.Swap)
         else:
             for i in self.alt_stack_items.values():
                 if i.variable_index is not None and i.variable_index > item.variable_index:
