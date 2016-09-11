@@ -200,8 +200,7 @@ class BaseStructuralVisitor(BaseTransformer):
         """Bind args to func's formal parameters."""
         self.symbol_table.begin_scope(scope_type=ScopeType.Function)
         for param, arg in zip(func.args, args):
-            # TODO use a specific symbol type instead of expression.
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.FuncArg, declaration=True)
 
         return (args, func)
 

@@ -564,7 +564,7 @@ class LinearInliner(BaseLinearVisitor):
         self.symbol_table.begin_scope(scope_type=ScopeType.Function)
         # Bind args to func's formal parameters.
         for param, arg in zip(func.args, op.args):
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_=SymbolType.Expr, declaration=True)
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_=SymbolType.FuncArg, declaration=True)
 
         # Visit the function ops.
         ret = []

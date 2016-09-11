@@ -23,6 +23,7 @@ class SymbolType(object):
     ByteArray = 'byte_array'
     Expr = 'expression'
     Func = 'function'
+    FuncArg = 'function_arg'
     Integer = 'integer'
     StackItem = 'stack_item'
     Symbol = 'symbol'

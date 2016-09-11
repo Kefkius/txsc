@@ -89,6 +89,7 @@ class AggressiveOptimizationsTest(BaseStructuralOptimizationTest):
         for expected, src in [
             ('5', 'func int addVars(a, b) {return a + b;} addVars(2, 3);'),
             ('12', 'func int addVars(a, b) {return a + b;} addVars(addVars(2, 3), 7);'),
+            ('5 ADD', 'assume item; func int addVars(a, b) {return a + b;} addVars(5, item);'),
         ]:
             result = self._compile(src)
             self.assertEqual(expected, result)
