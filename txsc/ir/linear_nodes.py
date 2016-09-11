@@ -87,6 +87,16 @@ class Assumption(Node):
     def __str__(self):
         return 'assume(%s)'%self.var_name
 
+class FunctionCall(Node):
+    """Call to a function."""
+    name = 'functioncall'
+    comparators = Node.comparators + ('func_name', 'args', 'ops',)
+    def __init__(self, func_name='', args=None, ops=None, **kwargs):
+        super(FunctionCall, self).__init__(**kwargs)
+        self.func_name = func_name
+        self.args = args if args is not None else []
+        self.ops = ops if ops is not None else []
+
 class Push(Node):
     name = 'push'
     comparators = Node.comparators + ('data',)

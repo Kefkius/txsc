@@ -9,7 +9,7 @@ from txsc.symbols import SymbolTable, SymbolType, ImmutableError, MultipleDeclar
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError, IRStrictNumError, IRTypeError
 from txsc.ir.instructions import SInstructions, format_structural_op
-from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor
+from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, SymbolVisitor
 import txsc.ir.structural_nodes as types
 
 
@@ -205,18 +205,19 @@ class StructuralOptimizer(BaseStructuralVisitor):
 
     def visit_function_body(self, body):
         for stmt in body:
+            result = self.visit(stmt)
             if isinstance(stmt, types.Return):
-                result = self.visit(stmt)
-                if isinstance(result, types.Symbol):
-                    result = self.symbol_table.lookup(result.name).value
-                return result
-            self.visit(stmt)
+                # Attempt to substitute symbol values in the return statement.
+                result = SymbolVisitor().transform(result, self.symbol_table)
+                return self.visit(result)
         raise IRError('Function did not return a value')
 
     def visit_FunctionCall(self, node):
         line_number = node.lineno
         node.args = self.map_visit(node.args)
         func = self.add_FunctionCall(node)
+        self.bind_args(node.args, func)
+
         body = copy.deepcopy(func.body)
 
         return_value = self.visit_function_body(body)
@@ -224,7 +225,10 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return_value.lineno = line_number
 
         self.symbol_table.end_scope()
-        return return_value
+        # If the result is constant, return it instead of the function call.
+        if get_const(return_value):
+            return return_value
+        return node
 
     def visit_If(self, node):
         node.test = self.visit(node.test)

@@ -1,6 +1,7 @@
 from collections import defaultdict
 import copy
 
+from txsc.symbols import ScopeType, SymbolType
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError
 from txsc.ir.instructions import LInstructions
@@ -375,6 +376,10 @@ class LinearContextualizer(BaseLinearVisitor):
         """Attempt to determine opcode argument."""
         return self.visit_Pick(op)
 
+    def visit_FunctionCall(self, op):
+        for i in op.ops:
+            i.idx = op.idx
+
 class LinearInliner(BaseLinearVisitor):
     """Replaces variables with stack operations."""
     def __init__(self, symbol_table, options=LIROptions()):
@@ -550,3 +555,29 @@ class LinearInliner(BaseLinearVisitor):
             return None
         op.ops = new_ops
         return op
+
+    def visit_FunctionCall(self, op):
+        self.stack.clear(clear_assumptions=False)
+        self.stack.process_instructions(self.instructions[:op.idx])
+
+        func = self.symbol_table.lookup(op.func_name).value
+        self.symbol_table.begin_scope(scope_type=ScopeType.Function)
+        # Bind args to func's formal parameters.
+        for param, arg in zip(func.args, op.args):
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_=SymbolType.Expr, declaration=True)
+
+        # Visit the function ops.
+        ret = []
+        for i in op.ops:
+            result = self.visit(i)
+            # Return the op if it's unchanged.
+            if result is None:
+                ret.append(i)
+            elif isinstance(result, list):
+                ret.extend(result)
+            else:
+                ret.append(result)
+
+        self.symbol_table.end_scope()
+
+        return ret

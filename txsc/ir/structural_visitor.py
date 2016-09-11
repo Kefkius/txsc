@@ -1,3 +1,4 @@
+import copy
 from functools import wraps
 import logging
 
@@ -179,7 +180,7 @@ class BaseStructuralVisitor(BaseTransformer):
             raise IRError(e.message)
 
     def add_FunctionCall(self, node):
-        """Bind arguments to node's formal parameters."""
+        """Get a function."""
         self.require_symbol_table('process function call')
 
         symbol = self.symbol_table.lookup(node.name)
@@ -189,23 +190,32 @@ class BaseStructuralVisitor(BaseTransformer):
             raise IRTypeError('Cannot call "%s" of type %s' % (node.name, symbol.type_))
 
         func = symbol.value
+        # Validate the number of arguments.
         if len(func.args) != len(node.args):
             raise IRError('Function "%s" requires %d argument(s) (got %d)' % (func.name, len(func.args), len(node.args)))
 
-        # Lookup and substitute symbols used as arguments.
-        args = list(node.args)
-        for i, arg in enumerate(args):
-            if isinstance(arg, structural_nodes.Symbol):
-                arg_value = self.symbol_table.lookup(arg.name).value
-                args[i] = arg_value
+        return func
 
+    def bind_args(self, args, func):
+        """Bind args to func's formal parameters."""
         self.symbol_table.begin_scope(scope_type=ScopeType.Function)
-        # Bind arguments to formal parameters.
         for param, arg in zip(func.args, args):
             # TODO use a specific symbol type instead of expression.
             self.symbol_table.add_symbol(name=param.id, value=arg, type_ = SymbolType.Expr, declaration=True)
 
-        return func
+        return (args, func)
+
+class SymbolVisitor(BaseStructuralVisitor):
+    """Substitutes symbols with their values."""
+    def transform(self, node, symbol_table):
+        self.symbol_table = symbol_table
+        return self.visit(node)
+
+    def visit_Symbol(self, node):
+        symbol = self.symbol_table.lookup(node.name)
+        if not symbol:
+            raise IRError('Symbol "%s" was not declared.' % node.name)
+        return symbol.value
 
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
@@ -388,7 +398,27 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_FunctionCall(self, node):
-        raise IRError("Function call could not be evaluated")
+        func = self.add_FunctionCall(node)
+        args = node.args
+        self.bind_args(args, func)
+
+        body = copy.deepcopy(func.body)
+        ops = []
+        for i in body:
+            ops.extend(self.visit(i))
+
+        self.symbol_table.end_scope()
+
+        # Transform arguments into LIR.
+        func_args = []
+        for arg in args:
+            r = self.visit(arg)
+            if isinstance(r, list) and len(r) == 1:
+                r = r[0]
+            func_args.append(r)
+
+        ret_value = types.FunctionCall(func_name=func.name, args=func_args, ops=ops)
+        return ret_value
 
     @returnlist
     def visit_Function(self, node):
@@ -397,3 +427,7 @@ class StructuralVisitor(BaseStructuralVisitor):
                 msg = 'Functions cannot push values to the stack'
                 self.error(msg, stmt.lineno)
                 raise IRImplicitPushError(msg, stmt.lineno)
+
+    @returnlist
+    def visit_Return(self, node):
+        return self.visit(node.value)
