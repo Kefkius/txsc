@@ -364,7 +364,7 @@ class ScriptTransformer(BaseTransformer):
             raise Exception('Cannot define function. Transformer was started without a symbol table.')
 
         args = node.args.args.elts
-        body = self.map_visit(node.body)
+        body = filter(lambda i: i is not None, self.map_visit(node.body))
 
         type_name = self.get_symbol_type(node.type_name)
         func_def = types.Function(node.name, type_name, args, body)
