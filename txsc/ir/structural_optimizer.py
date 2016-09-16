@@ -234,7 +234,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
     def visit_If(self, node):
         node.test = self.visit(node.test)
         node.truebranch.statements = self.map_visit(node.truebranch.statements)
-        if node.falsebranch:
+        if node.falsebranch.statements:
             node.falsebranch.statements = self.map_visit(node.falsebranch.statements)
         return node
 

@@ -255,7 +255,7 @@ class ScriptTransformer(BaseTransformer):
     def visit_If(self, node):
         test = self.visit(node.test)
         truebranch = self.visit(node.body)
-        falsebranch = []
+        falsebranch = types.Script(statements=[])
         if node.orelse:
             falsebranch = self.visit(node.orelse)
         return types.If(test=test, truebranch=truebranch, falsebranch=falsebranch)

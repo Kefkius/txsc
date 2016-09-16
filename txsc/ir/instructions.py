@@ -50,15 +50,19 @@ def format_structural_op(op):
         args_str = format_args(op.args)
         body_str = format_statements(op.body)
         return 'func %s(%s) {%s}' % (op.name, args_str, body_str)
+    elif isinstance(op, structural_nodes.Return):
+        return 'return %s' % format_structural_op(op.value)
     elif isinstance(op, structural_nodes.FunctionCall):
         args_str = format_args(op.args)
         return '%s(%s)' % (op.name, args_str)
+    elif isinstance(op, structural_nodes.Cast):
+        return '%s(%s)' % (op.as_type, format_structural_op(op.value))
     elif isinstance(op, structural_nodes.If):
         test = format_structural_op(op.test)
-        true_branch = format_statements(op.truebranch)
+        true_branch = format_statements(op.truebranch.statements)
         s = 'if %s {%s}' % (test, true_branch)
-        if op.falsebranch:
-            s += ' else {%s}' % format_statements(op.falsebranch)
+        if op.falsebranch.statements:
+            s += ' else {%s}' % format_statements(op.falsebranch.statements)
         return s
     elif isinstance(op, structural_nodes.InnerScript):
         return format_statements(op.statements)

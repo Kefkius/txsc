@@ -120,8 +120,8 @@ class StructuralFormatTest(unittest.TestCase):
 
     def test_conditional(self):
         for node, expected in [
-            (sir.If(test=sir.Int(1), truebranch=[sir.Int(5)], falsebranch=[]), 'if 1 {5;}'),
-            (sir.If(test=sir.Int(1), truebranch=[sir.Int(5)], falsebranch=[sir.Int(6)]), 'if 1 {5;} else {6;}'),
-            (sir.If(test=sir.Int(1), truebranch=[sir.Int(5)], falsebranch=[sir.Int(6), sir.Int(7)]), 'if 1 {5;} else {6; 7;}'),
+            (sir.If(test=sir.Int(1), truebranch=sir.Script([sir.Int(5)]), falsebranch=sir.Script([])), 'if 1 {5;}'),
+            (sir.If(test=sir.Int(1), truebranch=sir.Script([sir.Int(5)]), falsebranch=sir.Script([sir.Int(6)])), 'if 1 {5;} else {6;}'),
+            (sir.If(test=sir.Int(1), truebranch=sir.Script([sir.Int(5)]), falsebranch=sir.Script([sir.Int(6), sir.Int(7)])), 'if 1 {5;} else {6; 7;}'),
         ]:
             self.assertEqual(expected, SInstructions.format_op(node))
