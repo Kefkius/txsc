@@ -117,6 +117,7 @@ class BaseStructuralVisitor(BaseTransformer):
         """Parse an assignment statement into a more direct one."""
         self.require_symbol_table('assign value')
 
+        lineno = node.lineno
         type_ = node.type_
         value = node.value
         # Symbol value.
@@ -124,13 +125,8 @@ class BaseStructuralVisitor(BaseTransformer):
             other = self.symbol_table.lookup(value.name)
             type_ = other.type_
             value = other.value
-        result = structural_nodes.Assignment(node.name, value, type_)
-        result.lineno = node.lineno
-        return result
-
-    def add_Assignment(self, node):
-        """Add an assignment to the symbol table."""
-        self.require_symbol_table('assign value')
+        node = structural_nodes.Assignment(node.name, value, type_)
+        node.lineno = lineno
 
         # Prevent infinite recursion by substituting.
         # If the value being assigned is an operation and any argument to
@@ -147,6 +143,12 @@ class BaseStructuralVisitor(BaseTransformer):
 
                 node.value.set_args(new_args)
 
+        return node
+
+    def add_Assignment(self, node):
+        """Add an assignment to the symbol table."""
+        self.require_symbol_table('assign value')
+
         if node.type_ == SymbolType.StackItem:
             raise IRError('Cannot assign assumed stack item to symbol')
 
@@ -155,27 +157,36 @@ class BaseStructuralVisitor(BaseTransformer):
         except (ImmutableError, UndeclaredError) as e:
             raise IRError(e.message)
 
+    def parse_Declaration(self, node):
+        self.require_symbol_table('declare symbol')
+        if node.name == '_stack':
+            return node
+
+        lineno = node.lineno
+        type_ = node.type_
+        value = node.value
+        # Symbol value.
+        if type_ == SymbolType.Symbol:
+            other = self.symbol_table.lookup(value.name)
+            if other.type_ == SymbolType.StackItem:
+                raise IRError('Cannot assign assumed stack item to symbol')
+            type_ = other.type_
+            value = other.value
+        node = structural_nodes.Declaration(node.name, value, type_, node.mutable)
+        node.lineno = lineno
+        return node
+
     def add_Declaration(self, node):
         """Add a declaration to the symbol table."""
         self.require_symbol_table('declare symbol')
 
-        type_ = node.type_
-        value = node.value
         # '_stack' is an invalid variable name that signifies stack assumptions.
         if node.name == '_stack':
-            self.symbol_table.add_stack_assumptions(value)
+            self.symbol_table.add_stack_assumptions(node.value)
             return
-        else:
-            # Symbol value.
-            if type_ == SymbolType.Symbol:
-                other = self.symbol_table.lookup(value.name)
-                if other.type_ == SymbolType.StackItem:
-                    raise IRError('Cannot assign assumed stack item to symbol')
-                type_ = other.type_
-                value = other.value
 
         try:
-            self.symbol_table.add_symbol(node.name, value, type_, node.mutable, declaration=True)
+            self.symbol_table.add_symbol(node.name, node.value, node.type_, node.mutable, declaration=True)
         except MultipleDeclarationsError as e:
             raise IRError(e.message)
 
@@ -264,12 +275,15 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_Declaration(self, node):
-        self.add_Declaration(node)
+        node = self.parse_Declaration(node)
+        result = None
         # Names that start with an underscore are used internally.
         if not node.name.startswith('_'):
-            symbol_value = self.symbol_table.lookup(node.name).value
-            ops = self.visit(symbol_value)
-            return types.Assignment(node.name, ops)
+            node.value = self.visit(node.value)
+            result = types.Declaration(node.name, node.value, node.type_, node.mutable)
+
+        self.add_Declaration(node)
+        return result
 
     @returnlist
     def visit_Assignment(self, node):
@@ -284,12 +298,12 @@ class StructuralVisitor(BaseStructuralVisitor):
                 else:
                     self.warning(msg, assignment.lineno)
 
-        self.add_Assignment(assignment)
+        assignment.value = self.visit(assignment.value)
+        result = None
         # Names that start with an underscore are used internally.
-        if not node.name.startswith('_'):
-            symbol_value = self.symbol_table.lookup(node.name).value
-            ops = self.visit(symbol_value)
-            return types.Assignment(node.name, ops)
+        if not assignment.name.startswith('_'):
+            result = types.Assignment(assignment.name, assignment.value, assignment.type_)
+        return result
 
     @returnlist
     def visit_Symbol(self, node):
@@ -416,7 +430,9 @@ class StructuralVisitor(BaseStructuralVisitor):
                 r = r[0]
             func_args.append(r)
 
-        ret_value = types.FunctionCall(func_name=func.name, args=func_args, ops=ops)
+        ret_value = [types.FunctionCall(func_name=func.name, args=func_args)]
+        ret_value.extend(ops)
+        ret_value.append(types.EndFunctionCall(func_name=func.name))
         return ret_value
 
     @returnlist

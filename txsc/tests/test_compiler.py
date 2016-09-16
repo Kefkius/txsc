@@ -101,6 +101,13 @@ class CompileTxScriptFunctionTest(BaseCompilerTest):
         ]:
             self._test(test)
 
+    def test_local_variable(self):
+        for test in [
+            Test('5 ADD', ['assume item1;', 'func int addVars(a, b) {let value = a + b; return value;}', 'addVars(5, item1);']),
+            Test('5 ADD', ['assume item1;', 'func int addVars(a, b) {let value1 = a; let value2 = b; return value1 + value2;}', 'addVars(5, item1);']),
+        ]:
+            self._test(test)
+
 class CompileTxScriptAltStackConditionalTest(BaseCompilerTest):
     def _test(self, test):
         return super(CompileTxScriptAltStackConditionalTest, self)._test(test.expected, test.src)

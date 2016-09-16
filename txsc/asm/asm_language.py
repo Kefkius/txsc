@@ -76,10 +76,19 @@ class ASMTargetVisitor(BtcScriptTargetVisitor):
     def output(self):
         return ' '.join(self.values)
 
+    def visit_Declaration(self, node):
+        return None
+
     def visit_Assignment(self, node):
         return None
 
     def visit_Variable(self, node):
+        return None
+
+    def visit_FunctionCall(self, node):
+        return None
+
+    def visit_EndFunctionCall(self, node):
         return None
 
     def visit_InnerScript(self, node):

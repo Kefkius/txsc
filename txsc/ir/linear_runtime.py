@@ -1,7 +1,7 @@
 from collections import defaultdict
 import copy
 
-from txsc.symbols import ScopeType
+from txsc.symbols import ScopeType, SymbolType
 from txsc.ir import formats
 import txsc.ir.linear_nodes as types
 from txsc.ir.linear_visitor import op_for_int
@@ -282,11 +282,23 @@ class StackState(object):
     their effects, but there are specific methods for stack manipulation opcodes.
     """
     def __init__(self, symbol_table):
+        # Number of symbol table scopes that we've begun.
+        self.symbol_table_scope_count = 0
         self.symbol_table = symbol_table
         self.assumptions = []
         self._current_scope = StateScope()
         self.scopes = [self.state]
         self.clear()
+
+    def begin_symbol_table_scope(self, scope_type):
+        """Begin a scope in the symbol table."""
+        self.symbol_table.begin_scope(scope_type)
+        self.symbol_table_scope_count += 1
+
+    def end_symbol_table_scope(self):
+        """End a scope in the symbol table."""
+        self.symbol_table.end_scope()
+        self.symbol_table_scope_count -= 1
 
     def begin_scope(self, scope_type=ScopeType.General):
         """Begin a new scope.
@@ -295,7 +307,7 @@ class StackState(object):
         values can be altered.
         """
         stack_names = self.symbol_table.lookup('_stack_names')
-        self.symbol_table.begin_scope(scope_type)
+        self.begin_symbol_table_scope(scope_type)
         if stack_names:
             self.symbol_table.add_stack_assumptions(stack_names.value)
 
@@ -304,7 +316,7 @@ class StackState(object):
 
     def end_scope(self):
         """End the current scope in the stack state and the symbol table."""
-        self.symbol_table.end_scope()
+        self.end_symbol_table_scope()
         self.scopes.pop()
         if not self.scopes:
             raise Exception('Popped the topmost scope')
@@ -376,6 +388,10 @@ class StackState(object):
         return highest, stack_index
 
     def clear(self, clear_assumptions=True):
+        # End the symbol table scopes that we've begun.
+        while self.symbol_table_scope_count:
+            self.end_symbol_table_scope()
+
         self.state = StateScope()
         self.scopes = [self.state]
         if clear_assumptions:
@@ -422,7 +438,7 @@ class StackState(object):
 
     def process_instruction(self, op):
         """Process op and update the stack."""
-        if not isinstance(op, (types.Assignment, types.OpCode, types.InnerScript, types.Push)):
+        if not isinstance(op, (types.Declaration, types.Assignment, types.OpCode, types.InnerScript, types.Push, types.FunctionCall, types.EndFunctionCall)):
             return
         self.visit(op)
 
@@ -576,9 +592,24 @@ class StackState(object):
     def visit_EndIf(self, op):
         self.end_scope()
 
+    def visit_Declaration(self, op):
+        # If the symbol is not defined, then we're within a function and we need to define it.
+        if self.symbol_table.lookup(op.var_name, one_scope=True) is None:
+            self.symbol_table.add_symbol(op.var_name, op.value, op.type_, op.mutable, declaration=True)
+
     def visit_Assignment(self, op):
         symbol = self.symbol_table.lookup(op.var_name)
         symbol.value = op.value
+
+    def visit_FunctionCall(self, op):
+        func = self.symbol_table.lookup(op.func_name).value
+        self.begin_symbol_table_scope(scope_type=ScopeType.Function)
+        # Bind args to func's formal parameters.
+        for param, arg in zip(func.args, op.args):
+            self.symbol_table.add_symbol(name=param.id, value=arg, type_=SymbolType.FuncArg, declaration=True)
+
+    def visit_EndFunctionCall(self, op):
+        self.end_symbol_table_scope()
 
     def visit_ToAltStack(self, op):
         item = self.state_pop()

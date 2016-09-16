@@ -129,14 +129,15 @@ class StructuralOptimizer(BaseStructuralVisitor):
         return node
 
     def visit_Declaration(self, node):
-        self.add_Declaration(node)
-        return node
+        declaration = self.parse_Declaration(node)
+        self.add_Declaration(declaration)
+        return declaration
 
     def visit_Assignment(self, node):
         assignment = self.parse_Assignment(node)
         assignment.value = self.visit(assignment.value)
         self.add_Assignment(assignment)
-        return node
+        return assignment
 
     def visit_Symbol(self, node):
         """Attempt to simplify the value of a symbol."""

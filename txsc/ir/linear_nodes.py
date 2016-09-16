@@ -47,16 +47,36 @@ class Variable(Node):
     def __str__(self):
         return 'variable(%s)' % self.var_name
 
+class Declaration(Node):
+    """A declaration of a variable."""
+    name = 'declare'
+    var_name = ''
+    value = None
+    type_ = None
+    mutable = False
+    comparators = Node.comparators + ('var_name', 'value', 'type_', 'mutable',)
+    def __init__(self, var_name='', value=None, type_=None, mutable=False, **kwargs):
+        super(Declaration, self).__init__(**kwargs)
+        self.var_name = var_name
+        self.value = value
+        self.type_ = type_
+        self.mutable = mutable
+
+    def __str__(self):
+        return 'declare(%s, %s)' % (self.var_name, self.value)
+
 class Assignment(Node):
     """An assignment to a variable."""
     name = 'assign'
     var_name = ''
     value = None
-    comparators = Node.comparators + ('var_name', 'value',)
-    def __init__(self, var_name='', value=None, **kwargs):
+    type_ = None
+    comparators = Node.comparators + ('var_name', 'value', 'type_',)
+    def __init__(self, var_name='', value=None, type_=None, **kwargs):
         super(Assignment, self).__init__(**kwargs)
         self.var_name = var_name
         self.value = value
+        self.type_ = type_
 
     def __str__(self):
         value = map(str, self.value)
@@ -88,14 +108,21 @@ class Assumption(Node):
         return 'assume(%s)'%self.var_name
 
 class FunctionCall(Node):
-    """Call to a function."""
+    """Start of a function call."""
     name = 'functioncall'
-    comparators = Node.comparators + ('func_name', 'args', 'ops',)
-    def __init__(self, func_name='', args=None, ops=None, **kwargs):
+    comparators = Node.comparators + ('func_name', 'args',)
+    def __init__(self, func_name='', args=None, **kwargs):
         super(FunctionCall, self).__init__(**kwargs)
         self.func_name = func_name
         self.args = args if args is not None else []
-        self.ops = ops if ops is not None else []
+
+class EndFunctionCall(Node):
+    """End of a function call."""
+    name = 'endfunctioncall'
+    comparators = Node.comparators + ('func_name',)
+    def __init__(self, func_name='', **kwargs):
+        super(EndFunctionCall, self).__init__(**kwargs)
+        self.func_name = func_name
 
 class Push(Node):
     name = 'push'

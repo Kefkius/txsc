@@ -298,6 +298,9 @@ class LinearContextualizer(BaseLinearVisitor):
             return
         return method(instruction)
 
+    def visit_Declaration(self, op):
+        self.assignments[op.var_name].append(op.idx)
+
     def visit_Assignment(self, op):
         self.assignments[op.var_name].append(op.idx)
 
@@ -375,10 +378,6 @@ class LinearContextualizer(BaseLinearVisitor):
     def visit_Roll(self, op):
         """Attempt to determine opcode argument."""
         return self.visit_Pick(op)
-
-    def visit_FunctionCall(self, op):
-        for i in op.ops:
-            i.idx = op.idx
 
 class LinearInliner(BaseLinearVisitor):
     """Replaces variables with stack operations."""
@@ -493,7 +492,7 @@ class LinearInliner(BaseLinearVisitor):
 
     def visit_Assumption(self, op):
         self.stack.clear(clear_assumptions=False)
-        self.stack.process_instructions(self.instructions[:op.idx])
+        self.stack.process_instructions(self.instructions[:op.idx + 1])
         # Use the alt stack if this is an alt stack assumption.
         if self.contextualizer.uses_alt_stack(op.var_name):
             return self.alt_stack_manager.get_variable(op, self.contextualizer.is_last_occurrence(op))
@@ -532,7 +531,7 @@ class LinearInliner(BaseLinearVisitor):
         # the runtime StackState.
         if result is None:
             self.stack.clear(clear_assumptions=False)
-            self.stack.process_instructions(self.instructions[:op.idx])
+            self.stack.process_instructions(self.instructions[:op.idx + 1])
             result = self.symbol_table.lookup(op.var_name).value
         return result
 
@@ -555,29 +554,3 @@ class LinearInliner(BaseLinearVisitor):
             return None
         op.ops = new_ops
         return op
-
-    def visit_FunctionCall(self, op):
-        self.stack.clear(clear_assumptions=False)
-        self.stack.process_instructions(self.instructions[:op.idx])
-
-        func = self.symbol_table.lookup(op.func_name).value
-        self.symbol_table.begin_scope(scope_type=ScopeType.Function)
-        # Bind args to func's formal parameters.
-        for param, arg in zip(func.args, op.args):
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_=SymbolType.FuncArg, declaration=True)
-
-        # Visit the function ops.
-        ret = []
-        for i in op.ops:
-            result = self.visit(i)
-            # Return the op if it's unchanged.
-            if result is None:
-                ret.append(i)
-            elif isinstance(result, list):
-                ret.extend(result)
-            else:
-                ret.append(result)
-
-        self.symbol_table.end_scope()
-
-        return ret
