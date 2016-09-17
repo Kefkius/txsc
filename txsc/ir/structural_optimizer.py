@@ -207,11 +207,13 @@ class StructuralOptimizer(BaseStructuralVisitor):
     def visit_function_body(self, body):
         for stmt in body:
             result = self.visit(stmt)
+            # Don't return a constant result if a conditional is encountered.
+            if isinstance(stmt, types.If):
+                return None
             if isinstance(stmt, types.Return):
                 # Attempt to substitute symbol values in the return statement.
                 result = SymbolVisitor().transform(result, self.symbol_table)
                 return self.visit(result)
-        raise IRError('Function did not return a value')
 
     def visit_FunctionCall(self, node):
         line_number = node.lineno
@@ -222,13 +224,15 @@ class StructuralOptimizer(BaseStructuralVisitor):
         body = copy.deepcopy(func.body)
 
         return_value = self.visit_function_body(body)
-        return_value = self.cast_return_type(return_value, func.return_type)
-        return_value.lineno = line_number
-
         self.symbol_table.end_scope()
-        # If the result is constant, return it instead of the function call.
-        if get_const(return_value):
-            return return_value
+        # return_value is None if the function returns within conditionals.
+        if return_value is not None:
+            return_value = self.cast_return_type(return_value, func.return_type)
+            return_value.lineno = line_number
+
+            # If the result is constant, return it instead of the function call.
+            if get_const(return_value):
+                return return_value
         return node
 
     def visit_If(self, node):
