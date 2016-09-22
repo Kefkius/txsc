@@ -9,7 +9,7 @@ from txsc.symbols import SymbolTable, SymbolType, ImmutableError, MultipleDeclar
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError, IRStrictNumError, IRTypeError
 from txsc.ir.instructions import SInstructions, format_structural_op
-from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, SymbolVisitor
+from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, SymbolVisitor, FunctionVisitor
 import txsc.ir.structural_nodes as types
 
 
@@ -233,6 +233,12 @@ class StructuralOptimizer(BaseStructuralVisitor):
             # If the result is constant, return it instead of the function call.
             if get_const(return_value):
                 return return_value
+        return node
+
+    def visit_Function(self, node):
+        # Validate the function definition.
+        FunctionVisitor().transform(node, self.symbol_table)
+        self.symbol_table.add_function_def(node)
         return node
 
     def visit_If(self, node):

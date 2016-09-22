@@ -339,37 +339,25 @@ class ScriptTransformer(BaseTransformer):
                     operands = list(node.args))
 
     def visit_Call(self, node):
-        # User-defined function.
-        if self.symbol_table and self.symbol_table.lookup(node.func.id):
-            symbol = self.symbol_table.lookup(node.func.id)
-            if symbol.type_ != SymbolType.Func:
-                raise ParsingError('Cannot call "%s" of type %s' % (node.func.id, symbol.type_))
-            return types.FunctionCall(node.func.id, self.map_visit(node.args))
-
         # Handle "built-in" functions.
         if self.builtins.is_builtin(node.func.id):
             return self.visit(self.builtins.call_builtin(node))
         # Handle function calls that correspond to opcodes.
         if get_op_func(node.func.id):
             return self.visit_op_function_call(node)
-        # Function name must be known.
-        raise ParsingNameError('No function "%s" exists.' % node.func.id)
+        # Assume it's a user-defined function.
+        return types.FunctionCall(node.func.id, self.map_visit(node.args))
 
     def visit_Return(self, node):
         return types.Return(self.visit(node.value))
 
     # TODO Python 3 compatibility.
     def visit_FunctionDef(self, node):
-        if not self.symbol_table:
-            raise Exception('Cannot define function. Transformer was started without a symbol table.')
-
         args = node.args.args.elts
         body = filter(lambda i: i is not None, self.map_visit(node.body))
 
         type_name = self.get_symbol_type(node.type_name)
-        func_def = types.Function(node.name, type_name, args, body)
-        self.symbol_table.add_function_def(func_def)
-        return func_def
+        return types.Function(node.name, type_name, args, body)
 
     def format_dump(self, node, annotate_fields=True, include_attributes=False):
         if hasattr(node, 'dump') and not isinstance(node, types.Script):

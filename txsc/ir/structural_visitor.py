@@ -125,6 +125,9 @@ class BaseStructuralVisitor(BaseTransformer):
             other = self.symbol_table.lookup(value.name)
             type_ = other.type_
             value = other.value
+        # Function value.
+        elif type_ == SymbolType.Func:
+            raise IRError('Cannot assign function to symbol')
         node = structural_nodes.Assignment(node.name, value, type_)
         node.lineno = lineno
 
@@ -172,6 +175,9 @@ class BaseStructuralVisitor(BaseTransformer):
                 raise IRError('Cannot assign assumed stack item to symbol')
             type_ = other.type_
             value = other.value
+        # Function value.
+        elif type_ == SymbolType.Func:
+            raise IRError('Cannot assign function to symbol')
         node = structural_nodes.Declaration(node.name, value, type_, node.mutable)
         node.lineno = lineno
         return node
@@ -467,6 +473,7 @@ class StructuralVisitor(BaseStructuralVisitor):
     def visit_Function(self, node):
         # Validate the function definition.
         FunctionVisitor().transform(node, self.symbol_table)
+        self.symbol_table.add_function_def(node)
 
     @returnlist
     def visit_Return(self, node):
