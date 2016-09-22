@@ -227,6 +227,34 @@ class SymbolVisitor(BaseStructuralVisitor):
             raise IRError('Symbol "%s" was not declared.' % node.name)
         return symbol.value
 
+class FunctionVisitor(BaseStructuralVisitor):
+    """Validates function definitions."""
+    def __init__(self, *args, **kwargs):
+        super(FunctionVisitor, self).__init__(*args, **kwargs)
+        # Whether a return statement has been encountered.
+        self.has_returned = False
+
+    def transform(self, node, symbol_table):
+        self.has_returned = False
+        return self.visit(node)
+
+    def visit_Function(self, node):
+        for stmt in node.body:
+            if SInstructions.is_push_operation(stmt):
+                msg = 'Functions cannot push values to the stack'
+                self.error(msg, stmt.lineno)
+                raise IRImplicitPushError(msg, stmt.lineno)
+            self.visit(stmt)
+
+        if not self.has_returned:
+            raise IRError('Functions must have a return statement')
+
+    def visit_Return(self, node):
+        """Ensure that only one return statement is present."""
+        if self.has_returned:
+            raise IRError('Functions can only have one return statement')
+        self.has_returned = True
+
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
     def transform(self, node, symbol_table=None):
@@ -437,11 +465,8 @@ class StructuralVisitor(BaseStructuralVisitor):
 
     @returnlist
     def visit_Function(self, node):
-        for stmt in node.body:
-            if SInstructions.is_push_operation(stmt):
-                msg = 'Functions cannot push values to the stack'
-                self.error(msg, stmt.lineno)
-                raise IRImplicitPushError(msg, stmt.lineno)
+        # Validate the function definition.
+        FunctionVisitor().transform(node, self.symbol_table)
 
     @returnlist
     def visit_Return(self, node):
