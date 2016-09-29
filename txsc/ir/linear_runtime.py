@@ -438,7 +438,7 @@ class StackState(object):
 
     def process_instruction(self, op):
         """Process op and update the stack."""
-        if not isinstance(op, (types.Declaration, types.Assignment, types.OpCode, types.InnerScript, types.Push, types.FunctionCall, types.EndFunctionCall)):
+        if not isinstance(op, (types.Declaration, types.Assignment, types.OpCode, types.InnerScript, types.Push)):
             return
         self.visit(op)
 
@@ -600,16 +600,6 @@ class StackState(object):
     def visit_Assignment(self, op):
         symbol = self.symbol_table.lookup(op.var_name)
         symbol.value = op.value
-
-    def visit_FunctionCall(self, op):
-        func = self.symbol_table.lookup(op.func_name).value
-        self.begin_symbol_table_scope(scope_type=ScopeType.Function)
-        # Bind args to func's formal parameters.
-        for param, arg in zip(func.args, op.args):
-            self.symbol_table.add_symbol(name=param.id, value=arg, type_=SymbolType.FuncArg, declaration=True)
-
-    def visit_EndFunctionCall(self, op):
-        self.end_symbol_table_scope()
 
     def visit_ToAltStack(self, op):
         item = self.state_pop()

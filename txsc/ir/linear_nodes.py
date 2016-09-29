@@ -63,7 +63,11 @@ class Declaration(Node):
         self.mutable = mutable
 
     def __str__(self):
-        return 'declare(%s, %s)' % (self.var_name, self.value)
+        value = map(str, self.value)
+        # If the value is one operation, show it without list notation.
+        if len(value) == 1:
+            value = value[0]
+        return 'declare(%s, %s)' % (self.var_name, value)
 
 class Assignment(Node):
     """An assignment to a variable."""
@@ -106,23 +110,6 @@ class Assumption(Node):
 
     def __str__(self):
         return 'assume(%s)'%self.var_name
-
-class FunctionCall(Node):
-    """Start of a function call."""
-    name = 'functioncall'
-    comparators = Node.comparators + ('func_name', 'args',)
-    def __init__(self, func_name='', args=None, **kwargs):
-        super(FunctionCall, self).__init__(**kwargs)
-        self.func_name = func_name
-        self.args = args if args is not None else []
-
-class EndFunctionCall(Node):
-    """End of a function call."""
-    name = 'endfunctioncall'
-    comparators = Node.comparators + ('func_name',)
-    def __init__(self, func_name='', **kwargs):
-        super(EndFunctionCall, self).__init__(**kwargs)
-        self.func_name = func_name
 
 class Push(Node):
     name = 'push'
