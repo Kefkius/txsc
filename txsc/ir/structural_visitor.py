@@ -299,11 +299,21 @@ class FunctionVisitor(BaseStructuralVisitor):
         node.value = self.visit(node.value)
         node.type_ = SInstructions.get_symbol_type_for_node(node.value)
         node = self.parse_Declaration(node)
-        self.add_Declaration(node)
 
         name = self.mangle_name(node.name)
         self.local_vars[node.name] = name
         node.name = name
+        self.add_Declaration(node)
+
+        return node
+
+    def visit_Assignment(self, node):
+        node.value = self.visit(node.value)
+        node.type_ = SInstructions.get_symbol_type_for_node(node.value)
+        node = self.parse_Assignment(node)
+        if node.name in self.local_vars:
+            node.name = self.local_vars[node.name]
+        self.add_Assignment(node)
 
         return node
 
@@ -313,14 +323,14 @@ class FunctionVisitor(BaseStructuralVisitor):
         if idx is not None:
             return self.args[idx]
 
+        # Replace the symbol's name with its mangled name.
+        if node.name in self.local_vars:
+            node.name = self.local_vars[node.name]
         result = SymbolVisitor().transform(node, self.symbol_table)
         if result != node:
             result.lineno = node.lineno
             return result
 
-        # Replace the symbol's name with its mangled name.
-        if node.name in self.local_vars:
-            node.name = self.local_vars[node.name]
         return node
 
 class StructuralVisitor(BaseStructuralVisitor):
