@@ -88,7 +88,7 @@ class AltStackManager(object):
             elif isinstance(i, types.EndIf):
                 conditional_level -= 1
 
-            if isinstance(i, types.Assignment):
+            if isinstance(i, (types.Assignment, types.Declaration)):
                 item = self.alt_stack_items[i.var_name]
 
                 # Record if the assignment is within a conditional.

@@ -236,6 +236,8 @@ class SymbolVisitor(BaseStructuralVisitor):
             raise IRError('Symbol "%s" was not declared.' % node.name)
         if symbol.type_ == SymbolType.StackItem and not self.substitute_assumptions:
             return node
+        if symbol.mutable:
+            return node
         return symbol.value
 
 class FunctionDefinitionVisitor(BaseStructuralVisitor):
