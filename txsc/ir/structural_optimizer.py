@@ -9,7 +9,7 @@ from txsc.symbols import SymbolTable, SymbolType, ImmutableError, MultipleDeclar
 from txsc.transformer import BaseTransformer
 from txsc.ir import formats, IRError, IRStrictNumError, IRTypeError
 from txsc.ir.instructions import SInstructions, format_structural_op
-from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, SymbolVisitor, FunctionVisitor
+from txsc.ir.structural_visitor import SIROptions, BaseStructuralVisitor, SymbolVisitor, FunctionDefinitionVisitor
 import txsc.ir.structural_nodes as types
 
 
@@ -219,25 +219,20 @@ class StructuralOptimizer(BaseStructuralVisitor):
         line_number = node.lineno
         node.args = self.map_visit(node.args)
         func = self.add_FunctionCall(node)
-        self.bind_args(node.args, func)
 
-        body = copy.deepcopy(func.body)
-
-        return_value = self.visit_function_body(body)
-        self.symbol_table.end_scope()
+        return_value = self.visit_function_body(func.body)
         # return_value is None if the function returns within conditionals.
         if return_value is not None:
             return_value = self.cast_return_type(return_value, func.return_type)
             return_value.lineno = line_number
 
-            # If the result is constant, return it instead of the function call.
-            if get_const(return_value):
-                return return_value
+            # Return the optimized SIR instructions.
+            return return_value
         return node
 
     def visit_Function(self, node):
         # Validate the function definition.
-        FunctionVisitor().transform(node, self.symbol_table)
+        FunctionDefinitionVisitor().transform(node, self.symbol_table)
         self.symbol_table.add_function_def(node)
         return node
 

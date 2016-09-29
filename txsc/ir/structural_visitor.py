@@ -171,10 +171,9 @@ class BaseStructuralVisitor(BaseTransformer):
         # Symbol value.
         if type_ == SymbolType.Symbol:
             other = self.symbol_table.lookup(value.name)
-            if other.type_ == SymbolType.StackItem:
-                raise IRError('Cannot assign assumed stack item to symbol')
-            type_ = other.type_
-            value = other.value
+            if other.type_ != SymbolType.StackItem:
+                type_ = other.type_
+                value = other.value
         # Function value.
         elif type_ == SymbolType.Func:
             raise IRError('Cannot assign function to symbol')
@@ -211,6 +210,7 @@ class BaseStructuralVisitor(BaseTransformer):
         if len(func.args) != len(node.args):
             raise IRError('Function "%s" requires %d argument(s) (got %d)' % (func.name, len(func.args), len(node.args)))
 
+        func = FunctionVisitor().transform(copy.deepcopy(func), node.args, self.symbol_table)
         return func
 
     def bind_args(self, args, func):
@@ -223,6 +223,9 @@ class BaseStructuralVisitor(BaseTransformer):
 
 class SymbolVisitor(BaseStructuralVisitor):
     """Substitutes symbols with their values."""
+    def __init__(self, substitute_assumptions=False):
+        self.substitute_assumptions = substitute_assumptions
+
     def transform(self, node, symbol_table):
         self.symbol_table = symbol_table
         return self.visit(node)
@@ -231,12 +234,14 @@ class SymbolVisitor(BaseStructuralVisitor):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise IRError('Symbol "%s" was not declared.' % node.name)
+        if symbol.type_ == SymbolType.StackItem and not self.substitute_assumptions:
+            return node
         return symbol.value
 
-class FunctionVisitor(BaseStructuralVisitor):
+class FunctionDefinitionVisitor(BaseStructuralVisitor):
     """Validates function definitions."""
     def __init__(self, *args, **kwargs):
-        super(FunctionVisitor, self).__init__(*args, **kwargs)
+        super(FunctionDefinitionVisitor, self).__init__(*args, **kwargs)
         # Whether a return statement has been encountered.
         self.has_returned = False
 
@@ -260,6 +265,63 @@ class FunctionVisitor(BaseStructuralVisitor):
         if self.has_returned:
             raise IRError('Functions can only have one return statement')
         self.has_returned = True
+
+class FunctionVisitor(BaseStructuralVisitor):
+    """Handles symbol declarations in function calls."""
+    def __init__(self, *args, **kwargs):
+        super(FunctionVisitor, self).__init__(*args, **kwargs)
+        self.local_vars = {}
+
+    def get_parameter_index(self, name):
+        """Get the index of the named parameter."""
+        ids = [param.id for param in self.parameters]
+        try:
+            return ids.index(name)
+        except Exception:
+            return None
+
+    def mangle_name(self, name):
+        """Mangle a name with the id of the function."""
+        return '%s_%s' % (name, id(self.func))
+
+    def transform(self, node, args, symbol_table):
+        self.func = node
+        self.symbol_table = symbol_table
+        self.parameters = node.args
+        self.args = args
+
+        symbol_table.begin_scope(scope_type=ScopeType.Function)
+        result = self.visit(node)
+        symbol_table.end_scope()
+        return result
+
+    def visit_Declaration(self, node):
+        node.value = self.visit(node.value)
+        node.type_ = SInstructions.get_symbol_type_for_node(node.value)
+        node = self.parse_Declaration(node)
+        self.add_Declaration(node)
+
+        name = self.mangle_name(node.name)
+        self.local_vars[node.name] = name
+        node.name = name
+
+        return node
+
+    def visit_Symbol(self, node):
+        idx = self.get_parameter_index(node.name)
+        # Replace formal parameter with argument.
+        if idx is not None:
+            return self.args[idx]
+
+        result = SymbolVisitor().transform(node, self.symbol_table)
+        if result != node:
+            result.lineno = node.lineno
+            return result
+
+        # Replace the symbol's name with its mangled name.
+        if node.name in self.local_vars:
+            node.name = self.local_vars[node.name]
+        return node
 
 class StructuralVisitor(BaseStructuralVisitor):
     """Tranforms a structural representation into a linear one."""
@@ -447,32 +509,17 @@ class StructuralVisitor(BaseStructuralVisitor):
     def visit_FunctionCall(self, node):
         func = self.add_FunctionCall(node)
         args = node.args
-        self.bind_args(args, func)
 
         body = copy.deepcopy(func.body)
         ops = []
         for i in body:
             ops.extend(self.visit(i))
-
-        self.symbol_table.end_scope()
-
-        # Transform arguments into LIR.
-        func_args = []
-        for arg in args:
-            r = self.visit(arg)
-            if isinstance(r, list) and len(r) == 1:
-                r = r[0]
-            func_args.append(r)
-
-        ret_value = [types.FunctionCall(func_name=func.name, args=func_args)]
-        ret_value.extend(ops)
-        ret_value.append(types.EndFunctionCall(func_name=func.name))
-        return ret_value
+        return ops
 
     @returnlist
     def visit_Function(self, node):
         # Validate the function definition.
-        FunctionVisitor().transform(node, self.symbol_table)
+        FunctionDefinitionVisitor().transform(node, self.symbol_table)
         self.symbol_table.add_function_def(node)
 
     @returnlist
