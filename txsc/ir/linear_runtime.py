@@ -26,6 +26,7 @@ class AltStackItem(object):
     """Alt stack item.
 
     Attributes:
+        name (str): Item name.
         initial value: Value that the variable was declared with.
         assignments (int): Number of assignments to the variable.
         variable_index (int): Index of the variable in the alt stack.
@@ -33,6 +34,7 @@ class AltStackItem(object):
         is_assumption (bool): Whether the variable is an assumed stack item.
     """
     def __init__(self):
+        self.name = ''
         self.initial_value = None
         self.assignments = 0
         self.variable_index = None
@@ -70,16 +72,22 @@ class AltStackManager(object):
         Returns:
             The operations needed to set up the alt stack.
         """
-        self.alt_stack_items.clear()
+        self.clear()
         if stack_names and self.options.use_altstack_for_assumptions:
             for i, (stack_name, depth) in enumerate(stack_names.items()):
                 item = AltStackItem()
+                item.name = stack_name
                 item.is_assumption = True
                 item.variable_index = i
                 # Push the item to the alt stack.
                 item.initial_value = [op_for_int(depth), types.Roll()]
                 self.alt_stack_items[stack_name] = item
 
+        self.find_alt_stack_items(instructions)
+        return self.get_initial_script_ops()
+
+    def find_alt_stack_items(self, instructions):
+        """Find alt stack items in instructions."""
         conditional_level = 0
         for i in instructions:
             # Track the conditional nesting level.
@@ -90,6 +98,7 @@ class AltStackManager(object):
 
             if isinstance(i, (types.Assignment, types.Declaration)):
                 item = self.alt_stack_items[i.var_name]
+                item.name = i.var_name
 
                 # Record if the assignment is within a conditional.
                 if conditional_level > 0:
@@ -126,7 +135,8 @@ class AltStackManager(object):
         for k, v in self.alt_stack_items.items():
             v.variable_index = indices.get(k, None)
 
-        # Return the ops used to set up the initial alt stack.
+    def get_initial_script_ops(self):
+        """Return the ops used to set up the initial alt stack."""
         ops = []
         for item in sorted(self.alt_stack_items.values(), key = lambda i: i.variable_index):
             # Omit if the item doesn't require alt stack allocation.

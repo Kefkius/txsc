@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy
 from functools import wraps
 import logging
@@ -270,6 +271,7 @@ class FunctionDefinitionVisitor(BaseStructuralVisitor):
 
 class FunctionVisitor(BaseStructuralVisitor):
     """Handles symbol declarations in function calls."""
+    nonces = defaultdict(int)
     def __init__(self, *args, **kwargs):
         super(FunctionVisitor, self).__init__(*args, **kwargs)
         self.local_vars = {}
@@ -284,13 +286,14 @@ class FunctionVisitor(BaseStructuralVisitor):
 
     def mangle_name(self, name):
         """Mangle a name with the id of the function."""
-        return '%s_%s' % (name, id(self.func))
+        return '_func_"%s"_%s_%s' % (self.func.name, self.nonces[self.func.name], name)
 
     def transform(self, node, args, symbol_table):
         self.func = node
         self.symbol_table = symbol_table
         self.parameters = node.args
         self.args = args
+        self.nonces[self.func.name] += 1
 
         symbol_table.begin_scope(scope_type=ScopeType.Function)
         result = self.visit(node)
@@ -386,7 +389,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         node = self.parse_Declaration(node)
         result = None
         # Names that start with an underscore are used internally.
-        if not node.name.startswith('_'):
+        if node.name != '_stack':
             node.value = self.visit(node.value)
             result = types.Declaration(node.name, node.value, node.type_, node.mutable)
 
@@ -409,7 +412,7 @@ class StructuralVisitor(BaseStructuralVisitor):
         assignment.value = self.visit(assignment.value)
         result = None
         # Names that start with an underscore are used internally.
-        if not assignment.name.startswith('_'):
+        if assignment.name != '_stack':
             result = types.Assignment(assignment.name, assignment.value, assignment.type_)
         return result
 
