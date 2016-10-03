@@ -232,6 +232,8 @@ class StackItem(object):
     """Model of an item on a stack."""
     def __init__(self, op):
         self.op = op
+        # Whether this item has been pushed to the alt stack.
+        self.pushed_to_altstack = False
 
     def __str__(self):
         return str(self.op)
@@ -376,7 +378,9 @@ class StackState(object):
     def get_assumptions(self, assumption_name):
         """Get occurrences of assumption_name."""
         state = self.state_after_assumptions()
-        ret_list = copy.deepcopy(filter(lambda i: i.is_assumption() and i.op.var_name == assumption_name, state))
+        # Assumptions that have been pushed to the alt stack at some point
+        # are not included, as we assume their value may have changed.
+        ret_list = copy.deepcopy(filter(lambda i: i.is_assumption() and i.op.var_name == assumption_name and not i.pushed_to_altstack, state))
         return ret_list
 
     def get_highest_assumption(self, assumption):
@@ -613,6 +617,7 @@ class StackState(object):
 
     def visit_ToAltStack(self, op):
         item = self.state_pop()
+        item.pushed_to_altstack = True
         self.state.altstack.append(item)
 
     def visit_FromAltStack(self, op):
