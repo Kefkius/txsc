@@ -144,6 +144,7 @@ class StructuralOptimizer(BaseStructuralVisitor):
         symbol = self.symbol_table.lookup(node.name)
         if not symbol:
             raise IRError('Symbol "%s" was not declared.' % node.name)
+        # Don't try to optimize mutable symbols.
         if symbol.mutable:
             return node
         value = symbol.value
@@ -159,6 +160,9 @@ class StructuralOptimizer(BaseStructuralVisitor):
                 symbol.type_ = SInstructions.get_symbol_type_for_node(expr)
                 return expr
 
+        # If the immutable symbol is not an assumption, return its value.
+        if symbol.type_ != SymbolType.StackItem:
+            return value
         return node
 
     def visit_UnaryOpCode(self, node):
